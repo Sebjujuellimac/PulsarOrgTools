@@ -871,7 +871,10 @@ function updateAuthUI() {
 
 async function loginWithDiscord() {
   if (!sb) { alert('Database not connected.'); return; }
-  const { error } = await sb.auth.signInWithOAuth({ provider: 'discord' });
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'discord',
+    options: { redirectTo: 'https://pulsarorgtools.netlify.app' },
+  });
   if (error) showError('Login failed: ' + error.message);
 }
 
