@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip -o StarSuppliesBot.zip -d .)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where node *)",
+      "Bash(where node.exe)",
+      "Read(//c/Users/sdeca/AppData/Local/Programs//**)",
+      "Read(//c/Program Files//**)",
+      "Bash(dotnet --version)",
+      "Bash(perl -e \"print 'ok\\\\n'\")",
+      "Bash(cygpath -w /usr/bin/perl)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Read(//c/Users/sdeca/AppData/Roaming/**)",
+      "Read(//c/Users/sdeca/AppData/Local//**)",
+      "Bash(cmd.exe /c \"node --version 2>&1 && npm --version 2>&1\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\sdeca\\\\OneDrive\\\\Desktop\\\\PulsarOrgTools\" -Recurse -Force | ForEach-Object { $_.FullName })"
+    ]
+  }
+}

@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulsar Org Tools</title>
+<style>
+  /* ── Reset & base ── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #1a1a1f;
+    color: #e8e6e3;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  /* ── CSS variables (hardcoded for standalone use) ── */
+  :root {
+    --color-text-primary:     #e8e6e3;
+    --color-text-secondary:   #9e9b96;
+    --color-text-tertiary:    #6b6864;
+    --color-text-info:        #7eb8f7;
+    --color-background-primary:   #1a1a1f;
+    --color-background-secondary: #24242b;
+    --color-background-info:      #1a2a3a;
+    --color-border-primary:   #5a5855;
+    --color-border-secondary: #3a3835;
+    --color-border-tertiary:  #2e2c2a;
+    --border-radius-md: 6px;
+    --border-radius-lg: 8px;
+    --font-mono: 'Courier New', Courier, monospace;
+  }
+
+  .app { max-width: 1100px; margin: 0 auto; padding: 1rem 0; }
+
+  /* ── Header ── */
+  .header { display: flex; align-items: center; margin-bottom: 1.5rem; }
+  .logo-icon { width: 32px; height: 32px; margin-right: 10px; }
+  .logo-text { font-size: 15px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  .logo-sub { font-size: 11px; color: var(--color-text-secondary); letter-spacing: 0.12em; text-transform: uppercase; }
+
+  /* ── Stats ── */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; }
+  .stat-label { font-size: 10px; color: var(--color-text-secondary); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; margin-bottom: 1rem; }
+  .tab { flex: 1; padding: 8px 8px; font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.05em; text-transform: uppercase; background: transparent; border: none; cursor: pointer; color: var(--color-text-secondary); transition: all 0.15s; border-right: 0.5px solid var(--color-border-tertiary); }
+  .tab:last-child { border-right: none; }
+  .tab.active { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; }
+  .tab:hover:not(.active) { background: var(--color-background-secondary); color: var(--color-text-primary); }
+
+  /* ── Filter panels ── */
+  .filter-panel { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px 14px; margin-bottom: 1rem; display: none; }
+  .filter-panel.visible { display: block; }
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 100px; }
+  .filter-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); }
+  .filter-select { padding: 6px 10px; font-family: var(--font-mono); font-size: 12px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); color: var(--color-text-primary); width: 100%; }
+  .filter-reset { padding: 6px 12px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; align-self: flex-end; }
+  .filter-reset:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
+  .filter-summary { font-size: 11px; color: var(--color-text-secondary); margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary); display: none; }
+  .filter-summary.show { display: block; }
+  .filter-tag { display: inline-block; padding: 2px 8px; border-radius: 99px; background: var(--color-background-info); color: var(--color-text-info); font-size: 10px; margin-right: 4px; margin-top: 2px; }
+
+  /* ── Tick filters ── */
+  .tick-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .tick-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); }
+  .tick-option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .tick-option input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: #185FA5; }
+  .tick-option span { font-size: 12px; }
+
+  /* ── Dual range slider ── */
+  .dual-range { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
+  .dual-range-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); }
+  .dual-range-value { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  .dual-range-track-wrap { position: relative; height: 20px; display: flex; align-items: center; }
+  .dual-range-bg { position: absolute; left: 0; right: 0; height: 4px; background: var(--color-border-tertiary); border-radius: 2px; }
+  .dual-range-fill { position: absolute; height: 4px; background: #854F0B; border-radius: 2px; }
+  .dual-thumb { position: absolute; width: 16px; height: 16px; background: var(--color-background-primary); border: 2px solid #854F0B; border-radius: 50%; cursor: grab; transform: translateX(-50%); top: 50%; margin-top: -8px; }
+  .dual-thumb:active { cursor: grabbing; }
+  .dual-range-ends { display: flex; justify-content: space-between; font-size: 10px; color: var(--color-text-secondary); }
+
+  /* ── Recipe manager ── */
+  .recipe-manager { margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .recipe-manager-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .recipe-manager-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); }
+  .recipe-toggle { font-size: 11px; color: var(--color-text-info); background: none; border: none; cursor: pointer; font-family: var(--font-mono); padding: 0; }
+  .recipe-editor { display: none; }
+  .recipe-editor.open { display: block; }
+  .recipe-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; margin-bottom: 8px; }
+  .recipe-row { display: flex; gap: 6px; align-items: center; }
+  .recipe-row input { flex: 1; padding: 5px 8px; font-family: var(--font-mono); font-size: 11px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); color: var(--color-text-primary); }
+  .recipe-del { background: none; border: none; font-size: 14px; cursor: pointer; color: var(--color-text-secondary); padding: 0 4px; line-height: 1; }
+  .recipe-del:hover { color: #A32D2D; }
+  .recipe-add-row { display: flex; gap: 6px; }
+  .recipe-add-row input { flex: 1; padding: 5px 8px; font-family: var(--font-mono); font-size: 11px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); color: var(--color-text-primary); }
+  .recipe-add-btn { padding: 5px 10px; font-family: var(--font-mono); font-size: 11px; background: var(--color-background-info); border: none; border-radius: var(--border-radius-md); color: var(--color-text-info); cursor: pointer; white-space: nowrap; }
+
+  /* ── DKP banner ── */
+  .dkp-banner { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 10px 14px; margin-bottom: 1rem; display: none; }
+  .dkp-banner.visible { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+  .dkp-banner-item { display: flex; flex-direction: column; gap: 2px; }
+  .dkp-banner-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-secondary); }
+  .dkp-banner-value { font-size: 18px; font-weight: 500; }
+  .dkp-banner-divider { width: 0.5px; background: var(--color-border-tertiary); align-self: stretch; }
+
+  /* ── Toolbar ── */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 1rem; }
+  .search { flex: 1; padding: 8px 12px; font-family: var(--font-mono); font-size: 13px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); color: var(--color-text-primary); }
+  .search::placeholder { color: var(--color-text-tertiary); }
+  .add-btn { padding: 8px 16px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-background-info); border: none; border-radius: var(--border-radius-md); color: var(--color-text-info); cursor: pointer; font-weight: 500; white-space: nowrap; }
+  .add-btn:hover { opacity: 0.85; }
+  .result-count { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 10px; min-height: 16px; }
+
+  /* ── Grid & cards ── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px; cursor: pointer; transition: border-color 0.15s; }
+  .card:hover { border-color: var(--color-border-secondary); }
+  .card-cat { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; font-weight: 500; }
+  .card-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; line-height: 1.3; }
+  .card-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+  .qty-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--color-background-primary); color: var(--color-text-secondary); white-space: nowrap; }
+  .grade-badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+  .size-badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: var(--color-background-primary); color: var(--color-text-secondary); font-weight: 500; }
+  .class-badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+  .dkp-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #1e1a3a; color: #a89cf7; font-weight: 500; white-space: nowrap; }
+  .dkp-total-badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: #1e1a3a; color: #a89cf7; font-weight: 500; }
+  .comp-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+  .owner { font-size: 11px; color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .quality-bar { margin-top: 8px; }
+  .quality-bar-track { height: 3px; border-radius: 2px; background: var(--color-border-tertiary); overflow: hidden; }
+  .quality-bar-fill { height: 100%; border-radius: 2px; }
+  .quality-label { font-size: 10px; color: var(--color-text-secondary); margin-top: 3px; }
+
+  /* ── Category colours ── */
+  .cat-component .card-cat { color: #5a9e3f; }
+  .cat-material  .card-cat { color: #c47a2a; }
+  .cat-blueprint .card-cat { color: #8b72e8; }
+  .cat-wikelo    .card-cat { color: #2dbd8f; }
+
+  /* ── Grade/class badges ── */
+  .grade-A { background: #1e2e14; color: #5a9e3f; }
+  .grade-B { background: #142236; color: #4a8fd4; }
+  .grade-C { background: #2e1e0a; color: #c47a2a; }
+  .grade-D { background: #2e1010; color: #c44a4a; }
+  .grade-AAA { background: #102e22; color: #2dbd8f; }
+  .grade-AA  { background: #102e22; color: #2dbd8f; }
+  .grade-Pure { background: #1e2e14; color: #5a9e3f; }
+  .grade-Irradiated { background: #2e1e0a; color: #c47a2a; }
+  .class-Stealth     { background: #2a2a28; color: #c8c6bc; }
+  .class-Military    { background: #2e1010; color: #c44a4a; }
+  .class-Competition { background: #1e1a3a; color: #a89cf7; }
+  .class-Civilian    { background: #142236; color: #4a8fd4; }
+  .class-Industrial  { background: #2e1e0a; color: #c47a2a; }
+
+  /* ── Blueprint status ── */
+  .bp-status { font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+  .bp-owned { background: #1e2e14; color: #5a9e3f; }
+  .bp-researching { background: #2e1e0a; color: #c47a2a; }
+  .bp-wanted { background: #1e1a3a; color: #a89cf7; }
+
+  /* ── Wikelo type badges ── */
+  .wk-type-badge { font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+  .wk-favor    { background: #102e22; color: #2dbd8f; }
+  .wk-rare     { background: #2e1e0a; color: #c47a2a; }
+  .wk-currency { background: #1e1a3a; color: #a89cf7; }
+  .wk-loot     { background: #2e1810; color: #c4693a; }
+
+  /* ── Modals ── */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; display: none; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #1e1e24; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: min(500px, 92vw); max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+  .modal-title { font-size: 14px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+  .close-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--color-text-secondary); line-height: 1; }
+  .form-group { margin-bottom: 1rem; }
+  .form-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-secondary); margin-bottom: 6px; display: block; }
+  .form-input, .form-select { width: 100%; padding: 8px 12px; font-family: var(--font-mono); font-size: 13px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); color: var(--color-text-primary); }
+  .form-select option { background: #1e1e24; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .form-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+  .submit-btn { width: 100%; padding: 10px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--color-background-info); border: none; border-radius: var(--border-radius-md); color: var(--color-text-info); cursor: pointer; font-weight: 500; margin-top: 0.5rem; }
+  .submit-btn:hover { opacity: 0.85; }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--color-text-secondary); font-size: 13px; grid-column: 1/-1; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
+  .info-item .label { font-size: 10px; color: var(--color-text-secondary); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+  .info-item .value { font-size: 14px; font-weight: 500; }
+  .notes-text { font-size: 13px; color: var(--color-text-secondary); margin-top: 1rem; line-height: 1.6; border-top: 0.5px solid var(--color-border-tertiary); padding-top: 1rem; }
+  .action-row { display: flex; gap: 8px; margin-top: 1rem; }
+  .edit-btn { flex: 1; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 14px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-primary); cursor: pointer; }
+  .delete-btn { flex: 1; background: none; border: 0.5px solid #7a2020; border-radius: var(--border-radius-md); padding: 6px 14px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #c44a4a; cursor: pointer; }
+  .delete-btn:hover { background: #2e1010; }
+  .edit-btn:hover { background: var(--color-background-secondary); }
+
+  /* ── Section nav ── */
+  .section-nav { display: flex; margin-bottom: 1.5rem; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; }
+  .section-btn { flex: 1; padding: 10px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; background: transparent; border: none; border-right: 0.5px solid var(--color-border-tertiary); cursor: pointer; color: var(--color-text-secondary); transition: all 0.15s; }
+  .section-btn:last-child { border-right: none; }
+  .section-btn.active { background: var(--color-background-info); color: var(--color-text-info); }
+  .section-btn:hover:not(.active) { background: var(--color-background-secondary); color: var(--color-text-primary); }
+
+  /* ── Org grids ── */
+  .org-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+
+  /* ── Member cards ── */
+  .member-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; cursor: pointer; transition: border-color 0.15s; }
+  .member-card:hover { border-color: var(--color-border-secondary); }
+  .member-name { font-size: 15px; font-weight: 500; margin-bottom: 3px; }
+  .member-username { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 14px; }
+  .member-stats { display: flex; gap: 20px; }
+  .member-stat { display: flex; flex-direction: column; gap: 2px; }
+  .member-stat-label { font-size: 10px; color: var(--color-text-secondary); letter-spacing: 0.08em; text-transform: uppercase; }
+  .member-stat-value { font-size: 20px; font-weight: 500; }
+
+  /* ── Event cards ── */
+  .event-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; }
+  .event-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .event-meta { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 12px; line-height: 1.7; }
+  .event-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .ev-open   { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #1e2e14; color: #5a9e3f; font-weight: 500; }
+  .ev-closed { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #2e2c2a; color: #9e9b96; font-weight: 500; }
+
+  /* ── Leaderboard ── */
+  .leaderboard { display: flex; flex-direction: column; gap: 6px; }
+  .lb-row { display: flex; align-items: center; gap: 14px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px 16px; }
+  .lb-rank { font-size: 20px; width: 34px; text-align: center; flex-shrink: 0; }
+  .lb-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .lb-dkp  { font-size: 16px; font-weight: 500; color: #a89cf7; white-space: nowrap; }
+  .lb-meta { font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; }
+
+  /* ── Quest cards ── */
+  .quest-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .quest-title { font-size: 14px; font-weight: 500; }
+  .quest-desc { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; flex: 1; }
+  .quest-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .q-open      { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #1e2e14; color: #5a9e3f; font-weight: 500; }
+  .q-completed { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #142236; color: #4a8fd4; font-weight: 500; }
+  .q-closed    { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #2e2c2a; color: #9e9b96; font-weight: 500; }
+  .turnin-btn  { padding: 5px 12px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: var(--color-background-info); border: none; border-radius: var(--border-radius-md); color: var(--color-text-info); cursor: pointer; white-space: nowrap; }
+  .turnin-btn:hover { opacity: 0.85; }
+
+  /* ── Certifications ── */
+  .cert-row { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+  .cert-member { font-size: 13px; font-weight: 500; min-width: 150px; flex-shrink: 0; padding-top: 3px; }
+  .cert-tags { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .cert-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: #1a2a3a; color: #7eb8f7; font-weight: 500; }
+
+  /* ── TODO banner (shown until Supabase connected) ── */
+  .todo-banner { background: #2e1e0a; border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 10px 14px; margin-bottom: 1rem; font-size: 12px; color: #c47a2a; }
+  .todo-banner strong { color: #e8a44a; }
+
+  /* ── Loading & error states ── */
+  .loading-bar { height: 2px; background: linear-gradient(90deg, #185FA5 0%, #7eb8f7 50%, #185FA5 100%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 1px; margin-bottom: 1rem; display: none; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .error-banner { background: #2e1010; border: 0.5px solid #7a2020; border-radius: var(--border-radius-md); padding: 10px 14px; margin-bottom: 1rem; font-size: 12px; color: #c44a4a; display: none; }
+
+  /* ── Auth controls ── */
+  .header-auth { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .login-btn { padding: 7px 14px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; background: #5865F2; border: none; border-radius: var(--border-radius-md); color: #fff; cursor: pointer; white-space: nowrap; }
+  .login-btn:hover { opacity: 0.85; }
+  .admin-btn { padding: 6px 11px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+  .admin-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .user-pill { display: flex; align-items: center; gap: 8px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: 99px; padding: 4px 10px 4px 4px; }
+  .user-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--color-background-info); }
+  .user-name { font-size: 12px; font-weight: 500; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-badge { font-size: 9px; padding: 2px 6px; border-radius: 99px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  .badge-officer { background: #2e1e0a; color: #c47a2a; }
+  .badge-admin   { background: #2e1010; color: #c44a4a; }
+  .logout-btn { background: none; border: none; font-size: 14px; cursor: pointer; color: var(--color-text-tertiary); padding: 0 0 0 4px; line-height: 1; }
+  .logout-btn:hover { color: var(--color-text-secondary); }
+</style>
+</head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<body>
+<div class="app">
+
+  <div class="header">
+    <img src="img/PulsarLogo.png" class="logo-icon" alt="Pulsar" style="object-fit:contain;">
+    <div>
+      <div class="logo-text">Pulsar Org Tools</div>
+      <div class="logo-sub">Kelz Hounds Division · Star Citizen 4.7.1</div>
+    </div>
+    <div class="header-auth" id="header-auth"></div>
+  </div>
+
+  <div class="todo-banner" id="todoBanner">
+    <strong>⚠ Not connected to database.</strong> Data resets on refresh. Paste your Supabase anon key into the <code>SUPABASE_KEY</code> constant at the top of the script, then reload.
+  </div>
+  <div class="error-banner" id="errorBanner"></div>
+  <div class="loading-bar" id="loadingBar"></div>
+
+  <!-- Section switcher -->
+  <div class="section-nav">
+    <button class="section-btn active" id="nav-inventory" onclick="setSection('inventory')">📦 Inventory</button>
+    <button class="section-btn" id="nav-org" onclick="setSection('org')">🐺 Org Tools</button>
+  </div>
+
+  <!-- ═══════════════ INVENTORY SECTION ═══════════════ -->
+  <div id="section-inventory">
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs" id="inventory-tab-row">
+    <button class="tab active" onclick="setTab('component')">Components</button>
+    <button class="tab" onclick="setTab('material')">Materials</button>
+    <button class="tab" onclick="setTab('blueprint')">Blueprints</button>
+    <button class="tab" onclick="setTab('wikelo')">Wikelo</button>
+  </div>
+
+  <!-- Component filters -->
+  <div class="filter-panel visible" id="fp-component">
+    <div class="filter-row">
+      <div class="filter-group">
+        <span class="filter-label">Type</span>
+        <select class="filter-select" id="ff-function" onchange="render()">
+          <option value="">All types</option>
+          <option>Power Plant</option><option>Cooler</option><option>Shield Generator</option>
+          <option>Quantum Drive</option><option>Thruster</option><option>Radar / Sensor</option>
+          <option>Weapon Mount</option><option>Fuel Intake / Tank</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Class</span>
+        <select class="filter-select" id="ff-class" onchange="render()">
+          <option value="">All classes</option>
+          <option>Stealth</option><option>Military</option><option>Competition</option>
+          <option>Civilian</option><option>Industrial</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Grade</span>
+        <select class="filter-select" id="ff-grade" onchange="render()">
+          <option value="">All grades</option>
+          <option value="A">Grade A</option><option value="B">Grade B</option>
+          <option value="C">Grade C</option><option value="D">Grade D</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Size</span>
+        <select class="filter-select" id="ff-size" onchange="render()">
+          <option value="">All sizes</option>
+          <option value="S0">Size 0</option><option value="S1">Size 1</option><option value="S2">Size 2</option>
+          <option value="S3">Size 3</option><option value="S4">Size 4</option><option value="S5">Size 5</option>
+          <option value="S6">Size 6</option><option value="S7">Size 7</option>
+        </select>
+      </div>
+      <button class="filter-reset" onclick="resetFilters('component')">Reset</button>
+    </div>
+    <div class="filter-summary" id="fs-component"></div>
+  </div>
+
+  <!-- Material filters -->
+  <div class="filter-panel" id="fp-material">
+    <div class="filter-row">
+      <div class="filter-group" style="min-width:120px;flex:3;">
+        <span class="filter-label">Ore / Resource type (up to 3)</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <select class="filter-select" id="ff-mat1" onchange="render()" style="flex:1;min-width:110px;"></select>
+          <select class="filter-select" id="ff-mat2" onchange="render()" style="flex:1;min-width:110px;"></select>
+          <select class="filter-select" id="ff-mat3" onchange="render()" style="flex:1;min-width:110px;"></select>
+        </div>
+      </div>
+      <div class="dual-range">
+        <span class="dual-range-label">Quality / Purity: <span class="dual-range-value" id="range-display">1 – 1000</span></span>
+        <div class="dual-range-track-wrap" id="rangeTrack">
+          <div class="dual-range-bg"></div>
+          <div class="dual-range-fill" id="rangeFill"></div>
+          <div class="dual-thumb" id="thumbMin"></div>
+          <div class="dual-thumb" id="thumbMax"></div>
+        </div>
+        <div class="dual-range-ends"><span>1</span><span>1000</span></div>
+      </div>
+      <button class="filter-reset" onclick="resetFilters('material')">Reset</button>
+    </div>
+    <div class="filter-summary" id="fs-material"></div>
+  </div>
+
+  <!-- Blueprint filters -->
+  <div class="filter-panel" id="fp-blueprint">
+    <div class="filter-row" style="align-items:center;">
+      <span class="tick-label">Status</span>
+      <div class="tick-row">
+        <label class="tick-option"><input type="checkbox" id="ff-bp-unlocked" onchange="render()" checked><span>Unlocked</span></label>
+        <label class="tick-option"><input type="checkbox" id="ff-bp-locked" onchange="render()" checked><span>Locked</span></label>
+      </div>
+      <button class="filter-reset" style="margin-left:auto;" onclick="resetFilters('blueprint')">Reset</button>
+    </div>
+  </div>
+
+  <!-- Wikelo filters -->
+  <div class="filter-panel" id="fp-wikelo">
+    <div class="filter-row">
+      <div class="filter-group" style="flex:2;min-width:160px;">
+        <span class="filter-label">Show items required for recipe</span>
+        <select class="filter-select" id="ff-wk-recipe" onchange="render()">
+          <option value="">All items</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Item type</span>
+        <select class="filter-select" id="ff-wk-type" onchange="render()">
+          <option value="">All types</option>
+          <option value="favor">Wikelo Favor</option>
+          <option value="rare">Rare Resource</option>
+          <option value="currency">Special Currency</option>
+          <option value="loot">Mission Loot</option>
+        </select>
+      </div>
+      <button class="filter-reset" onclick="resetFilters('wikelo')">Reset</button>
+    </div>
+    <div class="recipe-manager">
+      <div class="recipe-manager-header">
+        <span class="recipe-manager-title">Recipe definitions — 4.7.1</span>
+        <button class="recipe-toggle" onclick="toggleRecipeEditor()">Edit recipes ▾</button>
+      </div>
+      <div class="recipe-editor" id="recipeEditor">
+        <div class="recipe-list" id="recipeList"></div>
+        <div class="recipe-add-row">
+          <input type="text" id="new-recipe-name" placeholder="Recipe name">
+          <input type="text" id="new-recipe-items" placeholder="Items, comma-separated">
+          <button class="recipe-add-btn" onclick="addRecipe()">Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-summary" id="fs-wikelo"></div>
+  </div>
+
+  <!-- DKP banner -->
+  <div class="dkp-banner" id="dkpBanner">
+    <div class="dkp-banner-item">
+      <span class="dkp-banner-label">Recipe</span>
+      <span class="dkp-banner-value" id="dkp-recipe-name" style="font-size:13px;"></span>
+    </div>
+    <div class="dkp-banner-divider"></div>
+    <div class="dkp-banner-item">
+      <span class="dkp-banner-label">Total recipe DKP</span>
+      <span class="dkp-banner-value" id="dkp-total" style="color:#a89cf7;"></span>
+    </div>
+    <div class="dkp-banner-divider"></div>
+    <div class="dkp-banner-item">
+      <span class="dkp-banner-label">Org stockpile DKP</span>
+      <span class="dkp-banner-value" id="dkp-held" style="color:#2dbd8f;"></span>
+    </div>
+    <div class="dkp-banner-divider"></div>
+    <div class="dkp-banner-item">
+      <span class="dkp-banner-label">Still needed</span>
+      <span class="dkp-banner-value" id="dkp-remaining"></span>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="search" type="text" placeholder="Search name, owner, type..." oninput="render()">
+    <button class="add-btn" onclick="openAddModal()">+ Add Item</button>
+  </div>
+  <div class="result-count" id="resultCount"></div>
+  <div class="grid" id="grid"></div>
+
+  </div><!-- end section-inventory -->
+
+  <!-- ═══════════════ ORG TOOLS SECTION ═══════════════ -->
+  <div id="section-org" style="display:none;">
+
+    <div class="stats" id="org-stats"></div>
+
+    <div class="tabs" id="org-tab-row">
+      <button class="tab active" onclick="setOrgTab('members')">Members</button>
+      <button class="tab" onclick="setOrgTab('events')">Events</button>
+      <button class="tab" onclick="setOrgTab('leaderboard')">Leaderboard</button>
+      <button class="tab" onclick="setOrgTab('certifications')">Certifications</button>
+      <button class="tab" onclick="setOrgTab('quests')">Quests</button>
+    </div>
+
+    <!-- Members filter -->
+    <div class="filter-panel visible" id="ofp-members">
+      <div class="filter-row">
+        <input class="search" id="org-search" type="text" placeholder="Search members…" oninput="renderOrg()" style="flex:1;">
+      </div>
+    </div>
+
+    <!-- Events filter -->
+    <div class="filter-panel" id="ofp-events">
+      <div class="filter-row" style="align-items:center;">
+        <span class="tick-label">Status</span>
+        <div class="tick-row">
+          <label class="tick-option"><input type="checkbox" id="off-ev-open" checked onchange="renderOrg()"><span>Open</span></label>
+          <label class="tick-option"><input type="checkbox" id="off-ev-closed" checked onchange="renderOrg()"><span>Past</span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard filter (none) -->
+    <div class="filter-panel" id="ofp-leaderboard" style="display:none;"></div>
+
+    <!-- Quests filter -->
+    <div class="filter-panel" id="ofp-quests">
+      <div class="filter-row" style="align-items:center;">
+        <span class="tick-label">Status</span>
+        <div class="tick-row">
+          <label class="tick-option"><input type="checkbox" id="off-q-open" checked onchange="renderOrg()"><span>Open</span></label>
+          <label class="tick-option"><input type="checkbox" id="off-q-completed" onchange="renderOrg()"><span>Completed</span></label>
+          <label class="tick-option"><input type="checkbox" id="off-q-closed" onchange="renderOrg()"><span>Closed</span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Certifications filter -->
+    <div class="filter-panel" id="ofp-certifications">
+      <div class="filter-row">
+        <div class="filter-group" style="max-width:220px;">
+          <span class="filter-label">Track</span>
+          <select class="filter-select" id="off-cert-track" onchange="renderOrg()">
+            <option value="">All tracks</option>
+            <option>Air Wing</option><option>Ground Forces</option><option>MSF</option>
+            <option>Fleet</option><option>Comms</option><option>Mining</option>
+            <option>Salvage</option><option>Logistics</option>
+          </select>
+        </div>
+        <div class="filter-group" style="flex:1;">
+          <span class="filter-label">Member</span>
+          <input class="filter-select" id="cert-search" type="text" placeholder="Filter by name…" oninput="renderOrg()">
+        </div>
+        <button class="filter-reset" onclick="document.getElementById('off-cert-track').value='';document.getElementById('cert-search').value='';renderOrg();">Reset</button>
+      </div>
+    </div>
+
+    <div class="result-count" id="org-result-count"></div>
+    <div id="org-grid" class="org-grid"></div>
+
+  </div><!-- end section-org -->
+
+</div><!-- end .app -->
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Add Item</span>
+      <button class="close-btn" onclick="closeModal('addModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-select" id="f-cat" onchange="onCatChange()">
+        <option value="component">Ship Component</option>
+        <option value="material">Material / Resource</option>
+        <option value="blueprint">Blueprint</option>
+        <option value="wikelo">Wikelo Item</option>
+      </select>
+    </div>
+    <div class="form-group" id="nameGroup">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="f-name" type="text" placeholder="">
+    </div>
+    <div id="fields-std">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="f-function">
+            <option value="">— Select —</option>
+            <option>Power Plant</option><option>Cooler</option><option>Shield Generator</option>
+            <option>Quantum Drive</option><option>Thruster</option><option>Radar / Sensor</option>
+            <option>Weapon Mount</option><option>Fuel Intake / Tank</option><option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Class</label>
+          <select class="form-select" id="f-class">
+            <option value="">— Select —</option>
+            <option>Stealth</option><option>Military</option><option>Competition</option>
+            <option>Civilian</option><option>Industrial</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-4">
+        <div class="form-group">
+          <label class="form-label">Grade</label>
+          <select class="form-select" id="f-grade">
+            <option value="">—</option><option value="A">A</option><option value="B">B</option>
+            <option value="C">C</option><option value="D">D</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Size</label>
+          <select class="form-select" id="f-size">
+            <option value="">—</option><option value="S0">0</option>
+            <option value="S1">1</option><option value="S2">2</option><option value="S3">3</option>
+            <option value="S4">4</option><option value="S5">5</option><option value="S6">6</option><option value="S7">7</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantity</label>
+          <input class="form-input" id="f-qty" type="number" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Owner / Loc.</label>
+          <input class="form-input" id="f-owner" type="text" placeholder="e.g. Area18">
+        </div>
+      </div>
+    </div>
+    <div id="fields-mat" style="display:none">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Ore / Resource type</label>
+          <select class="form-select" id="f-mat-type"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quality / Purity (1–1000)</label>
+          <input class="form-input" id="f-mat-quality" type="number" min="1" max="1000" placeholder="e.g. 450" oninput="let v=parseInt(this.value);if(v>1000)this.value=1000;else if(v<1&&this.value!=='')this.value=1;">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quantity (cSCU)</label>
+          <input class="form-input" id="f-mat-qty" type="number" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Owner / Location</label>
+          <input class="form-input" id="f-mat-owner" type="text" placeholder="e.g. Cargo — Caterpillar">
+        </div>
+      </div>
+    </div>
+    <div id="fields-bp" style="display:none">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Crafts / Produces</label>
+          <input class="form-input" id="f-bp-output" type="text" placeholder="e.g. Parallax Rifle">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="f-bp-status">
+            <option value="owned">Owned (unlocked)</option>
+            <option value="researching">Researching (locked)</option>
+            <option value="wanted">Wanted (locked)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Run Count</label>
+          <input class="form-input" id="f-bp-runs" type="number" min="0" value="0" placeholder="0 = unlimited">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Held By</label>
+          <input class="form-input" id="f-bp-holder" type="text" placeholder="e.g. Cmdr_Ryker">
+        </div>
+      </div>
+    </div>
+    <div id="fields-wk" style="display:none">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Item Type</label>
+          <select class="form-select" id="f-wk-type">
+            <option value="favor">Wikelo Favor</option><option value="rare">Rare Resource</option>
+            <option value="currency">Special Currency</option><option value="loot">Mission Loot</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantity Held</label>
+          <input class="form-input" id="f-wk-qty" type="number" min="0" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">DKP per unit</label>
+          <input class="form-input" id="f-wk-dkp" type="number" min="0" value="0" placeholder="0 = unassigned">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Held By / Location</label>
+          <input class="form-input" id="f-wk-holder" type="text" placeholder="e.g. Cmdr_Ryker">
+        </div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:4px;">
+      <label class="form-label">Notes</label>
+      <input class="form-input" id="f-notes" type="text" placeholder="Optional notes...">
+    </div>
+    <button class="submit-btn" id="submitBtn" onclick="submitItem()">Add to Inventory</button>
+  </div>
+</div>
+
+<!-- MEMBER PROFILE MODAL -->
+<div class="modal-bg" id="memberModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="member-modal-name"></span>
+      <button class="close-btn" onclick="closeModal('memberModal')">×</button>
+    </div>
+    <div id="member-modal-body"></div>
+  </div>
+</div>
+
+<!-- QUEST TURN-IN MODAL -->
+<div class="modal-bg" id="turnInModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="ti-quest-title"></span>
+      <button class="close-btn" onclick="closeModal('turnInModal')">×</button>
+    </div>
+    <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;" id="ti-quest-desc"></div>
+    <!-- anonymous: ask for username -->
+    <div id="ti-anon-fields">
+      <div class="form-group">
+        <label class="form-label">Your Discord Username</label>
+        <input class="form-input" id="ti-username" type="text" placeholder="e.g. Cmdr_Ryker">
+      </div>
+    </div>
+    <!-- authenticated: show identity pill -->
+    <div id="ti-auth-identity" style="display:none;margin-bottom:1rem;padding:10px 12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);">
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary);">Submitting as</div>
+      <div style="font-size:14px;font-weight:500;margin-top:3px;" id="ti-auth-name"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes <span style="color:#6b6864;">(optional — quantity delivered, ship used, etc.)</span></label>
+      <input class="form-input" id="ti-notes" type="text" placeholder="e.g. 200 Carinite delivered to Hex">
+    </div>
+    <div style="font-size:11px;color:#6b6864;margin-bottom:1rem;">
+      An officer will confirm your submission and award DKP via the bot.
+    </div>
+    <button class="submit-btn" id="ti-submit-btn" onclick="submitTurnIn()">Submit Turn-In</button>
+  </div>
+</div>
+
+<!-- ADMIN PASSWORD MODAL -->
+<div class="modal-bg" id="adminModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <span class="modal-title">Admin Access</span>
+      <button class="close-btn" onclick="closeModal('adminModal')">×</button>
+    </div>
+    <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;line-height:1.6;">
+      Enter the org admin password to unlock officer controls in this browser session.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="admin-pw-input" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')verifyAdminPassword()">
+    </div>
+    <div id="admin-pw-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" id="admin-pw-btn" onclick="verifyAdminPassword()">Unlock</button>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="d-title"></span>
+      <button class="close-btn" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div id="d-badge"></div>
+    <div class="info-grid" id="d-grid"></div>
+    <div class="notes-text" id="d-notes"></div>
+    <div class="action-row">
+      <button class="edit-btn" id="d-edit">Edit</button>
+      <button class="delete-btn" id="d-delete">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SUPABASE CONNECTION
+// Get your anon key: Supabase dashboard → Project Settings → API
+// ============================================================
+const SUPABASE_URL = 'https://njsmomshevbigaxmjvmj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_If0p7SXWaS4GoyWx_Q471g_adpwJQww';  // paste anon/public key here
+
+let sb = null;
+if (SUPABASE_URL && SUPABASE_KEY) {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  document.getElementById('todoBanner').style.display = 'none';
+}
+
+// ============================================================
+// AUTH — Discord OAuth via Supabase
+// ============================================================
+let authUser   = null;   // Supabase auth user
+let authMember = null;   // Row from members table
+let isOfficer  = false;  // from members.is_officer
+let isAdmin    = false;  // from org_config admin_password check
+
+if (sb) {
+  // Handle session present after OAuth redirect or page reload
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) handleAuthSession(session);
+    else updateAuthUI();
+  });
+
+  sb.auth.onAuthStateChange((_event, session) => {
+    if (session) handleAuthSession(session);
+    else { clearAuth(); updateAuthUI(); }
+  });
+} else {
+  updateAuthUI();
+}
+
+async function handleAuthSession(session) {
+  authUser = session.user;
+
+  // Discord user ID lives in user_metadata (Supabase stores it as provider_id)
+  const discordId =
+    authUser.user_metadata?.provider_id ||
+    authUser.identities?.[0]?.identity_data?.provider_id ||
+    authUser.identities?.[0]?.id;
+
+  if (discordId && sb) {
+    const { data: member } = await sb
+      .from('members')
+      .select('id, username, display_name, is_officer, discord_avatar')
+      .eq('id', discordId)
+      .maybeSingle();
+
+    if (member) {
+      authMember = member;
+      isOfficer  = !!member.is_officer;
+
+      // Keep avatar in sync silently
+      const freshAvatar = authUser.user_metadata?.avatar_url || null;
+      if (freshAvatar && freshAvatar !== member.discord_avatar) {
+        sb.from('members').update({ discord_avatar: freshAvatar }).eq('id', discordId);
+      }
+    }
+  }
+
+  updateAuthUI();
+}
+
+function clearAuth() {
+  authUser   = null;
+  authMember = null;
+  isOfficer  = false;
+  isAdmin    = false;
+}
+
+function updateAuthUI() {
+  const container = document.getElementById('header-auth');
+  if (!container) return;
+
+  if (authUser) {
+    const name      = authMember?.display_name || authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'Member';
+    const avatarUrl = authMember?.discord_avatar || authUser.user_metadata?.avatar_url || '';
+    const avatarEl  = avatarUrl
+      ? `<img class="user-avatar" src="${esc(avatarUrl)}" alt="">`
+      : `<div class="user-avatar" style="display:flex;align-items:center;justify-content:center;font-size:12px;">👤</div>`;
+    const badgeEl = isAdmin
+      ? `<span class="user-badge badge-admin">Admin</span>`
+      : isOfficer
+        ? `<span class="user-badge badge-officer">Officer</span>`
+        : '';
+    container.innerHTML = `
+      <div class="user-pill">
+        ${avatarEl}
+        <span class="user-name">${esc(name)}</span>
+        ${badgeEl}
+        <button class="logout-btn" onclick="doLogout()" title="Sign out">✕</button>
+      </div>`;
+  } else {
+    const adminBadge = isAdmin
+      ? `<span class="user-badge badge-admin" style="padding:4px 10px;">Admin</span>
+         <button class="admin-btn" onclick="doLogout()" title="Exit admin mode">Exit Admin</button>`
+      : `<button class="login-btn" onclick="loginWithDiscord()">Sign in with Discord</button>
+         <button class="admin-btn" onclick="openAdminModal()">Admin Access</button>`;
+    container.innerHTML = adminBadge;
+  }
+}
+
+async function loginWithDiscord() {
+  if (!sb) { alert('Database not connected.'); return; }
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'discord',
+    options: { redirectTo: window.location.href.split('?')[0].split('#')[0] },
+  });
+  if (error) showError('Login failed: ' + error.message);
+}
+
+async function doLogout() {
+  if (authUser && sb) await sb.auth.signOut();
+  isAdmin = false;
+  clearAuth();
+  updateAuthUI();
+}
+
+// ── Admin password fallback ──
+function openAdminModal() {
+  document.getElementById('admin-pw-input').value = '';
+  document.getElementById('admin-pw-error').style.display = 'none';
+  document.getElementById('adminModal').classList.add('open');
+  setTimeout(() => document.getElementById('admin-pw-input').focus(), 60);
+}
+
+async function verifyAdminPassword() {
+  const entered = document.getElementById('admin-pw-input').value;
+  if (!entered) return;
+  if (!sb) { closeModal('adminModal'); return; }
+
+  const btn = document.getElementById('admin-pw-btn');
+  btn.disabled = true; btn.textContent = 'Checking…';
+
+  try {
+    const { data } = await sb
+      .from('org_config').select('value').eq('key', 'admin_password').maybeSingle();
+
+    if (data && data.value === entered) {
+      isAdmin = true;
+      closeModal('adminModal');
+      updateAuthUI();
+    } else {
+      const errEl = document.getElementById('admin-pw-error');
+      errEl.textContent = 'Incorrect password.';
+      errEl.style.display = 'block';
+    }
+  } catch (err) {
+    const errEl = document.getElementById('admin-pw-error');
+    errEl.textContent = 'Error: ' + err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Unlock';
+  }
+}
+
+// ============================================================
+// TABLE & FIELD MAPPING
+// ============================================================
+function tableFor(cat) {
+  return { component:'components', material:'materials', blueprint:'blueprints', wikelo:'wikelo_items' }[cat];
+}
+
+function fromDB(row, cat) {
+  const it = { id: row.id, cat, name: row.name, notes: row.notes || '' };
+  if (cat === 'component') {
+    it.function  = row.function   || '';
+    it.compClass = row.comp_class || '';
+    it.grade     = row.grade      || '';
+    it.size      = row.size       || '';
+    it.qty       = row.qty        || 1;
+    it.owner     = row.owner      || '';
+  } else if (cat === 'material') {
+    it.oreType   = row.ore_type   || '';
+    it.quality   = row.quality    || 0;
+    it.qty       = row.qty        || 1;
+    it.owner     = row.owner      || '';
+  } else if (cat === 'blueprint') {
+    it.bpOutput  = row.bp_output  || '';
+    it.bpStatus  = row.bp_status  || 'wanted';
+    it.bpRuns    = row.bp_runs    || 0;
+    it.bpHolder  = row.bp_holder  || '';
+  } else if (cat === 'wikelo') {
+    it.wkType    = row.wk_type    || 'favor';
+    it.wkQty     = row.wk_qty     || 0;
+    it.wkDkp     = row.wk_dkp     || 0;
+    it.wkHolder  = row.wk_holder  || '';
+  }
+  return it;
+}
+
+function toDB(item) {
+  const row = { name: item.name, notes: item.notes || null };
+  if (item.cat === 'component') {
+    row.function   = item.function  || null;
+    row.comp_class = item.compClass || null;
+    row.grade      = item.grade     || null;
+    row.size       = item.size      || null;
+    row.qty        = item.qty       || 1;
+    row.owner      = item.owner     || null;
+  } else if (item.cat === 'material') {
+    row.ore_type   = item.oreType   || null;
+    row.quality    = item.quality   || 0;
+    row.qty        = item.qty       || 1;
+    row.owner      = item.owner     || null;
+  } else if (item.cat === 'blueprint') {
+    row.bp_output  = item.bpOutput  || null;
+    row.bp_status  = item.bpStatus  || 'wanted';
+    row.bp_runs    = item.bpRuns    || 0;
+    row.bp_holder  = item.bpHolder  || null;
+  } else if (item.cat === 'wikelo') {
+    row.wk_type    = item.wkType    || 'favor';
+    row.wk_qty     = item.wkQty     || 0;
+    row.wk_dkp     = item.wkDkp     || 0;
+    row.wk_holder  = item.wkHolder  || null;
+  }
+  return row;
+}
+
+// ============================================================
+// STATIC DATA
+// ============================================================
+const ORE_LIST = [
+  'Aluminum','Copper','Iron','Tungsten','Titanium',
+  'Agricium','Hephaestanite','Laranite','Corundum','Dolovine',
+  'Borase','Gold','Taranite','Bexalite','Aphorite',
+  'Quantanium','Saldynium','Jaclium','Savrilium',
+  'Hadanite','Beryl','Diamond','Quartz',
+  'Carinite','Carinite (Pure)','Other',
+];
+
+const DKP_TABLE = {
+  'wikelo favor':15,'polaris bit':15,'carinite (pure)':50,'carinite':1,
+  'irradiated valakkar pearl (grade aaa)':10,'irradiated valakkar pearl (grade aa)':2,
+  'irradiated valakkar pearl':10,'irradiated valakkar fang (apex)':3,
+  'jaclium':1,'jaclium (ore)':1,'saldynium':1,'saldynium (ore)':1,
+  'ace interceptor helmet':5,'ace pilot helmet':5,
+  'uee 6th platoon medal (pristine)':7,'tevarin war service marker (pristine)':7,
+  'rcmbnt':8,'large artifact fragment (pristine)':6,'asd secure drive':3,
+};
+function lookupDKP(name){
+  if(!name)return 0;const nl=name.toLowerCase();
+  if(DKP_TABLE[nl]!==undefined)return DKP_TABLE[nl];
+  for(const[k,v]of Object.entries(DKP_TABLE)){if(nl.startsWith(k)||k.startsWith(nl))return v;}
+  return 0;
+}
+
+const DEFAULT_RECIPES = [
+  {name:'Trade MG Scrip → Favor',items:['MG Scrip']},
+  {name:'Trade Council Scrip → Favor',items:['Council Scrip']},
+  {name:'Turn Carinite → Favor',items:['Carinite']},
+  {name:'Trade Valakkar → Favor',items:['Irradiated Valakkar Pearl']},
+  {name:'ATLS IKTI',items:['Wikelo Favor','Irradiated Valakkar Fang (Apex)','NN-13 Cannon','Argo ATLS']},
+  {name:'ATLS GEO Snowland',items:['Wikelo Favor','Irradiated Valakkar Pearl']},
+  {name:'ATLS GEO Orange Line',items:['Wikelo Favor','Quantanium','Copper','Tungsten','Corundum','Argo ATLS']},
+  {name:'ATLS GEO Cool Metal',items:['Wikelo Favor','Carinite (Pure)','Argo ATLS']},
+  {name:'Nox',items:['Wikelo Favor']},{name:'Pulse',items:['Wikelo Favor']},
+  {name:'Ursa Medivac',items:['Wikelo Favor','Saldynium','Jaclium']},
+  {name:'L-21 Wolf (Stealth)',items:['Wikelo Favor','Vanduul Plating','Vanduul Metal','Large Artifact Fragment (Pristine)']},
+  {name:'L-21 Wolf (Military)',items:['Wikelo Favor']},
+  {name:'Golem',items:['Wikelo Favor','ASD Secure Drive']},
+  {name:'Intrepid',items:['Wikelo Favor','Government Cartography Agency Medal (Pristine)']},
+  {name:'Fortune',items:['Wikelo Favor','Carinite (Pure)']},
+  {name:'C1 Spirit',items:['Wikelo Favor','Tevarin War Service Marker (Pristine)']},
+  {name:'Zeus Mk II ES',items:['Wikelo Favor','UEE 6th Platoon Medal (Pristine)']},
+  {name:'Zeus Mk II CL',items:['Wikelo Favor','Carinite','Ace Interceptor Helmet','Carinite (Pure)']},
+  {name:'Starlancer MAX',items:['Wikelo Favor','Ace Interceptor Helmet','Carinite (Pure)','Irradiated Valakkar Pearl']},
+  {name:'Constellation Taurus',items:['Wikelo Favor','Carinite (Pure)','Irradiated Valakkar Pearl','Government Cartography Agency Medal (Pristine)']},
+  {name:'Argo RAFT',items:['Wikelo Favor','Irradiated Valakkar Fang (Adult)','Irradiated Valakkar Fang (Juvenile)','Irradiated Kopion Horn','Irradiated Valakkar Pearl']},
+  {name:'MISC Prospector',items:['Wikelo Favor','Carinite','Saldynium','Jaclium','Carinite (Pure)']},
+  {name:'Sabre Firebird',items:['Wikelo Favor','DCHS-05 Orbital Positioning Comp-Board','Ace Interceptor Helmet','Government Cartography Agency Medal (Pristine)']},
+  {name:'Scorpius',items:['Wikelo Favor','DCHS-05 Orbital Positioning Comp-Board','Tevarin War Service Marker (Pristine)']},
+  {name:'F7C-M Super Hornet Mk II',items:['Wikelo Favor','DCHS-05 Orbital Positioning Comp-Board','Ace Interceptor Helmet','Government Cartography Agency Medal (Pristine)']},
+  {name:'Guardian',items:['Wikelo Favor','Irradiated Valakkar Pearl','Ace Interceptor Helmet','Tevarin War Service Marker (Pristine)']},
+  {name:'Guardian QI',items:['Wikelo Favor','Irradiated Valakkar Pearl','DCHS-05 Orbital Positioning Comp-Board','UEE 6th Platoon Medal (Pristine)']},
+  {name:'Guardian MX',items:['Wikelo Favor','Ace Interceptor Helmet','Large Artifact Fragment (Pristine)','Vanduul Plating','Vanduul Metal']},
+  {name:'F8C Lightning (Military)',items:['Wikelo Favor','Carinite (Pure)','Irradiated Valakkar Pearl','Tevarin War Service Marker (Pristine)']},
+  {name:'F8C Lightning (Stealth)',items:['Wikelo Favor','DCHS-05 Orbital Positioning Comp-Board','Carinite (Pure)','Irradiated Valakkar Pearl']},
+  {name:'Terrapin Medic',items:['Wikelo Favor','ASD Secure Drive','Tevarin War Service Marker (Pristine)']},
+  {name:'Starlancer TAC',items:['Wikelo Favor','Ace Interceptor Helmet','ASD Secure Drive','Irradiated Valakkar Pearl','Tevarin War Service Marker (Pristine)','Carinite (Pure)','DCHS-05 Orbital Positioning Comp-Board']},
+  {name:'Ares Inferno',items:['Wikelo Favor','Yormandi Tongue','Ace Interceptor Helmet','UEE 6th Platoon Medal (Pristine)']},
+  {name:'Ares Ion',items:['Wikelo Favor','Yormandi Eye','Ace Interceptor Helmet','Tevarin War Service Marker (Pristine)']},
+  {name:'Prowler Utility',items:['Wikelo Favor','Yormandi Eye','Yormandi Tongue','Irradiated Valakkar Pearl','Carinite (Pure)']},
+  {name:'A2 Hercules Starlifter',items:['Wikelo Favor','Polaris Bit','MG Scrip','ASD Secure Drive','Irradiated Valakkar Pearl','Tevarin War Service Marker (Pristine)','DCHS-05 Orbital Positioning Comp-Board','Carinite (Pure)']},
+  {name:'Anvil Asgard',items:['Wikelo Favor','ASD Secure Drive','RCMBNT-PWL-1','RCMBNT-PWL-2','RCMBNT-PWL-3','RCMBNT-RGL-1','RCMBNT-RGL-2','RCMBNT-RGL-3','RCMBNT-XTL-1','RCMBNT-XTL-2','RCMBNT-XTL-3']},
+  {name:'RSI Meteor',items:['Wikelo Favor','Ace Interceptor Helmet','Large Artifact Fragment (Pristine)','Vanduul Plating','Vanduul Metal']},
+  {name:'Polaris',items:['Wikelo Favor','Carinite','Irradiated Valakkar Fang (Apex)','MG Scrip','Polaris Bit','ASD Secure Drive','Ace Interceptor Helmet','Irradiated Valakkar Pearl','UEE 6th Platoon Medal (Pristine)','Carinite (Pure)','DCHS-05 Orbital Positioning Comp-Board','RCMBNT-PWL-1','RCMBNT-RGL-1','RCMBNT-XTL-1']},
+  {name:'Aegis Idris-P',items:['Wikelo Favor','Polaris Bit','DCHS-05 Orbital Positioning Comp-Board','Carinite','Irradiated Valakkar Fang (Apex)','MG Scrip','Ace Interceptor Helmet','ASD Secure Drive','Irradiated Valakkar Pearl','UEE 6th Platoon Medal (Pristine)','Carinite (Pure)','RCMBNT-PWL-1','RCMBNT-RGL-1','RCMBNT-XTL-1']},
+  {name:'Apollo Triage',items:['Wikelo Favor','Savrilium']},
+];
+
+let wkRecipes = [];
+
+// ============================================================
+// STATE
+// ============================================================
+let items = [];
+let activeTab='component',editId=null,rangeMin=1,rangeMax=1000;
+const RANGE_LO=1,RANGE_HI=1000;
+
+// ============================================================
+// LOADING & ERROR UI
+// ============================================================
+function setLoading(on) {
+  document.getElementById('loadingBar').style.display = on ? 'block' : 'none';
+  if (on) document.getElementById('grid').innerHTML = '<div class="empty">Loading inventory…</div>';
+}
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(showError._t);
+  showError._t = setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
+// ============================================================
+// SUPABASE CRUD
+// ============================================================
+async function loadAll() {
+  if (!sb) { wkRecipes = DEFAULT_RECIPES.map(r=>({...r})); populateRecipeDropdown(); render(); return; }
+  setLoading(true);
+  try {
+    const [comps,mats,bps,wks,recs] = await Promise.all([
+      sb.from('components').select('*'),
+      sb.from('materials').select('*'),
+      sb.from('blueprints').select('*'),
+      sb.from('wikelo_items').select('*'),
+      sb.from('wikelo_recipes').select('*').order('sort_order'),
+    ]);
+    if (comps.error) throw comps.error;
+    if (mats.error)  throw mats.error;
+    if (bps.error)   throw bps.error;
+    if (wks.error)   throw wks.error;
+    items = [
+      ...comps.data.map(r=>fromDB(r,'component')),
+      ...mats.data.map(r=>fromDB(r,'material')),
+      ...bps.data.map(r=>fromDB(r,'blueprint')),
+      ...wks.data.map(r=>fromDB(r,'wikelo')),
+    ];
+    wkRecipes = (!recs.error && recs.data.length > 0)
+      ? recs.data.map(r=>({id:r.id,name:r.name,items:r.items,sort_order:r.sort_order}))
+      : DEFAULT_RECIPES.map(r=>({...r}));
+    populateRecipeDropdown();
+  } catch(err) {
+    console.error('Supabase load error:',err);
+    showError('Could not load inventory: '+(err.message||String(err)));
+    wkRecipes = DEFAULT_RECIPES.map(r=>({...r}));
+    populateRecipeDropdown();
+  } finally {
+    setLoading(false);
+    render();
+  }
+}
+
+async function sbInsert(item) {
+  if (!sb) {
+    item.id = 'mem-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+    items.push(item); return item;
+  }
+  const {data,error} = await sb.from(tableFor(item.cat)).insert(toDB(item)).select().single();
+  if (error) throw error;
+  const saved = fromDB(data, item.cat);
+  items.push(saved); return saved;
+}
+
+async function sbUpdate(item) {
+  if (!sb) { const i=items.findIndex(x=>x.id===item.id); if(i>=0)items[i]=item; return; }
+  const {error} = await sb.from(tableFor(item.cat)).update(toDB(item)).eq('id',item.id);
+  if (error) throw error;
+  const i=items.findIndex(x=>x.id===item.id); if(i>=0)items[i]=item;
+}
+
+async function sbDelete(id,cat) {
+  if (!sb) { items=items.filter(x=>x.id!==id); return; }
+  const {error} = await sb.from(tableFor(cat)).delete().eq('id',id);
+  if (error) throw error;
+  items=items.filter(x=>x.id!==id);
+}
+
+// ============================================================
+// RECIPE CRUD
+// ============================================================
+async function sbInsertRecipe(name,recipeItems) {
+  const sort_order=wkRecipes.length+1;
+  if (!sb) {
+    wkRecipes.push({id:'mem-'+Date.now(),name,items:recipeItems,sort_order});
+    renderRecipeList(); populateRecipeDropdown(); render(); return;
+  }
+  const {data,error}=await sb.from('wikelo_recipes').insert({name,items:recipeItems,sort_order}).select().single();
+  if (error) throw error;
+  wkRecipes.push({id:data.id,name:data.name,items:data.items,sort_order:data.sort_order});
+  renderRecipeList(); populateRecipeDropdown(); render();
+}
+async function sbUpdateRecipe(idx) {
+  const r=wkRecipes[idx];
+  if (!sb||!r.id||r.id.startsWith('mem-')) return;
+  const {error}=await sb.from('wikelo_recipes').update({name:r.name,items:r.items}).eq('id',r.id);
+  if (error) showError('Failed to save recipe: '+error.message);
+}
+async function sbDeleteRecipe(idx) {
+  const r=wkRecipes[idx];
+  if (sb&&r.id&&!r.id.startsWith('mem-')) {
+    const {error}=await sb.from('wikelo_recipes').delete().eq('id',r.id);
+    if (error) { showError('Failed to delete recipe: '+error.message); return; }
+  }
+  wkRecipes.splice(idx,1); renderRecipeList(); populateRecipeDropdown(); render();
+}
+function recipeNameChange(idx,val){wkRecipes[idx].name=val;populateRecipeDropdown();sbUpdateRecipe(idx).catch(e=>showError(e.message));}
+function recipeItemsChange(idx,val){wkRecipes[idx].items=val.split(',').map(s=>s.trim()).filter(Boolean);render();sbUpdateRecipe(idx).catch(e=>showError(e.message));}
+function recipeDelete(idx){sbDeleteRecipe(idx).catch(e=>showError(e.message));}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function qualityColor(q){const p=q/1000;if(p>=0.7)return'#1D9E75';if(p>=0.4)return'#BA7517';return'#A32D2D';}
+function fmtQty(cSCU){if(cSCU<100)return cSCU+' cSCU';return+(cSCU/100).toFixed(2)+' SCU';}
+const GRADE_TEXT={A:'A',B:'B',C:'C',D:'D',AAA:'Pristine AAA',AA:'Grade AA',Pure:'Pure',Irradiated:'Irradiated'};
+const BP_STATUS={owned:'Owned',researching:'Researching',wanted:'Wanted'};
+const BP_CLASS={owned:'bp-owned',researching:'bp-researching',wanted:'bp-wanted'};
+const WK_TYPE_LBL={favor:'Wikelo Favor',rare:'Rare Resource',currency:'Special Currency',loot:'Mission Loot'};
+const WK_TYPE_CLS={favor:'wk-favor',rare:'wk-rare',currency:'wk-currency',loot:'wk-loot'};
+
+function populateOreDropdowns(){
+  const opts='<option value="">Any ore</option>'+ORE_LIST.map(o=>`<option value="${o}">${o}</option>`).join('');
+  ['ff-mat1','ff-mat2','ff-mat3'].forEach(id=>{const el=document.getElementById(id);const cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;});
+  const fs=document.getElementById('f-mat-type');if(fs){const cur=fs.value;fs.innerHTML='<option value="">— Select ore —</option>'+ORE_LIST.map(o=>`<option value="${o}">${o}</option>`).join('');if(cur)fs.value=cur;}
+}
+
+function initDualRange(){
+  const track=document.getElementById('rangeTrack'),thumbMn=document.getElementById('thumbMin'),thumbMx=document.getElementById('thumbMax');
+  function pctOf(v){return(v-RANGE_LO)/(RANGE_HI-RANGE_LO);}
+  function valOf(p){return Math.round(RANGE_LO+p*(RANGE_HI-RANGE_LO));}
+  function updateUI(){
+    const pMin=pctOf(rangeMin)*100,pMax=pctOf(rangeMax)*100;
+    thumbMn.style.left=pMin+'%';thumbMx.style.left=pMax+'%';
+    document.getElementById('rangeFill').style.left=pMin+'%';
+    document.getElementById('rangeFill').style.width=(pMax-pMin)+'%';
+    document.getElementById('range-display').textContent=rangeMin+' – '+rangeMax;
+  }
+  function dragThumb(thumb,isMin){
+    thumb.addEventListener('pointerdown',function(e){
+      e.preventDefault();thumb.setPointerCapture(e.pointerId);
+      const rect=track.getBoundingClientRect();
+      function onMove(ev){let p=Math.max(0,Math.min(1,(ev.clientX-rect.left)/rect.width));let v=valOf(p);if(isMin)rangeMin=Math.min(v,rangeMax);else rangeMax=Math.max(v,rangeMin);updateUI();render();}
+      thumb.addEventListener('pointermove',onMove);
+      thumb.addEventListener('pointerup',()=>thumb.removeEventListener('pointermove',onMove),{once:true});
+    });
+  }
+  dragThumb(thumbMn,true);dragThumb(thumbMx,false);updateUI();
+}
+
+function setTab(t){
+  activeTab=t;
+  document.querySelectorAll('#inventory-tab-row .tab').forEach((el,i)=>el.classList.toggle('active',['component','material','blueprint','wikelo'][i]===t));
+  ['component','material','blueprint','wikelo'].forEach(cat=>document.getElementById('fp-'+cat).classList.toggle('visible',cat===t));
+  render();
+}
+
+function populateRecipeDropdown(){
+  const sel=document.getElementById('ff-wk-recipe');const cur=sel.value;
+  sel.innerHTML='<option value="">All items</option>'+wkRecipes.map((r,i)=>`<option value="${i}">${r.name}</option>`).join('');
+  if(cur)sel.value=cur;
+}
+function renderRecipeList(){
+  document.getElementById('recipeList').innerHTML=wkRecipes.map((r,i)=>
+    `<div class="recipe-row">
+      <input value="${r.name}" onchange="recipeNameChange(${i},this.value)" placeholder="Recipe name">
+      <input value="${r.items.join(', ')}" onchange="recipeItemsChange(${i},this.value)" placeholder="Items, comma-separated" style="flex:2;">
+      <button class="recipe-del" onclick="recipeDelete(${i})">×</button>
+    </div>`
+  ).join('');
+}
+function toggleRecipeEditor(){const ed=document.getElementById('recipeEditor');ed.classList.toggle('open');if(ed.classList.contains('open'))renderRecipeList();}
+function addRecipe(){
+  const name=document.getElementById('new-recipe-name').value.trim(),raw=document.getElementById('new-recipe-items').value.trim();if(!name)return;
+  document.getElementById('new-recipe-name').value='';document.getElementById('new-recipe-items').value='';
+  sbInsertRecipe(name,raw.split(',').map(s=>s.trim()).filter(Boolean)).catch(e=>showError('Failed to add recipe: '+e.message));
+}
+function resetFilters(tab){
+  if(tab==='component'){['ff-function','ff-class','ff-grade','ff-size'].forEach(id=>document.getElementById(id).value='');}
+  if(tab==='material'){
+    ['ff-mat1','ff-mat2','ff-mat3'].forEach(id=>document.getElementById(id).value='');
+    rangeMin=RANGE_LO;rangeMax=RANGE_HI;
+    document.getElementById('thumbMin').style.left='0%';document.getElementById('thumbMax').style.left='100%';
+    document.getElementById('rangeFill').style.left='0%';document.getElementById('rangeFill').style.width='100%';
+    document.getElementById('range-display').textContent='1 – 1000';
+  }
+  if(tab==='blueprint'){document.getElementById('ff-bp-unlocked').checked=true;document.getElementById('ff-bp-locked').checked=true;}
+  if(tab==='wikelo'){document.getElementById('ff-wk-recipe').value='';document.getElementById('ff-wk-type').value='';}
+  render();
+}
+function updateSummary(id,tags){
+  const el=document.getElementById(id);if(!el)return;
+  if(tags.length){el.classList.add('show');el.innerHTML='Showing: '+tags.map(t=>`<span class="filter-tag">${t}</span>`).join('');}
+  else el.classList.remove('show');
+}
+function calcRecipeDKP(idx){
+  if(idx==='')return null;
+  const recipe=wkRecipes[parseInt(idx)];if(!recipe)return null;
+  let totalDkp=0;
+  for(const n of recipe.items)totalDkp+=lookupDKP(n);
+  let heldDkp=0;
+  for(const n of recipe.items){
+    const nl=n.toLowerCase();
+    const match=items.find(it=>{if(it.cat!=='wikelo')return false;const ml=it.name.toLowerCase();return ml.includes(nl)||nl.includes(ml);});
+    if(match)heldDkp+=(match.wkDkp||0)*(match.wkQty||0);
+  }
+  return{totalDkp,heldDkp,remaining:Math.max(0,totalDkp-heldDkp),name:recipe.name};
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const cf={fn:document.getElementById('ff-function').value,cls:document.getElementById('ff-class').value,grade:document.getElementById('ff-grade').value,size:document.getElementById('ff-size').value};
+  const mf={t1:document.getElementById('ff-mat1').value,t2:document.getElementById('ff-mat2').value,t3:document.getElementById('ff-mat3').value};
+  const bpU=document.getElementById('ff-bp-unlocked').checked,bpL=document.getElementById('ff-bp-locked').checked;
+  const wkRI=document.getElementById('ff-wk-recipe').value,wkT=document.getElementById('ff-wk-type').value;
+  let rSet=null;if(wkRI!==''){const r=wkRecipes[parseInt(wkRI)];if(r)rSet=r.items.map(s=>s.toLowerCase());}
+
+  // DKP banner
+  const banner=document.getElementById('dkpBanner');
+  if(activeTab==='wikelo'&&wkRI!==''){
+    const dkp=calcRecipeDKP(wkRI);
+    if(dkp){
+      document.getElementById('dkp-recipe-name').textContent=dkp.name;
+      document.getElementById('dkp-total').textContent=dkp.totalDkp+' DKP';
+      document.getElementById('dkp-held').textContent=dkp.heldDkp+' DKP';
+      const rem=document.getElementById('dkp-remaining');
+      rem.textContent=dkp.remaining+' DKP';rem.style.color=dkp.remaining===0?'#2dbd8f':'#c44a4a';
+      banner.classList.add('visible');
+    } else banner.classList.remove('visible');
+  } else banner.classList.remove('visible');
+
+  let filtered=items.filter(it=>{
+    if(it.cat!==activeTab)return false;
+    const mQ=!q||[it.name,it.owner,it.oreType,it.function,it.compClass,it.bpHolder,it.bpOutput,it.wkHolder].some(f=>(f||'').toLowerCase().includes(q));
+    if(!mQ)return false;
+    if(it.cat==='component'){if(cf.fn&&it.function!==cf.fn)return false;if(cf.cls&&it.compClass!==cf.cls)return false;if(cf.grade&&it.grade!==cf.grade)return false;if(cf.size&&it.size!==cf.size)return false;}
+    if(it.cat==='material'){if((it.quality||0)<rangeMin||(it.quality||0)>rangeMax)return false;const a=[mf.t1,mf.t2,mf.t3].filter(Boolean);if(a.length&&!a.includes(it.oreType))return false;}
+    if(it.cat==='blueprint'){const u=it.bpStatus==='owned';if(u&&!bpU)return false;if(!u&&!bpL)return false;}
+    if(it.cat==='wikelo'){if(wkT&&it.wkType!==wkT)return false;if(rSet){const nl=it.name.toLowerCase();if(!rSet.some(ri=>nl.includes(ri)||ri.includes(nl)))return false;}}
+    return true;
+  });
+
+  updateSummary('fs-component',[cf.fn,cf.cls,cf.grade?'Grade '+cf.grade:'',cf.size?'Size '+cf.size.replace('S',''):''].filter(Boolean));
+  updateSummary('fs-material',[...[mf.t1,mf.t2,mf.t3].filter(Boolean),...((rangeMin>RANGE_LO||rangeMax<RANGE_HI)?['Quality '+rangeMin+'–'+rangeMax]:[])]);
+  const wkTags=[];if(wkRI!=='')wkTags.push('Recipe: '+(wkRecipes[parseInt(wkRI)]?.name||''));if(wkT)wkTags.push(WK_TYPE_LBL[wkT]||wkT);
+  updateSummary('fs-wikelo',wkTags);
+  const anyF=[cf.fn,cf.cls,cf.grade,cf.size,mf.t1,mf.t2,mf.t3,...wkTags,q].some(Boolean)||(rangeMin>RANGE_LO||rangeMax<RANGE_HI);
+  document.getElementById('resultCount').textContent=anyF?`${filtered.length} item${filtered.length!==1?'s':''} matched`:'';
+
+  const grid=document.getElementById('grid');
+  if(!filtered.length){grid.innerHTML='<div class="empty">No items match the current filters.</div>';updateStats();return;}
+  grid.innerHTML=filtered.map(it=>{
+    if(it.cat==='component'){
+      const g=it.grade?`<span class="grade-badge grade-${it.grade}">Grade ${it.grade}</span>`:'';
+      const s=it.size?`<span class="size-badge">${it.size}</span>`:'';
+      const c=it.compClass?`<span class="class-badge class-${it.compClass}">${it.compClass}</span>`:'';
+      return`<div class="card cat-component" onclick="openDetail('${it.id}')"><div class="card-cat">Component</div><div class="card-name">${it.name}</div><div class="card-sub">${it.function||'—'}</div><div class="comp-meta">${c}${g}${s}</div><div class="card-footer"><span class="qty-badge">×${it.qty}</span><span class="owner">${it.owner||''}</span></div></div>`;
+    }
+    if(it.cat==='material'){
+      const qual=it.quality||0,pct=Math.round((qual/1000)*100),col=qualityColor(qual);
+      return`<div class="card cat-material" onclick="openDetail('${it.id}')"><div class="card-cat">Material</div><div class="card-name">${it.name}</div><div class="quality-bar"><div class="quality-bar-track"><div class="quality-bar-fill" style="width:${pct}%;background:${col};"></div></div><div class="quality-label">Quality ${qual} / 1000</div></div><div class="card-footer" style="margin-top:8px;"><span class="qty-badge">${fmtQty(it.qty)}</span><span class="owner">${it.owner||''}</span></div></div>`;
+    }
+    if(it.cat==='blueprint'){
+      return`<div class="card cat-blueprint" onclick="openDetail('${it.id}')"><div class="card-cat">Blueprint</div><div class="card-name">${it.name}</div><div class="card-sub">${it.bpOutput||'—'}</div><div class="card-footer"><span class="bp-status ${BP_CLASS[it.bpStatus]}">${BP_STATUS[it.bpStatus]}</span><span class="owner">${it.bpHolder||''}</span></div></div>`;
+    }
+    if(it.cat==='wikelo'){
+      const dkpR=it.wkDkp||0,totDkp=dkpR*(it.wkQty||0);
+      const dkpEl=dkpR>0?`<span class="dkp-badge">${dkpR} DKP</span>`:'';
+      return`<div class="card cat-wikelo" onclick="openDetail('${it.id}')"><div class="card-cat">Wikelo</div><div class="card-name">${it.name}</div><div class="card-sub" style="display:flex;align-items:center;gap:6px;">${WK_TYPE_LBL[it.wkType]||''}${dkpEl}</div><div style="font-size:11px;color:#9e9b96;margin-top:6px;">×${it.wkQty} held</div>${totDkp>0?`<div style="margin-top:6px;"><span class="dkp-total-badge">${totDkp} DKP held</span></div>`:''}</div>`;
+    }
+  }).join('');
+  updateStats();
+}
+
+function updateStats(){
+  const comps=items.filter(i=>i.cat==='component').reduce((a,i)=>a+i.qty,0);
+  const matsRaw=items.filter(i=>i.cat==='material').reduce((a,i)=>a+i.qty,0);
+  const matsSCU=+(matsRaw/100).toFixed(2);
+  const bps=items.filter(i=>i.cat==='blueprint').length;
+  const totDkp=items.filter(i=>i.cat==='wikelo').reduce((a,i)=>a+(i.wkDkp||0)*(i.wkQty||0),0);
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-label">Components</div><div class="stat-value" style="color:#5a9e3f">${comps}</div></div>
+    <div class="stat"><div class="stat-label">Materials</div><div class="stat-value" style="color:#c47a2a">${matsSCU}<span style="font-size:13px;margin-left:3px;">SCU</span></div></div>
+    <div class="stat"><div class="stat-label">Blueprints</div><div class="stat-value" style="color:#8b72e8">${bps}</div></div>
+    <div class="stat"><div class="stat-label">Wikelo DKP</div><div class="stat-value" style="color:#a89cf7">${totDkp}</div></div>`;
+}
+
+function onCatChange(){
+  const cat=document.getElementById('f-cat').value;
+  document.getElementById('fields-std').style.display=cat==='component'?'block':'none';
+  document.getElementById('fields-mat').style.display=cat==='material'?'block':'none';
+  document.getElementById('fields-bp').style.display=cat==='blueprint'?'block':'none';
+  document.getElementById('fields-wk').style.display=cat==='wikelo'?'block':'none';
+  document.getElementById('nameGroup').style.display=cat==='material'?'none':'block';
+  const ph={component:'e.g. Kroneg FL-33',blueprint:'e.g. Parallax Rifle',wikelo:'e.g. Wikelo Favor'};
+  document.getElementById('f-name').placeholder=ph[cat]||'';
+  if(cat==='wikelo'){document.getElementById('f-name').oninput=function(){const a=lookupDKP(this.value);if(a>0)document.getElementById('f-wk-dkp').value=a;};}
+  else document.getElementById('f-name').oninput=null;
+}
+function openAddModal(){
+  editId=null;document.getElementById('modalTitle').textContent='Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
+  ['f-name','f-owner','f-notes','f-mat-owner','f-bp-output','f-bp-holder','f-wk-holder'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-qty').value=1;document.getElementById('f-mat-qty').value=1;
+  document.getElementById('f-mat-quality').value='';document.getElementById('f-mat-type').value='';
+  document.getElementById('f-bp-runs').value=0;document.getElementById('f-wk-qty').value=1;
+  document.getElementById('f-wk-dkp').value=0;
+  document.getElementById('f-cat').value=activeTab;
+  ['f-grade','f-size','f-function','f-class'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-bp-status').value='owned';document.getElementById('f-wk-type').value='favor';
+  onCatChange();document.getElementById('addModal').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+async function submitItem(){
+  const cat=document.getElementById('f-cat').value;
+  const name=cat==='material'?document.getElementById('f-mat-type').value:document.getElementById('f-name').value.trim();
+  if(!name){alert(cat==='material'?'Please select an ore type.':'Please enter a name.');return;}
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true; btn.textContent=editId?'Saving…':'Adding…';
+  const item={cat,name,notes:document.getElementById('f-notes').value.trim()};
+  if(editId) item.id=editId;
+  if(cat==='component'){item.function=document.getElementById('f-function').value;item.compClass=document.getElementById('f-class').value;item.grade=document.getElementById('f-grade').value;item.size=document.getElementById('f-size').value;item.qty=parseInt(document.getElementById('f-qty').value)||1;item.owner=document.getElementById('f-owner').value.trim();}
+  else if(cat==='material'){item.oreType=document.getElementById('f-mat-type').value;item.name=item.oreType;item.quality=Math.max(1,Math.min(1000,parseInt(document.getElementById('f-mat-quality').value)||1));item.qty=parseInt(document.getElementById('f-mat-qty').value)||1;item.owner=document.getElementById('f-mat-owner').value.trim();}
+  else if(cat==='blueprint'){item.bpOutput=document.getElementById('f-bp-output').value.trim();item.bpStatus=document.getElementById('f-bp-status').value;item.bpRuns=parseInt(document.getElementById('f-bp-runs').value)||0;item.bpHolder=document.getElementById('f-bp-holder').value.trim();}
+  else if(cat==='wikelo'){item.wkType=document.getElementById('f-wk-type').value;item.wkQty=parseInt(document.getElementById('f-wk-qty').value)||0;item.wkDkp=parseInt(document.getElementById('f-wk-dkp').value)||0;item.wkHolder=document.getElementById('f-wk-holder').value.trim();}
+  try {
+    if(editId){ await sbUpdate(item); } else { await sbInsert(item); }
+    closeModal('addModal'); render();
+  } catch(err) {
+    showError('Failed to save: '+(err.message||String(err)));
+  } finally {
+    btn.disabled=false; btn.textContent=editId?'Save Changes':'Add to Inventory';
+  }
+}
+function openDetail(id){
+  const it=items.find(i=>i.id===id);if(!it)return;
+  document.getElementById('d-title').textContent=it.name;
+  let badge='';
+  if(it.cat==='component'){if(it.compClass)badge+=`<span class="class-badge class-${it.compClass}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">${it.compClass}</span>`;if(it.grade)badge+=`<span class="grade-badge grade-${it.grade}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">Grade ${it.grade}</span>`;if(it.size)badge+=`<span class="size-badge" style="display:inline-block;margin-bottom:10px;">${it.size}</span>`;}
+  else if(it.cat==='blueprint'){badge=`<span class="bp-status ${BP_CLASS[it.bpStatus]}" style="display:inline-block;margin-bottom:10px;">${BP_STATUS[it.bpStatus]}</span>`;}
+  else if(it.cat==='wikelo'){badge=`<span class="wk-type-badge ${WK_TYPE_CLS[it.wkType]}" style="display:inline-block;margin-bottom:10px;">${WK_TYPE_LBL[it.wkType]}</span>`;if(it.wkDkp)badge+=` <span class="dkp-badge" style="display:inline-block;margin-bottom:10px;margin-left:4px;">${it.wkDkp} DKP / unit</span>`;}
+  document.getElementById('d-badge').innerHTML=badge;
+  let info='';
+  if(it.cat==='component'){info=`<div class="info-item"><div class="label">Type</div><div class="value">${it.function||'—'}</div></div><div class="info-item"><div class="label">Class</div><div class="value">${it.compClass||'—'}</div></div><div class="info-item"><div class="label">Grade</div><div class="value">${it.grade?'Grade '+it.grade:'—'}</div></div><div class="info-item"><div class="label">Size</div><div class="value">${it.size||'—'}</div></div><div class="info-item"><div class="label">Quantity</div><div class="value">${it.qty}</div></div><div class="info-item"><div class="label">Owner / Location</div><div class="value">${it.owner||'—'}</div></div>`;}
+  else if(it.cat==='material'){const qual=it.quality||0,col=qualityColor(qual),pct=Math.round((qual/1000)*100);info=`<div class="info-item"><div class="label">Ore Type</div><div class="value">${it.oreType||'—'}</div></div><div class="info-item"><div class="label">Quality</div><div class="value">${qual} / 1000</div></div><div class="info-item"><div class="label">Quantity</div><div class="value">${fmtQty(it.qty)}</div></div><div class="info-item"><div class="label">Owner / Location</div><div class="value">${it.owner||'—'}</div></div><div style="grid-column:1/-1;margin-top:4px;"><div style="height:5px;border-radius:2px;background:#2e2c2a;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};border-radius:2px;"></div></div></div>`;}
+  else if(it.cat==='blueprint'){info=`<div class="info-item"><div class="label">Produces</div><div class="value">${it.bpOutput||'—'}</div></div><div class="info-item"><div class="label">Status</div><div class="value">${BP_STATUS[it.bpStatus]}</div></div><div class="info-item"><div class="label">Runs Remaining</div><div class="value">${it.bpRuns===0?'Unlimited':it.bpRuns}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.bpHolder||'—'}</div></div>`;}
+  else if(it.cat==='wikelo'){const totDkp=(it.wkDkp||0)*(it.wkQty||0);info=`<div class="info-item"><div class="label">Quantity Held</div><div class="value">${it.wkQty}</div></div><div class="info-item"><div class="label">DKP / unit</div><div class="value">${it.wkDkp||0}</div></div><div class="info-item"><div class="label">Total DKP held</div><div class="value" style="color:#a89cf7;">${totDkp}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.wkHolder||'—'}</div></div>`;}
+  document.getElementById('d-grid').innerHTML=info;
+  const notes=document.getElementById('d-notes');notes.textContent=it.notes||'';notes.style.display=it.notes?'block':'none';
+  document.getElementById('d-edit').onclick=()=>{closeModal('detailModal');editItem(id);};
+  document.getElementById('d-delete').onclick=async()=>{
+    try{await sbDelete(id,it.cat);closeModal('detailModal');render();}
+    catch(err){showError('Failed to delete: '+(err.message||String(err)));}
+  };
+  document.getElementById('detailModal').classList.add('open');
+}
+function editItem(id){
+  const it=items.find(i=>i.id===id);if(!it)return;
+  editId=id;document.getElementById('modalTitle').textContent='Edit Item';document.getElementById('submitBtn').textContent='Save Changes';
+  document.getElementById('f-cat').value=it.cat;document.getElementById('f-name').value=it.name;document.getElementById('f-notes').value=it.notes||'';
+  onCatChange();
+  if(it.cat==='component'){document.getElementById('f-function').value=it.function||'';document.getElementById('f-class').value=it.compClass||'';document.getElementById('f-grade').value=it.grade||'';document.getElementById('f-size').value=it.size||'';document.getElementById('f-qty').value=it.qty;document.getElementById('f-owner').value=it.owner||'';}
+  else if(it.cat==='material'){document.getElementById('f-mat-type').value=it.oreType||'';document.getElementById('f-mat-quality').value=it.quality||'';document.getElementById('f-mat-qty').value=it.qty;document.getElementById('f-mat-owner').value=it.owner||'';}
+  else if(it.cat==='blueprint'){document.getElementById('f-bp-output').value=it.bpOutput||'';document.getElementById('f-bp-status').value=it.bpStatus||'owned';document.getElementById('f-bp-runs').value=it.bpRuns||0;document.getElementById('f-bp-holder').value=it.bpHolder||'';}
+  else if(it.cat==='wikelo'){document.getElementById('f-wk-type').value=it.wkType||'favor';document.getElementById('f-wk-qty').value=it.wkQty||0;document.getElementById('f-wk-dkp').value=it.wkDkp||0;document.getElementById('f-wk-holder').value=it.wkHolder||'';}
+  document.getElementById('addModal').classList.add('open');
+}
+
+populateOreDropdowns();initDualRange();loadAll();
+
+// ============================================================
+// ORG TOOLS
+// ============================================================
+let orgMembers=[], orgEvents=[], orgCerts=[];
+let activeOrgTab='members', activeSection='inventory', orgLoaded=false;
+
+const ORG_COURSES = {
+  'BFS-01':'Air Wing','BFS-02':'Air Wing','AWC-01':'Air Wing','AWC-02':'Air Wing','AWC-03':'Air Wing',
+  'GFC-01':'Ground Forces','GVO-01':'Ground Forces',
+  'MSF-01':'MSF','MSF-02':'MSF',
+  'ENG-01':'Fleet','FLT-01':'Fleet','FLT-02':'Fleet',
+  'COM-01':'Comms','COM-02':'Comms',
+  'MNG-01':'Mining','MNG-02':'Mining',
+  'SAL-01':'Salvage','SAL-02':'Salvage',
+  'LOG-01':'Logistics',
+};
+const ORG_TRACK_ORDER = ['Air Wing','Ground Forces','MSF','Fleet','Comms','Mining','Salvage','Logistics'];
+const ORG_TRACK_EMOJI = {'Air Wing':'✈️','Ground Forces':'🪖','MSF':'⚓','Fleet':'🚀','Comms':'📡','Mining':'⛏️','Salvage':'🔧','Logistics':'📦'};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Section switcher ──
+function setSection(s) {
+  activeSection = s;
+  document.getElementById('section-inventory').style.display = s==='inventory' ? '' : 'none';
+  document.getElementById('section-org').style.display = s==='org' ? '' : 'none';
+  document.getElementById('nav-inventory').classList.toggle('active', s==='inventory');
+  document.getElementById('nav-org').classList.toggle('active', s==='org');
+  if (s==='org' && !orgLoaded) loadOrg();
+}
+
+// loadOrg() is defined below in the Quests section (includes quests fetch)
+
+function updateOrgStats() {
+  const totalDkp = orgMembers.reduce((a,m)=>a+m.dkp_balance,0);
+  const openEvents = orgEvents.filter(e=>e.status==='open').length;
+  document.getElementById('org-stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Members</div><div class="stat-value" style="color:#7eb8f7">${orgMembers.length}</div></div>
+    <div class="stat"><div class="stat-label">Total DKP</div><div class="stat-value" style="color:#a89cf7">${totalDkp}</div></div>
+    <div class="stat"><div class="stat-label">Open Events</div><div class="stat-value" style="color:#5a9e3f">${openEvents}</div></div>
+    <div class="stat"><div class="stat-label">Certs Awarded</div><div class="stat-value" style="color:#7eb8f7">${orgCerts.length}</div></div>`;
+}
+
+// ── Org tab switcher ──
+function setOrgTab(t) {
+  activeOrgTab = t;
+  const tabs = ['members','events','leaderboard','certifications','quests'];
+  document.querySelectorAll('#org-tab-row .tab').forEach((el,i)=>el.classList.toggle('active',tabs[i]===t));
+  tabs.forEach(tab=>{
+    const fp=document.getElementById('ofp-'+tab);
+    if(fp&&fp.style.display!=='none') fp.classList.toggle('visible',tab===t);
+  });
+  renderOrg();
+}
+
+// ── Render dispatcher ──
+function renderOrg() {
+  const grid = document.getElementById('org-grid');
+  if (activeOrgTab==='members')           renderMembers(grid);
+  else if (activeOrgTab==='events')       renderEvents(grid);
+  else if (activeOrgTab==='leaderboard')  renderLeaderboard(grid);
+  else if (activeOrgTab==='certifications') renderCertifications(grid);
+  else if (activeOrgTab==='quests')       renderQuests(grid);
+}
+
+// ── Members ──
+function renderMembers(grid) {
+  const q = (document.getElementById('org-search')?.value||'').toLowerCase();
+  const list = orgMembers.filter(m=>!q||esc(m.display_name).toLowerCase().includes(q)||esc(m.username).toLowerCase().includes(q));
+  document.getElementById('org-result-count').textContent = q ? `${list.length} member${list.length!==1?'s':''} matched` : '';
+  if (!list.length) { grid.innerHTML='<div class="empty">No members found.</div>'; grid.className=''; return; }
+  grid.className = 'org-grid';
+  grid.innerHTML = list.map(m=>`
+    <div class="member-card" onclick="openMemberModal('${esc(m.id)}')">
+      <div class="member-name">${esc(m.display_name||m.username)}</div>
+      <div class="member-username">${esc(m.username)}</div>
+      <div class="member-stats">
+        <div class="member-stat"><span class="member-stat-label">DKP</span><span class="member-stat-value" style="color:#a89cf7">${m.dkp_balance}</span></div>
+        <div class="member-stat"><span class="member-stat-label">Certs</span><span class="member-stat-value" style="color:#7eb8f7">${m.cert_count}</span></div>
+        <div class="member-stat"><span class="member-stat-label">Events</span><span class="member-stat-value" style="color:#5a9e3f">${m.event_count}</span></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Events ──
+function renderEvents(grid) {
+  const showOpen   = document.getElementById('off-ev-open')?.checked !== false;
+  const showClosed = document.getElementById('off-ev-closed')?.checked !== false;
+  const list = orgEvents.filter(e=>(e.status==='open'&&showOpen)||(e.status==='closed'&&showClosed));
+  document.getElementById('org-result-count').textContent = '';
+  if (!list.length) { grid.innerHTML='<div class="empty">No events found.</div>'; grid.className=''; return; }
+  grid.className = 'org-grid';
+  grid.innerHTML = list.map(e=>{
+    const when = e.scheduled_start_time
+      ? new Date(e.scheduled_start_time).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})
+      : 'Time TBD';
+    const loc = e.location ? `<br>📍 ${esc(e.location)}` : '';
+    const statusCls = e.status==='open' ? 'ev-open' : 'ev-closed';
+    const statusTxt = e.status==='open' ? 'Open' : 'Past';
+    return `<div class="event-card">
+      <div class="event-title">${esc(e.title)}</div>
+      <div class="event-meta">📅 ${when}${loc}</div>
+      <div class="event-footer">
+        <span class="dkp-badge">${e.dkp_reward} DKP</span>
+        <span class="${statusCls}">${statusTxt}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Leaderboard ──
+function renderLeaderboard(grid) {
+  document.getElementById('org-result-count').textContent = '';
+  const sorted = [...orgMembers].sort((a,b)=>b.dkp_balance-a.dkp_balance);
+  if (!sorted.length) { grid.innerHTML='<div class="empty">No members yet.</div>'; grid.className=''; return; }
+  const medals = ['🥇','🥈','🥉'];
+  grid.className = '';
+  grid.innerHTML = `<div class="leaderboard">`+sorted.map((m,i)=>`
+    <div class="lb-row" onclick="openMemberModal('${esc(m.id)}')" style="cursor:pointer;">
+      <span class="lb-rank">${medals[i]||'#'+(i+1)}</span>
+      <span class="lb-name">${esc(m.display_name||m.username)}</span>
+      <span class="lb-meta">${m.cert_count} cert${m.cert_count!==1?'s':''} · ${m.event_count} event${m.event_count!==1?'s':''}</span>
+      <span class="lb-dkp">${m.dkp_balance} DKP</span>
+    </div>`).join('')+`</div>`;
+}
+
+// ── Certifications ──
+function renderCertifications(grid) {
+  const trackFilter = document.getElementById('off-cert-track')?.value||'';
+  const q = (document.getElementById('cert-search')?.value||'').toLowerCase();
+  const certsByMember = {};
+  for (const c of orgCerts) {
+    if (!trackFilter || ORG_COURSES[c.course_code]===trackFilter) {
+      if (!certsByMember[c.member_id]) certsByMember[c.member_id]=[];
+      certsByMember[c.member_id].push(c.course_code);
+    }
+  }
+  const list = orgMembers.filter(m=>{
+    const hasCerts = certsByMember[m.id]?.length>0;
+    const matchQ = !q||(m.display_name||m.username).toLowerCase().includes(q);
+    return hasCerts&&matchQ;
+  });
+  document.getElementById('org-result-count').textContent = list.length ? `${list.length} member${list.length!==1?'s':''} with certs` : '';
+  if (!list.length) { grid.innerHTML='<div class="empty">No certifications found.</div>'; grid.className=''; return; }
+  grid.className = '';
+  grid.innerHTML = list.map(m=>{
+    const certs = certsByMember[m.id]||[];
+    return `<div class="cert-row">
+      <div class="cert-member">${esc(m.display_name||m.username)}</div>
+      <div class="cert-tags">${certs.map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Quests ──
+let orgQuests = [];
+
+async function loadOrg() {
+  if (!sb) { renderOrg(); updateOrgStats(); return; }
+  document.getElementById('loadingBar').style.display = 'block';
+  document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
+  try {
+    const [mRes,eRes,cRes,aRes,qRes] = await Promise.all([
+      sb.from('members').select('id,username,display_name,dkp_balance,joined_at').order('dkp_balance',{ascending:false}),
+      sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,location').order('scheduled_start_time',{ascending:false}),
+      sb.from('certifications').select('member_id,course_code,awarded_at'),
+      sb.from('attendance').select('member_id').eq('attended',true),
+      sb.from('quests').select('id,title,description,dkp_reward,status,created_at').order('created_at',{ascending:false}),
+    ]);
+    if (mRes.error) throw mRes.error;
+    orgCerts = cRes.data || [];
+    const attendCounts = {};
+    for (const r of (aRes.data||[])) attendCounts[r.member_id] = (attendCounts[r.member_id]||0)+1;
+    orgMembers = (mRes.data||[]).map(m=>({
+      ...m,
+      cert_count: orgCerts.filter(c=>c.member_id===m.id).length,
+      event_count: attendCounts[m.id]||0,
+    }));
+    orgEvents = eRes.data || [];
+    orgQuests = qRes.data || [];
+    orgLoaded = true;
+  } catch(err) {
+    showError('Could not load org data: '+(err.message||String(err)));
+  } finally {
+    document.getElementById('loadingBar').style.display = 'none';
+    renderOrg();
+    updateOrgStats();
+  }
+}
+
+function renderQuests(grid) {
+  const showOpen      = document.getElementById('off-q-open')?.checked !== false;
+  const showCompleted = document.getElementById('off-q-completed')?.checked;
+  const showClosed    = document.getElementById('off-q-closed')?.checked;
+  const list = orgQuests.filter(q =>
+    (q.status==='open'      && showOpen)      ||
+    (q.status==='completed' && showCompleted) ||
+    (q.status==='closed'    && showClosed)
+  );
+  document.getElementById('org-result-count').textContent = list.length ? `${list.length} quest${list.length!==1?'s':''}` : '';
+  if (!list.length) { grid.innerHTML='<div class="empty">No quests found. Officers can post quests via the Discord bot.</div>'; grid.className=''; return; }
+  grid.className = 'org-grid';
+  grid.innerHTML = list.map(q => {
+    const statusCls = {open:'q-open',completed:'q-completed',closed:'q-closed'}[q.status]||'q-closed';
+    const statusTxt = {open:'Open',completed:'Completed',closed:'Closed'}[q.status]||q.status;
+    const turnInBtn = q.status==='open'
+      ? `<button class="turnin-btn" onclick="openTurnIn('${esc(q.id)}','${esc(q.title)}','${esc(q.description||'')}');event.stopPropagation();">Submit Turn-In</button>`
+      : '';
+    return `<div class="quest-card">
+      <div class="quest-title">${esc(q.title)}</div>
+      ${q.description ? `<div class="quest-desc">${esc(q.description)}</div>` : ''}
+      <div class="quest-footer">
+        <span class="dkp-badge">${q.dkp_reward} DKP</span>
+        <span class="${statusCls}">${statusTxt}</span>
+        ${turnInBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let turnInQuestId = null;
+function openTurnIn(questId, title, desc) {
+  turnInQuestId = questId;
+  document.getElementById('ti-quest-title').textContent = title;
+  document.getElementById('ti-quest-desc').textContent = desc || '';
+  document.getElementById('ti-notes').value = '';
+  document.getElementById('ti-submit-btn').disabled = false;
+  document.getElementById('ti-submit-btn').textContent = 'Submit Turn-In';
+
+  // Show identity section based on auth state
+  if (authMember) {
+    document.getElementById('ti-anon-fields').style.display = 'none';
+    document.getElementById('ti-auth-identity').style.display = 'block';
+    document.getElementById('ti-auth-name').textContent = authMember.display_name || authMember.username;
+  } else {
+    document.getElementById('ti-anon-fields').style.display = 'block';
+    document.getElementById('ti-auth-identity').style.display = 'none';
+    document.getElementById('ti-username').value = '';
+  }
+
+  document.getElementById('turnInModal').classList.add('open');
+}
+
+async function submitTurnIn() {
+  const notes = document.getElementById('ti-notes').value.trim();
+  const btn   = document.getElementById('ti-submit-btn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  try {
+    if (!sb) throw new Error('Not connected to database.');
+
+    let member = authMember;
+
+    if (!member) {
+      // Anonymous path: look up by username
+      const username = document.getElementById('ti-username').value.trim();
+      if (!username) {
+        alert('Please enter your Discord username.');
+        btn.disabled = false; btn.textContent = 'Submit Turn-In';
+        return;
+      }
+      const { data } = await sb
+        .from('members').select('id, display_name').eq('username', username).maybeSingle();
+      if (!data) {
+        alert(`Member "${username}" not found. Make sure you've used /register in Discord first.`);
+        btn.disabled = false; btn.textContent = 'Submit Turn-In';
+        return;
+      }
+      member = data;
+    }
+
+    const { error } = await sb.from('quest_submissions').insert({
+      quest_id:  turnInQuestId,
+      member_id: member.id,
+      notes:     notes || null,
+    });
+
+    if (error) throw error;
+
+    const dkpAmt = orgQuests.find(q => q.id === turnInQuestId)?.dkp_reward || 0;
+    closeModal('turnInModal');
+    const el = document.getElementById('errorBanner');
+    el.textContent = `✅ Turn-in submitted! An officer will confirm and award your ${dkpAmt} DKP.`;
+    el.style.background = '#102e22'; el.style.borderColor = '#2dbd8f'; el.style.color = '#2dbd8f';
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display='none'; el.style.background=''; el.style.borderColor=''; el.style.color=''; }, 5000);
+
+  } catch(err) {
+    showError('Submission failed: ' + (err.message || String(err)));
+    btn.disabled = false; btn.textContent = 'Submit Turn-In';
+  }
+}
+
+// ── Member profile modal ──
+function openMemberModal(id) {
+  const m = orgMembers.find(x=>x.id===id);
+  if (!m) return;
+  const certs = orgCerts.filter(c=>c.member_id===id);
+  const byTrack = {};
+  for (const c of certs) {
+    const track = ORG_COURSES[c.course_code]||'Other';
+    if (!byTrack[track]) byTrack[track]=[];
+    byTrack[track].push(c.course_code);
+  }
+  const certLines = ORG_TRACK_ORDER.filter(t=>byTrack[t]?.length).map(t=>`
+    <div class="info-item" style="grid-column:1/-1;">
+      <div class="label">${ORG_TRACK_EMOJI[t]} ${t}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+        ${byTrack[t].map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')}
+      </div>
+    </div>`).join('');
+  document.getElementById('member-modal-name').textContent = m.display_name||m.username;
+  document.getElementById('member-modal-body').innerHTML = `
+    <div class="info-grid" style="margin-bottom:1.25rem;">
+      <div class="info-item"><div class="label">DKP Balance</div><div class="value" style="color:#a89cf7">${m.dkp_balance}</div></div>
+      <div class="info-item"><div class="label">Certifications</div><div class="value" style="color:#7eb8f7">${certs.length}</div></div>
+      <div class="info-item"><div class="label">Events Attended</div><div class="value" style="color:#5a9e3f">${m.event_count}</div></div>
+      <div class="info-item"><div class="label">Member Since</div><div class="value">${new Date(m.joined_at).toLocaleDateString()}</div></div>
+    </div>
+    ${certs.length
+      ? `<div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9e9b96;margin-bottom:10px;">Certifications</div>
+         <div class="info-grid">${certLines}</div>`
+      : '<div style="color:#6b6864;font-size:13px;">No certifications held yet.</div>'}`;
+  document.getElementById('memberModal').classList.add('open');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "pulsar-org-tools-bot",
+  "version": "1.0.0",
+  "description": "Kelz Hounds Division — Discord bot for DKP, events, and org management",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js",
+    "dashboard": "npx serve ../dashboard -p 3000"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "@supabase/supabase-js": "^2.45.4",
+    "dotenv": "^16.4.5"
+  }
+}
