@@ -1,46 +1,6 @@
 import { SlashCommandBuilder, GuildScheduledEventPrivacyLevel, GuildScheduledEventEntityType } from 'discord.js';
 import { db } from '../../db.js';
-
-// ──────────────────────────────────────────────
-// Timezone support
-// ──────────────────────────────────────────────
-const TIMEZONE_MAP = {
-  'EST':  'America/New_York',
-  'CST':  'America/Chicago',
-  'MST':  'America/Denver',
-  'PST':  'America/Los_Angeles',
-  'GMT':  'UTC',
-  'UTC':  'UTC',
-  'BST':  'Europe/London',
-  'CET':  'Europe/Paris',
-  'AEST': 'Australia/Sydney',
-};
-
-/**
- * Convert a local date+time string to a UTC Date, respecting DST.
- * Returns null if input is invalid.
- */
-function parseEventTime(dateStr, timeStr, tzAbbr = 'EST') {
-  const ianaZone = TIMEZONE_MAP[tzAbbr.toUpperCase()];
-  if (!ianaZone) return null;
-
-  // Step 1: Treat the input as if it were UTC (naive parse)
-  const naiveUTC = new Date(`${dateStr}T${timeStr}:00Z`);
-  if (isNaN(naiveUTC.getTime())) return null;
-
-  // Step 2: Find the UTC offset in the target timezone at that approximate time
-  // sv-SE locale gives YYYY-MM-DD HH:MM:SS — reliable for date parsing
-  const fmt = (tz) => new Intl.DateTimeFormat('sv-SE', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  }).format(naiveUTC);
-
-  const offsetMs = new Date(fmt('UTC') + 'Z') - new Date(fmt(ianaZone) + 'Z');
-
-  // Step 3: Apply offset to get the real UTC equivalent
-  return new Date(naiveUTC.getTime() + offsetMs);
-}
+import { TIMEZONE_MAP, parseEventTime } from '../../utils/timeUtils.js';
 
 // ──────────────────────────────────────────────
 // Command definition

@@ -871,10 +871,7 @@ function updateAuthUI() {
 
 async function loginWithDiscord() {
   if (!sb) { alert('Database not connected.'); return; }
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'discord',
-    options: { redirectTo: window.location.href.split('?')[0].split('#')[0] },
-  });
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'discord' });
   if (error) showError('Login failed: ' + error.message);
 }
 
