@@ -294,6 +294,32 @@
   .listing-label-sale    { color: #5a9e3f; }
   .listing-label-auction { color: #c47a2a; }
   .listing-label-sold    { color: var(--color-text-tertiary); }
+  .listing-label-pending { color: #a89cf7; }
+
+  /* ── Loot pending panel ── */
+  #loot-body-row { display: flex; gap: 1rem; align-items: flex-start; }
+  #loot-main { flex: 1; min-width: 0; }
+  #loot-pending-panel { display: none; width: 17rem; flex-shrink: 0; }
+  #loot-body-row.has-panel #loot-pending-panel { display: block; }
+  .lp-panel-box { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 0.875rem; }
+  .lp-panel-hdr { font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding-bottom: 0.625rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 0.75rem; }
+  .lp-empty { font-size: 0.69rem; color: var(--color-text-tertiary); text-align: center; padding: 1rem 0; }
+  .lp-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.625rem; margin-bottom: 0.5rem; }
+  .lp-card:last-child { margin-bottom: 0; }
+  .lp-type { font-size: 0.5rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem; }
+  .lp-type-purchase { color: #5a9e3f; }
+  .lp-type-bid      { color: #c47a2a; }
+  .lp-item { font-size: 0.75rem; font-weight: 600; color: var(--color-text-primary); line-height: 1.3; }
+  .lp-who { font-size: 0.625rem; color: var(--color-text-secondary); margin-top: 0.2rem; }
+  .lp-amount { font-size: 0.875rem; font-weight: 600; color: #a89cf7; margin-top: 0.25rem; }
+  .lp-date { font-size: 0.5rem; color: var(--color-text-tertiary); margin-top: 0.2rem; }
+  .lp-actions { display: flex; gap: 0.375rem; margin-top: 0.5rem; }
+  .lp-approve { flex: 1; padding: 0.3rem 0; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; background: #102e22; border: 0.5px solid #2dbd8f; border-radius: var(--border-radius-md); color: #2dbd8f; cursor: pointer; }
+  .lp-approve:hover:not(:disabled) { opacity: 0.85; }
+  .lp-approve:disabled { opacity: 0.45; cursor: default; }
+  .lp-deny { flex: 1; padding: 0.3rem 0; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: 0.5px solid #7a2020; border-radius: var(--border-radius-md); color: #c44a4a; cursor: pointer; }
+  .lp-deny:hover:not(:disabled) { background: #2e1010; }
+  .lp-deny:disabled { opacity: 0.45; cursor: default; }
   .listing-price { font-size: 0.875rem; font-weight: 500; color: #a89cf7; margin-bottom: 0.375rem; }
   .listing-meta  { font-size: 0.69rem; color: var(--color-text-secondary); margin-bottom: 0.3rem; line-height: 1.4; }
   .listing-end   { font-size: 0.625rem; color: var(--color-text-tertiary); margin-bottom: 0.375rem; }
@@ -580,8 +606,13 @@
     <input class="search" id="search" type="text" placeholder="Search name, owner, type..." oninput="render()">
     <button class="add-btn" onclick="openAddModal()">+ Add Item</button>
   </div>
-  <div class="result-count" id="resultCount"></div>
-  <div class="grid" id="grid"></div>
+  <div id="loot-body-row">
+    <div id="loot-main">
+      <div class="result-count" id="resultCount"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div id="loot-pending-panel"></div>
+  </div>
 
   </div><!-- end section-inventory -->
 
@@ -1031,6 +1062,8 @@ async function handleAuthSession(session) {
   }
 
   updateAuthUI();
+  // Re-render loot tab so pending panel appears/disappears without a tab switch
+  if (activeSection === 'inventory') render();
 }
 
 function clearAuth() {
@@ -1307,12 +1340,13 @@ async function loadAll() {
   if (!sb) { wkRecipes = DEFAULT_RECIPES.map(r=>({...r})); populateRecipeDropdown(); render(); return; }
   setLoading(true);
   try {
-    const [comps,mats,bps,wks,recs] = await Promise.all([
+    const [comps,mats,bps,wks,recs,pend] = await Promise.all([
       sb.from('components').select('*'),
       sb.from('materials').select('*'),
       sb.from('blueprints').select('*'),
       sb.from('wikelo_items').select('*'),
       sb.from('wikelo_recipes').select('*').order('sort_order'),
+      sb.from('loot_pending').select('id,item_id,member_id,member_name,type,amount,item_name,submitted_at').order('submitted_at',{ascending:true}),
     ]);
     if (comps.error) throw comps.error;
     if (mats.error)  throw mats.error;
@@ -1327,6 +1361,7 @@ async function loadAll() {
     wkRecipes = (!recs.error && recs.data.length > 0)
       ? recs.data.map(r=>({id:r.id,name:r.name,items:r.items,sort_order:r.sort_order}))
       : DEFAULT_RECIPES.map(r=>({...r}));
+    lootPending = (!pend.error && pend.data) ? pend.data : [];
     populateRecipeDropdown();
   } catch(err) {
     console.error('Supabase load error:',err);
@@ -1585,6 +1620,8 @@ function render(){
           <div class="listing-end">Ends ${endFmt} ET</div>
           ${!ended&&authMember?`<button class="bid-btn" onclick="openBidModal('${it.id}');event.stopPropagation();">Bid →</button>`:''}
         </div>`;
+      } else if (it.listingType==='pending') {
+        listingHTML=`<div class="listing-strip"><div class="listing-label listing-label-pending">⏳ Pending Review</div></div>`;
       } else if (it.listingType==='sold') {
         listingHTML=`<div class="listing-strip"><div class="listing-label listing-label-sold">Sold</div></div>`;
       }
@@ -1598,6 +1635,16 @@ function render(){
       </div>`;
     }
   }).join('');
+
+  // Loot pending panel — officers only, loot tab only
+  const lootRow = document.getElementById('loot-body-row');
+  if (lootRow) {
+    const showPanel = activeTab === 'wikelo' && (isOfficer || isAdmin);
+    lootRow.classList.toggle('has-panel', showPanel);
+    if (showPanel) renderLootPending();
+    else { const p = document.getElementById('loot-pending-panel'); if (p) p.innerHTML = ''; }
+  }
+
   updateStats();
 }
 
@@ -1746,6 +1793,7 @@ populateOreDropdowns();initDualRange();loadAll();
 // LOOT MARKETPLACE — Buy & Bid
 // ============================================================
 let _buyItemId = null, _bidItemId = null;
+let lootPending = []; // pending buy/bid submissions awaiting officer approval
 
 function openBuyConfirm(itemId) {
   if (!authMember) { showError('Sign in with Discord to purchase items.'); return; }
@@ -1776,38 +1824,29 @@ async function confirmBuy() {
   }
 
   const btn = document.getElementById('buy-btn');
-  btn.disabled = true; btn.textContent = 'Processing…';
+  btn.disabled = true; btn.textContent = 'Submitting…';
 
   try {
-    const newBalance = authMember.dkp_balance - it.listingPrice;
-    const [itemRes, balRes, txRes] = await Promise.all([
-      sb.from('wikelo_items').update({ listing_type: 'sold' }).eq('id', _buyItemId),
-      sb.from('members').update({ dkp_balance: newBalance }).eq('id', authMember.id),
-      sb.from('dkp_transactions').insert({
-        member_id: authMember.id, amount: -it.listingPrice,
-        reason: `Loot purchase: ${it.name}`,
-      }),
+    // Submit pending record + lock item — DKP not deducted until officer approves
+    const memberName = authMember.display_name || authMember.username;
+    const [itemRes, pendRes] = await Promise.all([
+      sb.from('wikelo_items').update({ listing_type: 'pending' }).eq('id', _buyItemId),
+      sb.from('loot_pending').insert({
+        item_id: it.id, member_id: authMember.id, member_name: memberName,
+        type: 'purchase', amount: it.listingPrice, item_name: it.name,
+      }).select().single(),
     ]);
     if (itemRes.error) throw itemRes.error;
-    if (balRes.error)  throw balRes.error;
-    // tx insert failure is non-fatal
+    if (pendRes.error) throw pendRes.error;
 
     // Update local state
-    it.listingType = 'sold';
-    authMember.dkp_balance = newBalance;
-    // Also sync the orgMembers copy so leaderboard/member cards reflect new balance
-    const mi = orgMembers.findIndex(m => m.id === authMember.id);
-    if (mi !== -1) orgMembers[mi].dkp_balance = newBalance;
+    it.listingType = 'pending';
+    if (pendRes.data) lootPending.push(pendRes.data);
     closeModal('buyModal');
     render();
-
-    const el = document.getElementById('errorBanner');
-    el.textContent = `✅ Purchased "${it.name}" for ${it.listingPrice} DKP. New balance: ${newBalance} DKP.`;
-    el.style.background='#102e22'; el.style.borderColor='#2dbd8f'; el.style.color='#2dbd8f';
-    el.style.display='block';
-    setTimeout(()=>{el.style.display='none';el.style.background='';el.style.borderColor='';el.style.color='';},6000);
+    lootFlash(`Purchase submitted — awaiting officer approval.`, 'blue');
   } catch(err) {
-    errEl.textContent = 'Purchase failed: ' + (err.message || String(err));
+    errEl.textContent = 'Submission failed: ' + (err.message || String(err));
     errEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Confirm Purchase';
   }
@@ -1852,31 +1891,166 @@ async function placeBid() {
   }
 
   const btn = document.getElementById('bid-btn');
-  btn.disabled = true; btn.textContent = 'Placing bid…';
+  btn.disabled = true; btn.textContent = 'Submitting bid…';
 
   try {
     const bidderName = authMember.display_name || authMember.username;
-    const { error } = await sb.from('wikelo_items').update({
-      auction_current_bid:  bid,
-      auction_bidder_name:  bidderName,
-    }).eq('id', _bidItemId);
-    if (error) throw error;
+    // Record pending bid + update auction state + lock item pending review
+    const [itemRes, pendRes] = await Promise.all([
+      sb.from('wikelo_items').update({
+        auction_current_bid: bid, auction_bidder_name: bidderName, listing_type: 'pending',
+      }).eq('id', _bidItemId),
+      sb.from('loot_pending').insert({
+        item_id: it.id, member_id: authMember.id, member_name: bidderName,
+        type: 'bid', amount: bid, item_name: it.name,
+      }).select().single(),
+    ]);
+    if (itemRes.error) throw itemRes.error;
+    if (pendRes.error) throw pendRes.error;
 
     // Update local state
     it.auctionCur = bid;
     it.auctionWho = bidderName;
+    it.listingType = 'pending';
+    if (pendRes.data) lootPending.push(pendRes.data);
     closeModal('bidModal');
     render();
-
-    const el = document.getElementById('errorBanner');
-    el.textContent = `🏷 Bid of ${bid} DKP placed on "${it.name}". You'll be notified when the auction closes.`;
-    el.style.background='#2e1e0a'; el.style.borderColor='#c47a2a'; el.style.color='#c47a2a';
-    el.style.display='block';
-    setTimeout(()=>{el.style.display='none';el.style.background='';el.style.borderColor='';el.style.color='';},7000);
+    lootFlash(`Bid of ${bid} DKP submitted on "${it.name}" — awaiting officer approval.`, 'amber');
   } catch(err) {
     errEl.textContent = 'Bid failed: ' + (err.message || String(err));
     errEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Place Bid';
+  }
+}
+
+// ── Loot flash banner helper ───────────────────────────────────────────────────
+function lootFlash(msg, tone) {
+  const el = document.getElementById('errorBanner');
+  const themes = {
+    green:  { bg:'#102e22', border:'#2dbd8f', color:'#2dbd8f' },
+    amber:  { bg:'#2e1e0a', border:'#c47a2a', color:'#c47a2a' },
+    blue:   { bg:'#1a2a3a', border:'#7eb8f7', color:'#7eb8f7' },
+    red:    { bg:'#2e1010', border:'#c44a4a', color:'#c44a4a' },
+  };
+  const t = themes[tone] || themes.blue;
+  el.textContent = msg;
+  el.style.background = t.bg; el.style.borderColor = t.border; el.style.color = t.color;
+  el.style.display = 'block';
+  clearTimeout(lootFlash._t);
+  lootFlash._t = setTimeout(() => { el.style.display='none'; el.style.background=''; el.style.borderColor=''; el.style.color=''; }, 7000);
+}
+
+// ── Loot pending panel ─────────────────────────────────────────────────────────
+function renderLootPending() {
+  const panel = document.getElementById('loot-pending-panel');
+  if (!panel) return;
+
+  if (!lootPending.length) {
+    panel.innerHTML = `<div class="lp-panel-box">
+      <div class="lp-panel-hdr">Pending Transactions</div>
+      <div class="lp-empty">No pending submissions.</div>
+    </div>`;
+    return;
+  }
+
+  const cards = lootPending.map(p => {
+    const dateStr = new Date(p.submitted_at).toLocaleString('en-US', {
+      month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZone:'America/New_York'
+    });
+    const typeLbl = p.type === 'purchase' ? 'Purchase Request' : 'Auction Bid';
+    const typeCls = p.type === 'purchase' ? 'lp-type-purchase' : 'lp-type-bid';
+    return `<div class="lp-card">
+      <div class="lp-type ${typeCls}">${typeLbl}</div>
+      <div class="lp-item">${esc(p.item_name)}</div>
+      <div class="lp-who">by ${esc(p.member_name)}</div>
+      <div class="lp-amount">${p.amount} DKP</div>
+      <div class="lp-date">${dateStr} ET</div>
+      <div class="lp-actions">
+        <button class="lp-approve" id="lpa-${p.id}" onclick="approveLootPending('${p.id}')">Approve</button>
+        <button class="lp-deny"    id="lpd-${p.id}" onclick="denyLootPending('${p.id}')">Deny</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `<div class="lp-panel-box">
+    <div class="lp-panel-hdr">Pending Transactions <span style="color:#a89cf7;font-weight:600;">${lootPending.length}</span></div>
+    ${cards}
+  </div>`;
+}
+
+async function approveLootPending(pendingId) {
+  const p = lootPending.find(x => x.id === pendingId);
+  if (!p) return;
+
+  // Disable buttons to prevent double-tap
+  ['lpa-','lpd-'].forEach(pfx => {
+    const b = document.getElementById(pfx + pendingId);
+    if (b) { b.disabled = true; }
+  });
+  document.getElementById('lpa-' + pendingId).textContent = 'Working…';
+
+  try {
+    // Fetch live member balance
+    const { data: member, error: mErr } = await sb
+      .from('members').select('id,dkp_balance').eq('id', p.member_id).maybeSingle();
+    if (mErr || !member) throw new Error('Member not found.');
+
+    const newBalance = (member.dkp_balance || 0) - p.amount;
+    if (newBalance < 0) throw new Error(`${p.member_name} only has ${member.dkp_balance} DKP — not enough for ${p.amount}.`);
+
+    const [itemRes, balRes, , delRes] = await Promise.all([
+      sb.from('wikelo_items').update({ listing_type: 'sold', auction_current_bid: 0, auction_bidder_name: null }).eq('id', p.item_id),
+      sb.from('members').update({ dkp_balance: newBalance }).eq('id', p.member_id),
+      sb.from('dkp_transactions').insert({ member_id: p.member_id, amount: -p.amount, reason: `Loot ${p.type}: ${p.item_name}` }),
+      sb.from('loot_pending').delete().eq('id', pendingId),
+    ]);
+    if (itemRes.error) throw itemRes.error;
+    if (balRes.error)  throw balRes.error;
+
+    // Update local state
+    const it = items.find(x => x.id === p.item_id);
+    if (it) { it.listingType = 'sold'; it.auctionCur = 0; it.auctionWho = ''; }
+    lootPending = lootPending.filter(x => x.id !== pendingId);
+    const mi = orgMembers.findIndex(m => m.id === p.member_id);
+    if (mi !== -1) orgMembers[mi].dkp_balance = newBalance;
+
+    renderLootPending();
+    render();
+    lootFlash(`✅ Approved — ${p.member_name} paid ${p.amount} DKP for ${p.item_name}.`, 'green');
+  } catch(err) {
+    showError('Approval failed: ' + (err.message || String(err)));
+    renderLootPending(); // re-enable buttons
+  }
+}
+
+async function denyLootPending(pendingId) {
+  const p = lootPending.find(x => x.id === pendingId);
+  if (!p) return;
+
+  ['lpa-','lpd-'].forEach(pfx => {
+    const b = document.getElementById(pfx + pendingId);
+    if (b) b.disabled = true;
+  });
+  document.getElementById('lpd-' + pendingId).textContent = 'Working…';
+
+  try {
+    const restoreType = p.type === 'purchase' ? 'sale' : 'auction';
+    const [itemRes, delRes] = await Promise.all([
+      sb.from('wikelo_items').update({ listing_type: restoreType }).eq('id', p.item_id),
+      sb.from('loot_pending').delete().eq('id', pendingId),
+    ]);
+    if (itemRes.error) throw itemRes.error;
+
+    const it = items.find(x => x.id === p.item_id);
+    if (it) it.listingType = restoreType;
+    lootPending = lootPending.filter(x => x.id !== pendingId);
+
+    renderLootPending();
+    render();
+    lootFlash(`Denied — ${p.item_name} relisted as ${restoreType}.`, 'amber');
+  } catch(err) {
+    showError('Denial failed: ' + (err.message || String(err)));
+    renderLootPending();
   }
 }
 
