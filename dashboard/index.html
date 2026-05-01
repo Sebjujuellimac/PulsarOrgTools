@@ -279,6 +279,13 @@
   .q-open      { font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 99px; background: #1e2e14; color: #5a9e3f; font-weight: 500; }
   .q-completed { font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 99px; background: #142236; color: #4a8fd4; font-weight: 500; }
   .q-closed    { font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 99px; background: #2e2c2a; color: #9e9b96; font-weight: 500; }
+  .q-type-action { font-size: 0.5rem; padding: 0.1rem 0.44rem; border-radius: 99px; background: #23232a; color: #6b6864; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .q-type-item   { font-size: 0.5rem; padding: 0.1rem 0.44rem; border-radius: 99px; background: #1a302e; color: #2dbd8f; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .quest-meta { font-size: 0.625rem; color: var(--color-text-tertiary); display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
+  .quest-meta-tag { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 3px; padding: 0.1rem 0.375rem; }
+  .pq-type-row { display: flex; gap: 0.5rem; margin-bottom: 0.125rem; }
+  .pq-type-btn { flex: 1; padding: 0.4rem; font-size: 0.69rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); cursor: pointer; transition: all 0.12s; }
+  .pq-type-btn.active { background: var(--color-background-info); border-color: var(--color-text-info); color: var(--color-text-info); }
   .turnin-btn  { padding: 0.3rem 0.75rem; font-family: var(--font-mono); font-size: 0.69rem; letter-spacing: 0.05em; text-transform: uppercase; background: var(--color-background-info); border: none; border-radius: var(--border-radius-md); color: var(--color-text-info); cursor: pointer; white-space: nowrap; }
   .turnin-btn:hover { opacity: 0.85; }
 
@@ -604,7 +611,7 @@
 
   <div class="toolbar">
     <input class="search" id="search" type="text" placeholder="Search name, owner, type..." oninput="render()">
-    <button class="add-btn" onclick="openAddModal()">+ Add Item</button>
+    <button class="add-btn" id="add-item-btn" onclick="openAddModal()" style="display:none;">+ Add Item</button>
   </div>
   <div id="loot-body-row">
     <div id="loot-main">
@@ -898,24 +905,84 @@
 
 <!-- POST QUEST MODAL (officers / admins) -->
 <div class="modal-bg" id="postQuestModal">
-  <div class="modal" style="max-width:440px;">
+  <div class="modal" style="max-width:480px;">
     <div class="modal-header">
       <span class="modal-title">Post Quest</span>
       <button class="close-btn" onclick="closeModal('postQuestModal')">×</button>
     </div>
     <div class="form-group">
-      <label class="form-label">Title</label>
+      <label class="form-label">Quest Type</label>
+      <div class="pq-type-row">
+        <button class="pq-type-btn active" id="pq-type-btn-action" onclick="pqTypeChange('action')">⚔ Action</button>
+        <button class="pq-type-btn"        id="pq-type-btn-item"   onclick="pqTypeChange('item')">📦 Item Deposit</button>
+      </div>
+      <input type="hidden" id="pq-type" value="action">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Quest Title</label>
       <input class="form-input" id="pq-title" type="text" placeholder="e.g. Carinite Mining Run">
     </div>
     <div class="form-group">
-      <label class="form-label">Description</label>
-      <input class="form-input" id="pq-desc" type="text" placeholder="What needs to be done">
+      <label class="form-label">Description <span style="font-size:0.625rem;color:var(--color-text-tertiary);">optional</span></label>
+      <input class="form-input" id="pq-desc" type="text" placeholder="Additional context">
     </div>
     <div class="form-group">
       <label class="form-label">DKP Reward</label>
       <input class="form-input" id="pq-dkp" type="number" min="1" placeholder="e.g. 50">
     </div>
-    <div id="pq-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+
+    <!-- Action-specific fields -->
+    <div id="pq-action-fields">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Faction <span style="font-size:0.625rem;color:var(--color-text-tertiary);">optional</span></label>
+          <input class="form-input" id="pq-faction" type="text" placeholder="e.g. Vanduul">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location <span style="font-size:0.625rem;color:var(--color-text-tertiary);">optional</span></label>
+          <input class="form-input" id="pq-location" type="text" placeholder="e.g. Pyro System">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Goal <span style="font-size:0.625rem;color:var(--color-text-tertiary);">optional</span></label>
+        <input class="form-input" id="pq-goal" type="text" placeholder="e.g. Destroy 5 fighters">
+      </div>
+    </div>
+
+    <!-- Item-specific fields -->
+    <div id="pq-item-fields" style="display:none;">
+      <div class="form-row">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">Item Name</label>
+          <input class="form-input" id="pq-item-name" type="text" placeholder="e.g. Carinite (Pure)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Item Type</label>
+          <select class="form-select" id="pq-item-wktype">
+            <option value="favor">Favor</option>
+            <option value="rare">Rare Resource</option>
+            <option value="currency">Special Currency</option>
+            <option value="loot">Mission Loot</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Quantity</label>
+          <input class="form-input" id="pq-item-qty" type="number" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">DKP / Unit</label>
+          <input class="form-input" id="pq-item-dkp" type="number" min="0" value="0" placeholder="0 = unassigned">
+        </div>
+        <div class="form-group">
+          <label class="form-label">List for Sale (DKP) <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt.</span></label>
+          <input class="form-input" id="pq-item-price" type="number" min="0" placeholder="0 = no listing">
+        </div>
+      </div>
+    </div>
+
+    <div id="pq-error" style="display:none;font-size:0.75rem;color:#c44a4a;margin-bottom:0.75rem;"></div>
     <button class="submit-btn" id="pq-btn" onclick="submitNewQuest()">Post Quest</button>
   </div>
 </div>
@@ -1076,6 +1143,9 @@ function clearAuth() {
 function updateAuthUI() {
   const container = document.getElementById('header-auth');
   if (!container) return;
+  // Gate add-item button to officers/admins
+  const addBtn = document.getElementById('add-item-btn');
+  if (addBtn) addBtn.style.display = (isOfficer || isAdmin) ? '' : 'none';
 
   if (authUser) {
     const name      = authMember?.display_name || authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'Member';
@@ -1685,6 +1755,7 @@ function onListingTypeChange() {
 }
 
 function openAddModal(){
+  if (!isOfficer && !isAdmin) { showError('Only officers can add items to the inventory.'); return; }
   editId=null;document.getElementById('modalTitle').textContent='Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
   ['f-name','f-owner','f-notes','f-mat-owner','f-bp-output','f-bp-holder','f-wk-holder'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-qty').value=1;document.getElementById('f-mat-qty').value=1;
@@ -2321,7 +2392,7 @@ async function loadOrg() {
       sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,location').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
       sb.from('attendance').select('member_id').eq('attended',true),
-      sb.from('quests').select('id,title,description,dkp_reward,status,created_at').order('created_at',{ascending:false}),
+      sb.from('quests').select('id,title,description,dkp_reward,status,created_at,quest_type,faction,location,goal,item_name,item_wk_type,item_qty,item_dkp,item_listing_type,item_listing_price').order('created_at',{ascending:false}),
       sb.from('quest_submissions').select('id,quest_id,member_id,notes,submitted_at,members(display_name,username),quests(title,dkp_reward)').order('submitted_at',{ascending:true}),
     ]);
     if (mRes.error) throw mRes.error;
@@ -2406,12 +2477,37 @@ function renderQuests(grid) {
   grid.innerHTML = submissionsHTML + toolbarHTML + list.map(q => {
     const statusCls = {open:'q-open',completed:'q-completed',closed:'q-closed'}[q.status]||'q-closed';
     const statusTxt = {open:'Open',completed:'Completed',closed:'Closed'}[q.status]||q.status;
+    const isItem    = q.quest_type === 'item';
+    const typeBadge = isItem
+      ? `<span class="q-type-item">Item Deposit</span>`
+      : `<span class="q-type-action">Action</span>`;
     const turnInBtn = q.status==='open'
       ? `<button class="turnin-btn" onclick="openTurnIn('${esc(q.id)}','${esc(q.title)}','${esc(q.description||'')}');event.stopPropagation();">Submit Turn-In</button>`
       : '';
+    // Type-specific metadata tags
+    let metaHTML = '';
+    if (isItem && q.item_name) {
+      const wkLbl = {favor:'Favor',rare:'Rare Resource',currency:'Special Currency',loot:'Mission Loot'}[q.item_wk_type] || 'Favor';
+      const tags = [
+        `<span class="quest-meta-tag">📦 ${esc(q.item_name)}</span>`,
+        q.item_qty > 1 ? `<span class="quest-meta-tag">×${q.item_qty}</span>` : '',
+        `<span class="quest-meta-tag">${wkLbl}</span>`,
+        q.item_dkp > 0 ? `<span class="quest-meta-tag">${q.item_dkp} DKP/unit</span>` : '',
+        q.item_listing_type === 'sale' ? `<span class="quest-meta-tag" style="color:#5a9e3f;">For Sale ${q.item_listing_price} DKP</span>` : '',
+      ].filter(Boolean).join('');
+      metaHTML = `<div class="quest-meta">${tags}</div>`;
+    } else {
+      const tags = [
+        q.faction  ? `<span class="quest-meta-tag">🎯 ${esc(q.faction)}</span>`  : '',
+        q.location ? `<span class="quest-meta-tag">📍 ${esc(q.location)}</span>` : '',
+        q.goal     ? `<span class="quest-meta-tag">${esc(q.goal)}</span>`         : '',
+      ].filter(Boolean).join('');
+      if (tags) metaHTML = `<div class="quest-meta">${tags}</div>`;
+    }
     return `<div class="quest-card">
-      <div class="quest-title">${esc(q.title)}</div>
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">${typeBadge}<div class="quest-title" style="margin:0;">${esc(q.title)}</div></div>
       ${q.description ? `<div class="quest-desc">${esc(q.description)}</div>` : ''}
+      ${metaHTML}
       <div class="quest-footer">
         <span class="dkp-badge">${q.dkp_reward} DKP</span>
         <span class="${statusCls}">${statusTxt}</span>
@@ -2424,28 +2520,46 @@ function renderQuests(grid) {
 // ── Post Quest (officers / admins) ──
 function openPostQuestModal() {
   if (!isOfficer && !isAdmin) return;
-  ['pq-title','pq-desc','pq-dkp'].forEach(id => document.getElementById(id).value = '');
+  ['pq-title','pq-desc','pq-dkp','pq-faction','pq-location','pq-goal','pq-item-name','pq-item-price']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('pq-item-qty').value    = '1';
+  document.getElementById('pq-item-dkp').value    = '0';
+  document.getElementById('pq-item-wktype').value = 'favor';
   document.getElementById('pq-error').style.display = 'none';
   document.getElementById('pq-btn').disabled = false;
   document.getElementById('pq-btn').textContent = 'Post Quest';
+  pqTypeChange('action');
   document.getElementById('postQuestModal').classList.add('open');
   setTimeout(() => document.getElementById('pq-title').focus(), 60);
 }
 
+function pqTypeChange(type) {
+  document.getElementById('pq-type').value = type;
+  document.getElementById('pq-type-btn-action').classList.toggle('active', type === 'action');
+  document.getElementById('pq-type-btn-item').classList.toggle('active',   type === 'item');
+  document.getElementById('pq-action-fields').style.display = type === 'action' ? '' : 'none';
+  document.getElementById('pq-item-fields').style.display   = type === 'item'   ? '' : 'none';
+}
+
 async function submitNewQuest() {
   if (!isOfficer && !isAdmin) return;
+  const questType = document.getElementById('pq-type').value;
   const title = document.getElementById('pq-title').value.trim();
   const desc  = document.getElementById('pq-desc').value.trim();
   const dkp   = parseInt(document.getElementById('pq-dkp').value);
   const errEl = document.getElementById('pq-error');
 
-  if (!title || !desc || !dkp || dkp < 1) {
-    errEl.textContent = 'Title, description, and a positive DKP reward are all required.';
+  if (!title || !dkp || dkp < 1) {
+    errEl.textContent = 'Quest title and a positive DKP reward are required.';
+    errEl.style.display = 'block'; return;
+  }
+  if (questType === 'item' && !document.getElementById('pq-item-name').value.trim()) {
+    errEl.textContent = 'Item quests require an item name.';
     errEl.style.display = 'block'; return;
   }
 
   if (!authUser && isAdmin) {
-    errEl.textContent = 'Quest posting requires signing in with Discord as an officer. The admin password grants view-only access to quest management.';
+    errEl.textContent = 'Quest posting requires signing in with Discord as an officer. Admin password grants view-only access.';
     errEl.style.display = 'block'; return;
   }
 
@@ -2453,14 +2567,31 @@ async function submitNewQuest() {
   btn.disabled = true; btn.textContent = 'Posting…';
   errEl.style.display = 'none';
 
+  const insert = {
+    title,
+    description: desc || null,
+    dkp_reward:  dkp,
+    status:      'open',
+    quest_type:  questType,
+    created_by:  authMember?.id || null,
+  };
+
+  if (questType === 'action') {
+    insert.faction  = document.getElementById('pq-faction').value.trim()  || null;
+    insert.location = document.getElementById('pq-location').value.trim() || null;
+    insert.goal     = document.getElementById('pq-goal').value.trim()     || null;
+  } else {
+    const itemPrice = parseInt(document.getElementById('pq-item-price').value) || 0;
+    insert.item_name          = document.getElementById('pq-item-name').value.trim();
+    insert.item_wk_type       = document.getElementById('pq-item-wktype').value;
+    insert.item_qty           = parseInt(document.getElementById('pq-item-qty').value) || 1;
+    insert.item_dkp           = parseInt(document.getElementById('pq-item-dkp').value) || 0;
+    insert.item_listing_type  = itemPrice > 0 ? 'sale' : 'none';
+    insert.item_listing_price = itemPrice > 0 ? itemPrice : null;
+  }
+
   try {
-    const { data, error } = await sb.from('quests').insert({
-      title,
-      description: desc,
-      dkp_reward:  dkp,
-      status:      'open',
-      created_by:  authMember?.id || null,
-    }).select().single();
+    const { data, error } = await sb.from('quests').insert(insert).select().single();
 
     if (error) throw error;
 
@@ -2638,7 +2769,24 @@ async function confirmApprove(subId) {
       sb.from('quest_submissions').delete().eq('id', subId),
     ]);
 
-    // 4. Update local state — no page reload needed
+    // 4. If this is an item quest, add the deposited item to inventory
+    if (quest?.quest_type === 'item' && quest?.item_name) {
+      const itemPrice = quest.item_listing_type === 'sale' ? quest.item_listing_price : null;
+      const { data: newItem } = await sb.from('wikelo_items').insert({
+        name:              quest.item_name,
+        wk_type:           quest.item_wk_type  || 'favor',
+        wk_qty:            quest.item_qty       || 1,
+        wk_dkp:            quest.item_dkp       || 0,
+        listing_type:      quest.item_listing_type  || 'none',
+        listing_price_dkp: itemPrice,
+      }).select().single();
+      if (newItem) {
+        items.push(fromDB(newItem, 'wikelo'));
+        if (activeSection === 'inventory') render();
+      }
+    }
+
+    // 5. Update local state — no page reload needed
     orgSubmissions = orgSubmissions.filter(s => s.id !== subId);
     const qi = orgQuests.findIndex(q => q.id === sub.quest_id);
     if (qi !== -1) orgQuests[qi].status = 'completed';
