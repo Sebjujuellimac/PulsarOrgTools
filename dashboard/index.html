@@ -201,12 +201,7 @@
   .bp-researching { background: #2e1e0a; color: #c47a2a; }
   .bp-wanted { background: #1e1a3a; color: #a89cf7; }
 
-  /* ── Wikelo / Loot type badges ── */
-  .wk-type-badge { font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 99px; font-weight: 500; }
-  .wk-favor    { background: #102e22; color: #2dbd8f; }
-  .wk-rare     { background: #2e1e0a; color: #c47a2a; }
-  .wk-currency { background: #1e1a3a; color: #a89cf7; }
-  .wk-loot     { background: #2e1810; color: #c4693a; }
+  /* wk-type-badge removed — item type distinction deprecated */
 
   /* ── Modals ── */
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; display: none; align-items: center; justify-content: center; }
@@ -557,16 +552,6 @@
           <option value="">All items</option>
         </select>
       </div>
-      <div class="filter-group">
-        <span class="filter-label">Item type</span>
-        <select class="filter-select" id="ff-wk-type" onchange="render()">
-          <option value="">All types</option>
-          <option value="favor">Favor</option>
-          <option value="rare">Rare Resource</option>
-          <option value="currency">Special Currency</option>
-          <option value="loot">Mission Loot</option>
-        </select>
-      </div>
       <button class="filter-reset" onclick="resetFilters('wikelo')">Reset</button>
     </div>
     <div class="recipe-manager">
@@ -799,13 +784,6 @@
     <div id="fields-wk" style="display:none">
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Item Type</label>
-          <select class="form-select" id="f-wk-type">
-            <option value="favor">Favor</option><option value="rare">Rare Resource</option>
-            <option value="currency">Special Currency</option><option value="loot">Mission Loot</option>
-          </select>
-        </div>
-        <div class="form-group">
           <label class="form-label">Quantity Held</label>
           <input class="form-input" id="f-wk-qty" type="number" min="0" value="1">
         </div>
@@ -813,8 +791,6 @@
           <label class="form-label">DKP per unit</label>
           <input class="form-input" id="f-wk-dkp" type="number" min="0" value="0" placeholder="0 = unassigned">
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
           <label class="form-label">Held By / Location</label>
           <input class="form-input" id="f-wk-holder" type="text" placeholder="e.g. Cmdr_Ryker">
@@ -951,33 +927,103 @@
 
     <!-- Item-specific fields -->
     <div id="pq-item-fields" style="display:none;">
-      <div class="form-row">
-        <div class="form-group" style="flex:2;">
-          <label class="form-label">Item Name</label>
-          <input class="form-input" id="pq-item-name" type="text" placeholder="e.g. Carinite (Pure)">
+      <div class="form-group">
+        <label class="form-label">Item Category</label>
+        <select class="form-select" id="pq-item-cat" onchange="pqItemCatChange()">
+          <option value="wikelo">Loot Item</option>
+          <option value="component">Ship Component</option>
+          <option value="material">Material / Resource</option>
+        </select>
+      </div>
+
+      <!-- Loot item fields -->
+      <div id="pq-ic-wikelo">
+        <div class="form-row">
+          <div class="form-group" style="flex:2;">
+            <label class="form-label">Item Name</label>
+            <input class="form-input" id="pq-item-name" type="text" placeholder="e.g. Carinite (Pure)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantity</label>
+            <input class="form-input" id="pq-item-qty" type="number" min="1" value="1">
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Item Type</label>
-          <select class="form-select" id="pq-item-wktype">
-            <option value="favor">Favor</option>
-            <option value="rare">Rare Resource</option>
-            <option value="currency">Special Currency</option>
-            <option value="loot">Mission Loot</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">DKP / Unit</label>
+            <input class="form-input" id="pq-item-dkp" type="number" min="0" value="0" placeholder="0 = unassigned">
+          </div>
+          <div class="form-group">
+            <label class="form-label">List for Sale (DKP) <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt.</span></label>
+            <input class="form-input" id="pq-item-price" type="number" min="0" placeholder="0 = no listing">
+          </div>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Quantity</label>
-          <input class="form-input" id="pq-item-qty" type="number" min="1" value="1">
+
+      <!-- Component fields -->
+      <div id="pq-ic-component" style="display:none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Type <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt.</span></label>
+            <select class="form-select" id="pq-comp-function">
+              <option value="">Any</option>
+              <option>Power Plant</option><option>Cooler</option><option>Shield Generator</option>
+              <option>Quantum Drive</option><option>Thruster</option><option>Radar / Sensor</option>
+              <option>Weapon Mount</option><option>Fuel Intake / Tank</option><option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Class <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt.</span></label>
+            <select class="form-select" id="pq-comp-class">
+              <option value="">Any</option>
+              <option>Stealth</option><option>Military</option><option>Competition</option>
+              <option>Civilian</option><option>Industrial</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Grade <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt.</span></label>
+            <select class="form-select" id="pq-comp-grade">
+              <option value="">Any</option>
+              <option value="A">A</option><option value="B">B</option>
+              <option value="C">C</option><option value="D">D</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Size <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt.</span></label>
+            <select class="form-select" id="pq-comp-size">
+              <option value="">Any</option>
+              <option value="S0">0</option><option value="S1">1</option><option value="S2">2</option>
+              <option value="S3">3</option><option value="S4">4</option><option value="S5">5</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantity</label>
+            <input class="form-input" id="pq-comp-qty" type="number" min="1" value="1">
+          </div>
         </div>
         <div class="form-group">
-          <label class="form-label">DKP / Unit</label>
-          <input class="form-input" id="pq-item-dkp" type="number" min="0" value="0" placeholder="0 = unassigned">
+          <label class="form-label">Specific item <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt. — e.g. "Kroneg FL-33"</span></label>
+          <input class="form-input" id="pq-comp-name" type="text" placeholder="Leave blank to accept any matching spec">
         </div>
-        <div class="form-group">
-          <label class="form-label">List for Sale (DKP) <span style="font-size:0.5rem;color:var(--color-text-tertiary);">opt.</span></label>
-          <input class="form-input" id="pq-item-price" type="number" min="0" placeholder="0 = no listing">
+      </div>
+
+      <!-- Material fields -->
+      <div id="pq-ic-material" style="display:none;">
+        <div class="form-row">
+          <div class="form-group" style="flex:2;">
+            <label class="form-label">Material Type</label>
+            <select class="form-select" id="pq-mat-type"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Min. Quality</label>
+            <input class="form-input" id="pq-mat-quality" type="number" min="1" max="1000" value="1" placeholder="1–1000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantity (cSCU)</label>
+            <input class="form-input" id="pq-mat-qty" type="number" min="1" value="1">
+          </div>
         </div>
       </div>
     </div>
@@ -1509,8 +1555,7 @@ function fmtQty(cSCU){if(cSCU<100)return cSCU+' cSCU';return+(cSCU/100).toFixed(
 const GRADE_TEXT={A:'A',B:'B',C:'C',D:'D',AAA:'Pristine AAA',AA:'Grade AA',Pure:'Pure',Irradiated:'Irradiated'};
 const BP_STATUS={owned:'Owned',researching:'Researching',wanted:'Wanted'};
 const BP_CLASS={owned:'bp-owned',researching:'bp-researching',wanted:'bp-wanted'};
-const WK_TYPE_LBL={favor:'Favor',rare:'Rare Resource',currency:'Special Currency',loot:'Mission Loot'};
-const WK_TYPE_CLS={favor:'wk-favor',rare:'wk-rare',currency:'wk-currency',loot:'wk-loot'};
+// WK_TYPE_LBL / WK_TYPE_CLS removed — item type distinction deprecated
 
 function populateOreDropdowns(){
   const opts='<option value="">Any ore</option>'+ORE_LIST.map(o=>`<option value="${o}">${o}</option>`).join('');
@@ -1584,7 +1629,7 @@ function resetFilters(tab){
     document.getElementById('range-display').textContent='1 – 1000';
   }
   if(tab==='blueprint'){document.getElementById('ff-bp-unlocked').checked=true;document.getElementById('ff-bp-locked').checked=true;}
-  if(tab==='wikelo'){document.getElementById('ff-wk-recipe').value='';document.getElementById('ff-wk-type').value='';}
+  if(tab==='wikelo'){document.getElementById('ff-wk-recipe').value='';}
   render();
 }
 function updateSummary(id,tags){
@@ -1614,7 +1659,7 @@ function render(){
   const cf={fn:document.getElementById('ff-function').value,cls:document.getElementById('ff-class').value,grade:document.getElementById('ff-grade').value,size:document.getElementById('ff-size').value};
   const mf={t1:document.getElementById('ff-mat1').value,t2:document.getElementById('ff-mat2').value,t3:document.getElementById('ff-mat3').value};
   const bpU=document.getElementById('ff-bp-unlocked').checked,bpL=document.getElementById('ff-bp-locked').checked;
-  const wkRI=document.getElementById('ff-wk-recipe').value,wkT=document.getElementById('ff-wk-type').value;
+  const wkRI=document.getElementById('ff-wk-recipe').value,wkT='';
   let rSet=null;if(wkRI!==''){const r=wkRecipes[parseInt(wkRI)];if(r)rSet=r.items.map(s=>s.toLowerCase());}
 
   // DKP banner
@@ -1698,7 +1743,7 @@ function render(){
       return`<div class="card cat-wikelo" onclick="openDetail('${it.id}')">
         <div class="card-cat">Loot</div>
         <div class="card-name">${it.name}</div>
-        <div class="card-sub" style="display:flex;align-items:center;gap:6px;">${WK_TYPE_LBL[it.wkType]||''}${dkpEl}</div>
+        <div class="card-sub" style="display:flex;align-items:center;gap:6px;">${dkpEl}</div>
         <div style="font-size:11px;color:#9e9b96;margin-top:6px;">×${it.wkQty} held</div>
         ${totDkp>0?`<div style="margin-top:6px;"><span class="dkp-total-badge">${totDkp} DKP held</span></div>`:''}
         ${listingHTML}
@@ -1764,7 +1809,7 @@ function openAddModal(){
   document.getElementById('f-wk-dkp').value=0;
   document.getElementById('f-cat').value=activeTab;
   ['f-grade','f-size','f-function','f-class'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-bp-status').value='owned';document.getElementById('f-wk-type').value='favor';
+  document.getElementById('f-bp-status').value='owned';
   document.getElementById('f-listing-type').value='none'; onListingTypeChange();
   onCatChange();document.getElementById('addModal').classList.add('open');
 }
@@ -1781,7 +1826,6 @@ async function submitItem(){
   else if(cat==='material'){item.oreType=document.getElementById('f-mat-type').value;item.name=item.oreType;item.quality=Math.max(1,Math.min(1000,parseInt(document.getElementById('f-mat-quality').value)||1));item.qty=parseInt(document.getElementById('f-mat-qty').value)||1;item.owner=document.getElementById('f-mat-owner').value.trim();}
   else if(cat==='blueprint'){item.bpOutput=document.getElementById('f-bp-output').value.trim();item.bpStatus=document.getElementById('f-bp-status').value;item.bpRuns=parseInt(document.getElementById('f-bp-runs').value)||0;item.bpHolder=document.getElementById('f-bp-holder').value.trim();}
   else if(cat==='wikelo'){
-    item.wkType=document.getElementById('f-wk-type').value;
     item.wkQty=parseInt(document.getElementById('f-wk-qty').value)||0;
     item.wkDkp=parseInt(document.getElementById('f-wk-dkp').value)||0;
     item.wkHolder=document.getElementById('f-wk-holder').value.trim();
@@ -1810,7 +1854,7 @@ function openDetail(id){
   let badge='';
   if(it.cat==='component'){if(it.compClass)badge+=`<span class="class-badge class-${it.compClass}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">${it.compClass}</span>`;if(it.grade)badge+=`<span class="grade-badge grade-${it.grade}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">Grade ${it.grade}</span>`;if(it.size)badge+=`<span class="size-badge" style="display:inline-block;margin-bottom:10px;">${it.size}</span>`;}
   else if(it.cat==='blueprint'){badge=`<span class="bp-status ${BP_CLASS[it.bpStatus]}" style="display:inline-block;margin-bottom:10px;">${BP_STATUS[it.bpStatus]}</span>`;}
-  else if(it.cat==='wikelo'){badge=`<span class="wk-type-badge ${WK_TYPE_CLS[it.wkType]}" style="display:inline-block;margin-bottom:10px;">${WK_TYPE_LBL[it.wkType]}</span>`;if(it.wkDkp)badge+=` <span class="dkp-badge" style="display:inline-block;margin-bottom:10px;margin-left:4px;">${it.wkDkp} DKP / unit</span>`;}
+  else if(it.cat==='wikelo'){if(it.wkDkp)badge=`<span class="dkp-badge" style="display:inline-block;margin-bottom:10px;">${it.wkDkp} DKP / unit</span>`;}
   document.getElementById('d-badge').innerHTML=badge;
   let info='';
   if(it.cat==='component'){info=`<div class="info-item"><div class="label">Type</div><div class="value">${it.function||'—'}</div></div><div class="info-item"><div class="label">Class</div><div class="value">${it.compClass||'—'}</div></div><div class="info-item"><div class="label">Grade</div><div class="value">${it.grade?'Grade '+it.grade:'—'}</div></div><div class="info-item"><div class="label">Size</div><div class="value">${it.size||'—'}</div></div><div class="info-item"><div class="label">Quantity</div><div class="value">${it.qty}</div></div><div class="info-item"><div class="label">Owner / Location</div><div class="value">${it.owner||'—'}</div></div>`;}
@@ -1835,7 +1879,6 @@ function editItem(id){
   else if(it.cat==='material'){document.getElementById('f-mat-type').value=it.oreType||'';document.getElementById('f-mat-quality').value=it.quality||'';document.getElementById('f-mat-qty').value=it.qty;document.getElementById('f-mat-owner').value=it.owner||'';}
   else if(it.cat==='blueprint'){document.getElementById('f-bp-output').value=it.bpOutput||'';document.getElementById('f-bp-status').value=it.bpStatus||'owned';document.getElementById('f-bp-runs').value=it.bpRuns||0;document.getElementById('f-bp-holder').value=it.bpHolder||'';}
   else if(it.cat==='wikelo'){
-    document.getElementById('f-wk-type').value=it.wkType||'favor';
     document.getElementById('f-wk-qty').value=it.wkQty||0;
     document.getElementById('f-wk-dkp').value=it.wkDkp||0;
     document.getElementById('f-wk-holder').value=it.wkHolder||'';
@@ -1872,7 +1915,7 @@ function openBuyConfirm(itemId) {
   if (!it || it.listingType !== 'sale') return;
   _buyItemId = itemId;
   document.getElementById('buy-item-name').textContent = it.name;
-  document.getElementById('buy-item-desc').textContent = WK_TYPE_LBL[it.wkType] || '';
+  document.getElementById('buy-item-desc').textContent = it.wkDkp ? `${it.wkDkp} DKP / unit` : '';
   document.getElementById('buy-price').textContent = it.listingPrice + ' DKP';
   document.getElementById('buy-balance-line').textContent =
     `Your balance: ${authMember.dkp_balance} DKP  →  ${authMember.dkp_balance - it.listingPrice} DKP after purchase`;
@@ -2486,16 +2529,32 @@ function renderQuests(grid) {
       : '';
     // Type-specific metadata tags
     let metaHTML = '';
-    if (isItem && q.item_name) {
-      const wkLbl = {favor:'Favor',rare:'Rare Resource',currency:'Special Currency',loot:'Mission Loot'}[q.item_wk_type] || 'Favor';
-      const tags = [
-        `<span class="quest-meta-tag">📦 ${esc(q.item_name)}</span>`,
-        q.item_qty > 1 ? `<span class="quest-meta-tag">×${q.item_qty}</span>` : '',
-        `<span class="quest-meta-tag">${wkLbl}</span>`,
-        q.item_dkp > 0 ? `<span class="quest-meta-tag">${q.item_dkp} DKP/unit</span>` : '',
-        q.item_listing_type === 'sale' ? `<span class="quest-meta-tag" style="color:#5a9e3f;">For Sale ${q.item_listing_price} DKP</span>` : '',
-      ].filter(Boolean).join('');
-      metaHTML = `<div class="quest-meta">${tags}</div>`;
+    if (isItem) {
+      const cat = q.item_cat || 'wikelo';
+      let tags = '';
+      if (cat === 'wikelo' && q.item_name) {
+        tags = [
+          `<span class="quest-meta-tag">📦 ${esc(q.item_name)}</span>`,
+          q.item_qty > 1 ? `<span class="quest-meta-tag">×${q.item_qty}</span>` : '',
+          q.item_dkp > 0 ? `<span class="quest-meta-tag">${q.item_dkp} DKP/unit</span>` : '',
+          q.item_listing_type === 'sale' ? `<span class="quest-meta-tag" style="color:#5a9e3f;">For Sale ${q.item_listing_price} DKP</span>` : '',
+        ].filter(Boolean).join('');
+      } else if (cat === 'component') {
+        const spec = [q.item_comp_function, q.item_comp_class, q.item_comp_grade ? 'Grade '+q.item_comp_grade : '', q.item_comp_size ? 'Size '+q.item_comp_size.replace('S','') : ''].filter(Boolean).join(' · ');
+        tags = [
+          `<span class="quest-meta-tag">⚙ Component</span>`,
+          spec ? `<span class="quest-meta-tag">${esc(spec)}</span>` : '',
+          q.item_name ? `<span class="quest-meta-tag">${esc(q.item_name)}</span>` : '',
+          q.item_qty > 1 ? `<span class="quest-meta-tag">×${q.item_qty}</span>` : '',
+        ].filter(Boolean).join('');
+      } else if (cat === 'material') {
+        tags = [
+          `<span class="quest-meta-tag">🪨 ${esc(q.item_mat_type || 'Material')}</span>`,
+          q.item_mat_min_quality > 1 ? `<span class="quest-meta-tag">Min. Quality ${q.item_mat_min_quality}</span>` : '',
+          q.item_qty ? `<span class="quest-meta-tag">${q.item_qty} cSCU</span>` : '',
+        ].filter(Boolean).join('');
+      }
+      if (tags) metaHTML = `<div class="quest-meta">${tags}</div>`;
     } else {
       const tags = [
         q.faction  ? `<span class="quest-meta-tag">🎯 ${esc(q.faction)}</span>`  : '',
@@ -2520,11 +2579,17 @@ function renderQuests(grid) {
 // ── Post Quest (officers / admins) ──
 function openPostQuestModal() {
   if (!isOfficer && !isAdmin) return;
-  ['pq-title','pq-desc','pq-dkp','pq-faction','pq-location','pq-goal','pq-item-name','pq-item-price']
+  ['pq-title','pq-desc','pq-dkp','pq-faction','pq-location','pq-goal',
+   'pq-item-name','pq-item-price','pq-comp-name','pq-comp-function','pq-comp-class','pq-comp-grade','pq-comp-size']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.getElementById('pq-item-qty').value    = '1';
-  document.getElementById('pq-item-dkp').value    = '0';
-  document.getElementById('pq-item-wktype').value = 'favor';
+  document.getElementById('pq-item-qty').value  = '1';
+  document.getElementById('pq-item-dkp').value  = '0';
+  document.getElementById('pq-comp-qty').value  = '1';
+  document.getElementById('pq-mat-qty').value   = '1';
+  document.getElementById('pq-mat-quality').value = '1';
+  document.getElementById('pq-item-cat').value  = 'wikelo';
+  pqItemCatChange();
+  populatePqMatType();
   document.getElementById('pq-error').style.display = 'none';
   document.getElementById('pq-btn').disabled = false;
   document.getElementById('pq-btn').textContent = 'Post Quest';
@@ -2541,6 +2606,23 @@ function pqTypeChange(type) {
   document.getElementById('pq-item-fields').style.display   = type === 'item'   ? '' : 'none';
 }
 
+function pqItemCatChange() {
+  const cat = document.getElementById('pq-item-cat').value;
+  document.getElementById('pq-ic-wikelo').style.display    = cat === 'wikelo'    ? '' : 'none';
+  document.getElementById('pq-ic-component').style.display = cat === 'component' ? '' : 'none';
+  document.getElementById('pq-ic-material').style.display  = cat === 'material'  ? '' : 'none';
+}
+
+// Populate material type dropdown in quest modal from the same ore list used by add-item
+function populatePqMatType() {
+  const src = document.getElementById('f-mat-type');
+  const dst = document.getElementById('pq-mat-type');
+  if (!src || !dst || dst.options.length > 0) return;
+  Array.from(src.options).forEach(o => {
+    dst.appendChild(new Option(o.text, o.value));
+  });
+}
+
 async function submitNewQuest() {
   if (!isOfficer && !isAdmin) return;
   const questType = document.getElementById('pq-type').value;
@@ -2553,9 +2635,16 @@ async function submitNewQuest() {
     errEl.textContent = 'Quest title and a positive DKP reward are required.';
     errEl.style.display = 'block'; return;
   }
-  if (questType === 'item' && !document.getElementById('pq-item-name').value.trim()) {
-    errEl.textContent = 'Item quests require an item name.';
-    errEl.style.display = 'block'; return;
+  const itemCat = document.getElementById('pq-item-cat')?.value || 'wikelo';
+  if (questType === 'item') {
+    if (itemCat === 'wikelo' && !document.getElementById('pq-item-name').value.trim()) {
+      errEl.textContent = 'Loot item quests require an item name.';
+      errEl.style.display = 'block'; return;
+    }
+    if (itemCat === 'material' && !document.getElementById('pq-mat-type').value) {
+      errEl.textContent = 'Material quests require a material type.';
+      errEl.style.display = 'block'; return;
+    }
   }
 
   if (!authUser && isAdmin) {
@@ -2581,13 +2670,26 @@ async function submitNewQuest() {
     insert.location = document.getElementById('pq-location').value.trim() || null;
     insert.goal     = document.getElementById('pq-goal').value.trim()     || null;
   } else {
-    const itemPrice = parseInt(document.getElementById('pq-item-price').value) || 0;
-    insert.item_name          = document.getElementById('pq-item-name').value.trim();
-    insert.item_wk_type       = document.getElementById('pq-item-wktype').value;
-    insert.item_qty           = parseInt(document.getElementById('pq-item-qty').value) || 1;
-    insert.item_dkp           = parseInt(document.getElementById('pq-item-dkp').value) || 0;
-    insert.item_listing_type  = itemPrice > 0 ? 'sale' : 'none';
-    insert.item_listing_price = itemPrice > 0 ? itemPrice : null;
+    insert.item_cat = itemCat;
+    if (itemCat === 'wikelo') {
+      const itemPrice = parseInt(document.getElementById('pq-item-price').value) || 0;
+      insert.item_name          = document.getElementById('pq-item-name').value.trim();
+      insert.item_qty           = parseInt(document.getElementById('pq-item-qty').value) || 1;
+      insert.item_dkp           = parseInt(document.getElementById('pq-item-dkp').value) || 0;
+      insert.item_listing_type  = itemPrice > 0 ? 'sale' : 'none';
+      insert.item_listing_price = itemPrice > 0 ? itemPrice : null;
+    } else if (itemCat === 'component') {
+      insert.item_name           = document.getElementById('pq-comp-name').value.trim() || null;
+      insert.item_comp_function  = document.getElementById('pq-comp-function').value  || null;
+      insert.item_comp_class     = document.getElementById('pq-comp-class').value     || null;
+      insert.item_comp_grade     = document.getElementById('pq-comp-grade').value     || null;
+      insert.item_comp_size      = document.getElementById('pq-comp-size').value      || null;
+      insert.item_qty            = parseInt(document.getElementById('pq-comp-qty').value) || 1;
+    } else if (itemCat === 'material') {
+      insert.item_mat_type        = document.getElementById('pq-mat-type').value;
+      insert.item_mat_min_quality = parseInt(document.getElementById('pq-mat-quality').value) || 1;
+      insert.item_qty             = parseInt(document.getElementById('pq-mat-qty').value) || 1;
+    }
   }
 
   try {
@@ -2770,20 +2872,40 @@ async function confirmApprove(subId) {
     ]);
 
     // 4. If this is an item quest, add the deposited item to inventory
-    if (quest?.quest_type === 'item' && quest?.item_name) {
-      const itemPrice = quest.item_listing_type === 'sale' ? quest.item_listing_price : null;
-      const { data: newItem } = await sb.from('wikelo_items').insert({
-        name:              quest.item_name,
-        wk_type:           quest.item_wk_type  || 'favor',
-        wk_qty:            quest.item_qty       || 1,
-        wk_dkp:            quest.item_dkp       || 0,
-        listing_type:      quest.item_listing_type  || 'none',
-        listing_price_dkp: itemPrice,
-      }).select().single();
-      if (newItem) {
-        items.push(fromDB(newItem, 'wikelo'));
-        if (activeSection === 'inventory') render();
+    if (quest?.quest_type === 'item') {
+      const itemCat = quest.item_cat || 'wikelo';
+      let newItem = null;
+      if (itemCat === 'wikelo' && quest.item_name) {
+        const { data } = await sb.from('wikelo_items').insert({
+          name:              quest.item_name,
+          wk_qty:            quest.item_qty  || 1,
+          wk_dkp:            quest.item_dkp  || 0,
+          listing_type:      quest.item_listing_type  || 'none',
+          listing_price_dkp: quest.item_listing_type === 'sale' ? quest.item_listing_price : null,
+        }).select().single();
+        if (data) { items.push(fromDB(data, 'wikelo')); newItem = data; }
+      } else if (itemCat === 'component') {
+        const compName = quest.item_name ||
+          [quest.item_comp_function, quest.item_comp_grade ? 'Grade '+quest.item_comp_grade : ''].filter(Boolean).join(' ') || 'Component';
+        const { data } = await sb.from('components').insert({
+          name:       compName,
+          function:   quest.item_comp_function || null,
+          comp_class: quest.item_comp_class    || null,
+          grade:      quest.item_comp_grade    || null,
+          size:       quest.item_comp_size     || null,
+          qty:        quest.item_qty           || 1,
+        }).select().single();
+        if (data) { items.push(fromDB(data, 'component')); newItem = data; }
+      } else if (itemCat === 'material') {
+        const { data } = await sb.from('materials').insert({
+          name:     quest.item_mat_type || 'Material',
+          ore_type: quest.item_mat_type || null,
+          quality:  quest.item_mat_min_quality || 1,
+          qty:      quest.item_qty || 1,
+        }).select().single();
+        if (data) { items.push(fromDB(data, 'material')); newItem = data; }
       }
+      if (newItem && activeSection === 'inventory') render();
     }
 
     // 5. Update local state — no page reload needed
