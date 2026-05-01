@@ -322,6 +322,13 @@
   .lp-deny { flex: 1; padding: 0.3rem 0; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: 0.5px solid #7a2020; border-radius: var(--border-radius-md); color: #c44a4a; cursor: pointer; }
   .lp-deny:hover:not(:disabled) { background: #2e1010; }
   .lp-deny:disabled { opacity: 0.45; cursor: default; }
+  /* ── Quest pending panel ── */
+  #quest-body-row { display: flex; gap: 1rem; align-items: flex-start; }
+  #quest-main { flex: 1; min-width: 0; }
+  #quest-pending-panel { display: none; width: 17rem; flex-shrink: 0; }
+  #quest-body-row.has-panel #quest-pending-panel { display: block; }
+  .lp-type-turnin { color: #c47a2a; }
+
   .listing-price { font-size: 0.875rem; font-weight: 500; color: #a89cf7; margin-bottom: 0.375rem; }
   .listing-meta  { font-size: 0.69rem; color: var(--color-text-secondary); margin-bottom: 0.3rem; line-height: 1.4; }
   .listing-end   { font-size: 0.625rem; color: var(--color-text-tertiary); margin-bottom: 0.375rem; }
@@ -517,14 +524,14 @@
         </div>
       </div>
       <div class="dual-range">
-        <span class="dual-range-label">Quality / Purity: <span class="dual-range-value" id="range-display">1 – 1000</span></span>
+        <span class="dual-range-label">Quality / Purity: <span class="dual-range-value" id="range-display">0 – 999</span></span>
         <div class="dual-range-track-wrap" id="rangeTrack">
           <div class="dual-range-bg"></div>
           <div class="dual-range-fill" id="rangeFill"></div>
           <div class="dual-thumb" id="thumbMin"></div>
           <div class="dual-thumb" id="thumbMax"></div>
         </div>
-        <div class="dual-range-ends"><span>1</span><span>1000</span></div>
+        <div class="dual-range-ends"><span>0</span><span>999</span></div>
       </div>
       <button class="filter-reset" onclick="resetFilters('material')">Reset</button>
     </div>
@@ -659,8 +666,13 @@
       </div>
     </div>
 
-    <div class="result-count" id="org-result-count"></div>
-    <div id="org-grid" class="org-grid"></div>
+    <div id="quest-body-row">
+      <div id="quest-main">
+        <div class="result-count" id="org-result-count"></div>
+        <div id="org-grid" class="org-grid"></div>
+      </div>
+      <div id="quest-pending-panel"></div>
+    </div>
 
   </div><!-- end section-org -->
 
@@ -740,8 +752,8 @@
           <select class="form-select" id="f-mat-type"></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Quality / Purity (1–1000)</label>
-          <input class="form-input" id="f-mat-quality" type="number" min="1" max="1000" placeholder="e.g. 450" oninput="let v=parseInt(this.value);if(v>1000)this.value=1000;else if(v<1&&this.value!=='')this.value=1;">
+          <label class="form-label">Quality / Purity (0–999)</label>
+          <input class="form-input" id="f-mat-quality" type="number" min="0" max="999" placeholder="e.g. 450" oninput="let v=parseInt(this.value);if(v>999)this.value=999;else if(v<0&&this.value!=='')this.value=0;">
         </div>
       </div>
       <div class="form-row">
@@ -1018,7 +1030,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Min. Quality</label>
-            <input class="form-input" id="pq-mat-quality" type="number" min="1" max="1000" value="1" placeholder="1–1000">
+            <input class="form-input" id="pq-mat-quality" type="number" min="0" max="999" value="0" placeholder="0–999">
           </div>
           <div class="form-group">
             <label class="form-label">Quantity (cSCU)</label>
@@ -1431,8 +1443,8 @@ let wkRecipes = [];
 // STATE
 // ============================================================
 let items = [];
-let activeTab='component',editId=null,rangeMin=1,rangeMax=1000;
-const RANGE_LO=1,RANGE_HI=1000;
+let activeTab='component',editId=null,rangeMin=0,rangeMax=999;
+const RANGE_LO=0,RANGE_HI=999;
 
 // ============================================================
 // LOADING & ERROR UI
@@ -1626,7 +1638,7 @@ function resetFilters(tab){
     rangeMin=RANGE_LO;rangeMax=RANGE_HI;
     document.getElementById('thumbMin').style.left='0%';document.getElementById('thumbMax').style.left='100%';
     document.getElementById('rangeFill').style.left='0%';document.getElementById('rangeFill').style.width='100%';
-    document.getElementById('range-display').textContent='1 – 1000';
+    document.getElementById('range-display').textContent='0 – 999';
   }
   if(tab==='blueprint'){document.getElementById('ff-bp-unlocked').checked=true;document.getElementById('ff-bp-locked').checked=true;}
   if(tab==='wikelo'){document.getElementById('ff-wk-recipe').value='';}
@@ -2210,6 +2222,75 @@ function updateOrgStats() {
     <div class="stat"><div class="stat-label">Certs Awarded</div><div class="stat-value" style="color:#7eb8f7">${orgCerts.length}</div></div>`;
 }
 
+// ── Quest pending panel ────────────────────────────────────────────────────────
+function renderQuestPending() {
+  const panel = document.getElementById('quest-pending-panel');
+  if (!panel) return;
+
+  if (!orgSubmissions.length) {
+    panel.innerHTML = `<div class="lp-panel-box">
+      <div class="lp-panel-hdr">Pending Turn-Ins</div>
+      <div class="lp-empty">No pending submissions.</div>
+    </div>`;
+    return;
+  }
+
+  const cards = orgSubmissions.map(s => {
+    const memberName = s.members?.display_name || s.members?.username || s.member_id;
+    const questTitle = s.quests?.title || '—';
+    const dkpAmt     = s.quests?.dkp_reward || 0;
+    const dateStr    = s.submitted_at
+      ? new Date(s.submitted_at).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+      : '';
+    return `<div class="lp-card">
+      <div class="lp-type lp-type-turnin">Turn-In</div>
+      <div class="lp-item">${esc(questTitle)}</div>
+      <div class="lp-who">by ${esc(memberName)}</div>
+      ${s.notes ? `<div class="lp-who" style="font-style:italic;">"${esc(s.notes)}"</div>` : ''}
+      <div class="lp-amount">${dkpAmt} DKP</div>
+      <div class="lp-date">${dateStr} ET</div>
+      <div class="lp-actions" id="qp-actions-${esc(s.id)}">
+        <button class="lp-approve" onclick="expandQuestApprove('${esc(s.id)}',${dkpAmt})">Approve</button>
+        <button class="lp-deny"    onclick="denySubmission('${esc(s.id)}')">Deny</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `<div class="lp-panel-box">
+    <div class="lp-panel-hdr">Pending Turn-Ins <span style="color:#c47a2a;font-weight:600;">${orgSubmissions.length}</span></div>
+    ${cards}
+  </div>`;
+}
+
+function expandQuestApprove(subId, defaultDkp) {
+  const el = document.getElementById('qp-actions-' + subId);
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0.375rem;width:100%;">
+      <div style="display:flex;align-items:center;gap:0.375rem;">
+        <input id="qp-dkp-${subId}" type="number" value="${defaultDkp}" min="0"
+          style="flex:1;padding:0.25rem 0.5rem;font-family:var(--font-mono);font-size:0.69rem;font-weight:500;
+                 background:var(--color-background-primary);border:0.5px solid #2dbd8f;
+                 border-radius:var(--border-radius-md);color:#2dbd8f;text-align:center;"
+          onkeydown="if(event.key==='Enter')confirmApprove('${subId}');if(event.key==='Escape')cancelQuestApprove('${subId}',${defaultDkp})">
+        <span style="font-size:0.5rem;color:#9e9b96;">DKP</span>
+      </div>
+      <div class="lp-actions" style="margin-top:0;">
+        <button class="lp-approve" onclick="confirmApprove('${subId}')">Confirm</button>
+        <button class="lp-deny"    onclick="cancelQuestApprove('${subId}',${defaultDkp})">✕</button>
+      </div>
+    </div>`;
+  document.getElementById('qp-dkp-' + subId)?.select();
+}
+
+function cancelQuestApprove(subId, defaultDkp) {
+  const el = document.getElementById('qp-actions-' + subId);
+  if (!el) return;
+  el.innerHTML = `
+    <button class="lp-approve" onclick="expandQuestApprove('${subId}',${defaultDkp})">Approve</button>
+    <button class="lp-deny"    onclick="denySubmission('${subId}')">Deny</button>`;
+}
+
 // ── Org tab switcher ──
 function setOrgTab(t) {
   activeOrgTab = t;
@@ -2233,6 +2314,15 @@ function renderOrg() {
   else if (activeOrgTab==='leaderboard')  renderLeaderboard(grid);
   else if (activeOrgTab==='certifications') renderCertifications(grid);
   else if (activeOrgTab==='quests')       renderQuests(grid);
+
+  // Quest pending panel — officers only, quests tab only
+  const questRow = document.getElementById('quest-body-row');
+  if (questRow) {
+    const showPanel = activeOrgTab === 'quests' && (isOfficer || isAdmin);
+    questRow.classList.toggle('has-panel', showPanel);
+    if (showPanel) renderQuestPending();
+    else { const p = document.getElementById('quest-pending-panel'); if (p) p.innerHTML = ''; }
+  }
 }
 
 // ── Members ──
@@ -2471,39 +2561,6 @@ function renderQuests(grid) {
   );
   document.getElementById('org-result-count').textContent = list.length ? `${list.length} quest${list.length!==1?'s':''}` : '';
 
-  // ── Pending submissions panel (officers / admins only) ──────────────────────
-  let submissionsHTML = '';
-  if ((isOfficer || isAdmin) && orgSubmissions.length) {
-    const canApprove = isOfficer; // requires real Discord officer JWT for RLS
-    const cards = orgSubmissions.map(s => {
-      const memberName = s.members?.display_name || s.members?.username || s.member_id;
-      const questTitle = s.quests?.title || '—';
-      const dkpAmt     = s.quests?.dkp_reward || 0;
-      const dateStr    = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
-      const actionHTML = canApprove
-        ? `<button class="approve-btn" onclick="expandApprove('${esc(s.id)}',${dkpAmt})">Approve +${dkpAmt} DKP</button>
-           <button class="deny-btn"    onclick="denySubmission('${esc(s.id)}')">Deny</button>`
-        : `<span style="font-size:10px;color:#6b6864;align-self:center;">Sign in as officer to approve</span>`;
-      return `<div class="submission-card">
-        <div class="submission-meta">
-          <div class="submission-member">${esc(memberName)}</div>
-          <div class="submission-quest">Quest: ${esc(questTitle)}</div>
-          ${s.notes ? `<div class="submission-notes">"${esc(s.notes)}"</div>` : ''}
-          <div class="submission-date">${dateStr}</div>
-        </div>
-        <div id="sub-actions-${esc(s.id)}" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
-          ${actionHTML}
-        </div>
-      </div>`;
-    }).join('');
-    submissionsHTML = `<div style="grid-column:1/-1;margin-bottom:1.25rem;">
-      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#c47a2a;margin-bottom:8px;font-weight:500;">
-        ⏳ Pending Turn-Ins (${orgSubmissions.length})
-      </div>
-      <div class="submission-list">${cards}</div>
-    </div>`;
-  }
-
   // ── Officer toolbar ─────────────────────────────────────────────────────────
   const canPost = isOfficer || isAdmin;
   const toolbarHTML = canPost
@@ -2514,10 +2571,10 @@ function renderQuests(grid) {
 
   grid.className = 'org-grid';
   if (!list.length) {
-    grid.innerHTML = submissionsHTML + toolbarHTML + '<div class="empty" style="grid-column:1/-1;">No quests found.</div>';
+    grid.innerHTML = toolbarHTML + '<div class="empty" style="grid-column:1/-1;">No quests found.</div>';
     return;
   }
-  grid.innerHTML = submissionsHTML + toolbarHTML + list.map(q => {
+  grid.innerHTML = toolbarHTML + list.map(q => {
     const statusCls = {open:'q-open',completed:'q-completed',closed:'q-closed'}[q.status]||'q-closed';
     const statusTxt = {open:'Open',completed:'Completed',closed:'Closed'}[q.status]||q.status;
     const isItem    = q.quest_type === 'item';
@@ -2798,50 +2855,20 @@ async function submitTurnIn() {
   }
 }
 
-// ── Approve flow: expand button into editable DKP input ──────────────────────
-function expandApprove(subId, defaultDkp) {
-  const el = document.getElementById('sub-actions-' + subId);
-  if (!el) return;
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
-      <div style="display:flex;align-items:center;gap:5px;">
-        <input id="sub-dkp-${subId}" type="number" value="${defaultDkp}" min="0"
-          style="width:64px;padding:4px 7px;font-family:var(--font-mono);font-size:12px;font-weight:500;
-                 background:var(--color-background-primary);border:0.5px solid #2dbd8f;
-                 border-radius:var(--border-radius-md);color:#2dbd8f;text-align:center;"
-          onkeydown="if(event.key==='Enter')confirmApprove('${subId}');if(event.key==='Escape')cancelApprove('${subId}',${defaultDkp})">
-        <span style="font-size:10px;color:#9e9b96;">DKP</span>
-      </div>
-      <div style="display:flex;gap:5px;">
-        <button class="approve-btn" onclick="confirmApprove('${subId}')">Confirm</button>
-        <button class="deny-btn" style="padding:5px 10px;" onclick="cancelApprove('${subId}',${defaultDkp})">✕</button>
-      </div>
-    </div>`;
-  document.getElementById('sub-dkp-' + subId)?.select();
-}
-
-function cancelApprove(subId, defaultDkp) {
-  const el = document.getElementById('sub-actions-' + subId);
-  if (!el) return;
-  el.innerHTML = `
-    <button class="approve-btn" onclick="expandApprove('${subId}',${defaultDkp})">Approve +${defaultDkp} DKP</button>
-    <button class="deny-btn"    onclick="denySubmission('${subId}')">Deny</button>`;
-}
-
 // ── Confirm approval with (possibly edited) DKP amount ───────────────────────
 async function confirmApprove(subId) {
   if (!isOfficer) { showError('Only Discord-authenticated officers can approve submissions.'); return; }
   const sub = orgSubmissions.find(s => s.id === subId);
   if (!sub) return;
 
-  const dkpInput   = document.getElementById('sub-dkp-' + subId);
+  const dkpInput   = document.getElementById('qp-dkp-' + subId);
   const dkpAmt     = Math.max(0, parseInt(dkpInput?.value) || 0);
   const quest      = orgQuests.find(q => q.id === sub.quest_id);
   const questTitle = quest?.title || sub.quests?.title || 'Quest';
 
   // Lock the action area while working
-  const actEl = document.getElementById('sub-actions-' + subId);
-  if (actEl) actEl.innerHTML = `<span style="font-size:11px;color:#9e9b96;">Working…</span>`;
+  const actEl = document.getElementById('qp-actions-' + subId);
+  if (actEl) actEl.innerHTML = `<span style="font-size:0.625rem;color:#9e9b96;">Working…</span>`;
 
   try {
     // 1. Fetch current member balance
@@ -2930,8 +2957,8 @@ async function confirmApprove(subId) {
     // Restore the expand state so officer can retry
     if (actEl) {
       actEl.innerHTML = `
-        <button class="approve-btn" onclick="expandApprove('${subId}',${dkpAmt})">Approve +${dkpAmt} DKP</button>
-        <button class="deny-btn" onclick="denySubmission('${subId}')">Deny</button>`;
+        <button class="lp-approve" onclick="expandQuestApprove('${subId}',${dkpAmt})">Approve</button>
+        <button class="lp-deny"    onclick="denySubmission('${subId}')">Deny</button>`;
     }
   }
 }
