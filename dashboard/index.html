@@ -38,7 +38,7 @@
   /* ── Sidebar ── */
   .sidebar { width: 188px; min-width: 188px; flex-shrink: 0; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
   .sidebar-logo { padding: 1.5rem 1.25rem 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
-  .sidebar-logo-img { width: 88px; height: 88px; object-fit: contain; display: block; margin-bottom: 14px; }
+  .sidebar-logo-img { width: 88px; height: 88px; object-fit: cover; display: block; margin-bottom: 14px; border-radius: 50%; }
   .sidebar-logo-text { font-size: 14px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3; }
   .sidebar-nav { padding: 0.6rem 0; flex: 1; }
   .sidebar-section-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.75rem 1.25rem 0.3rem; }
@@ -264,6 +264,22 @@
   .cert-tags { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
   .cert-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: #1a2a3a; color: #7eb8f7; font-weight: 500; }
 
+  /* ── Loot listing ── */
+  .listing-strip { margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .listing-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 5px; }
+  .listing-label-sale    { color: #5a9e3f; }
+  .listing-label-auction { color: #c47a2a; }
+  .listing-label-sold    { color: var(--color-text-tertiary); }
+  .listing-price { font-size: 14px; font-weight: 500; color: #a89cf7; margin-bottom: 6px; }
+  .listing-meta  { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 5px; line-height: 1.4; }
+  .listing-end   { font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 6px; }
+  .buy-btn  { padding: 5px 12px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: #1e2e14; border: 0.5px solid #5a9e3f; border-radius: var(--border-radius-md); color: #5a9e3f; cursor: pointer; white-space: nowrap; }
+  .buy-btn:hover  { opacity: 0.85; }
+  .bid-btn  { padding: 5px 12px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: #2e1e0a; border: 0.5px solid #c47a2a; border-radius: var(--border-radius-md); color: #c47a2a; cursor: pointer; white-space: nowrap; }
+  .bid-btn:hover  { opacity: 0.85; }
+  .listing-section-divider { margin-top: 14px; padding-top: 12px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .listing-section-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
   /* ── Submission cards ── */
   .submission-list { display: flex; flex-direction: column; gap: 8px; }
   .submission-card { background: var(--color-background-secondary); border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 12px 14px; display: flex; align-items: flex-start; gap: 14px; }
@@ -277,6 +293,31 @@
   .approve-btn:disabled { opacity: 0.5; cursor: default; }
   .deny-btn { padding: 6px 14px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: 0.5px solid #7a2020; border-radius: var(--border-radius-md); color: #c44a4a; cursor: pointer; white-space: nowrap; flex-shrink: 0; align-self: center; }
   .deny-btn:hover:not(:disabled) { background: #2e1010; }
+
+  /* ── Calendar ── */
+  .cal-container { width: 100%; }
+  .cal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .cal-nav-btn { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); font-size: 18px; line-height: 1; cursor: pointer; padding: 3px 11px 5px; }
+  .cal-nav-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .cal-week-label { flex: 1; text-align: center; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; }
+  .cal-today-btn { padding: 5px 12px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+  .cal-today-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .cal-day-col { border-right: 0.5px solid var(--color-border-tertiary); min-height: 220px; display: flex; flex-direction: column; }
+  .cal-day-col:last-child { border-right: none; }
+  .cal-day-col.cal-today-col { background: rgba(30,42,58,0.35); }
+  .cal-day-head { padding: 8px 6px 7px; border-bottom: 0.5px solid var(--color-border-tertiary); text-align: center; background: var(--color-background-secondary); flex-shrink: 0; }
+  .cal-day-name { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 5px; }
+  .cal-day-num { font-size: 15px; font-weight: 500; color: var(--color-text-secondary); line-height: 1; }
+  .cal-today-num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--color-background-info); color: var(--color-text-info); font-size: 13px; }
+  .cal-day-body { flex: 1; padding: 6px 5px; display: flex; flex-direction: column; gap: 5px; }
+  .cal-event { border-radius: 4px; padding: 5px 7px; border-left: 2px solid transparent; }
+  .cal-ev-open { background: #182a18; border-left-color: #5a9e3f; }
+  .cal-ev-past { background: var(--color-background-secondary); border-left-color: var(--color-border-secondary); opacity: 0.7; }
+  .cal-ev-time  { font-size: 9px; color: var(--color-text-tertiary); letter-spacing: 0.04em; margin-bottom: 2px; }
+  .cal-ev-title { font-size: 11px; font-weight: 500; line-height: 1.35; color: var(--color-text-primary); margin-bottom: 3px; word-break: break-word; }
+  .cal-ev-dkp   { font-size: 9px; color: #a89cf7; }
+  .cal-no-events { font-size: 11px; color: var(--color-text-tertiary); text-align: center; padding: 2rem 0.5rem; }
 
   /* ── TODO banner (shown until Supabase connected) ── */
   .todo-banner { background: #2e1e0a; border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 10px 14px; margin-bottom: 1rem; font-size: 12px; color: #c47a2a; }
@@ -319,16 +360,16 @@
       <div class="sidebar-item active" id="nav-component" onclick="setTab('component')">Components</div>
       <div class="sidebar-item" id="nav-material" onclick="setTab('material')">Materials</div>
       <div class="sidebar-item" id="nav-blueprint" onclick="setTab('blueprint')">Blueprints</div>
-      <div class="sidebar-item" id="nav-wikelo" onclick="setTab('wikelo')">Wikelo</div>
+      <div class="sidebar-item" id="nav-wikelo" onclick="setTab('wikelo')">Loot</div>
 
-      <div class="sidebar-section-label" style="margin-top:0.5rem;">Org Tools</div>
+      <div class="sidebar-section-label" style="margin-top:0.5rem;">Social</div>
       <div class="sidebar-item" id="nav-members" onclick="setOrgTab('members')">Members</div>
       <div class="sidebar-item" id="nav-leaderboard" onclick="setOrgTab('leaderboard')">Leaderboard</div>
       <div class="sidebar-item" id="nav-certifications" onclick="setOrgTab('certifications')">Certifications</div>
       <div class="sidebar-item" id="nav-quests" onclick="setOrgTab('quests')">Quests</div>
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Calendar</div>
-      <div class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Org Events</div>
+      <div class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Events</div>
     </nav>
 
     <div class="sidebar-auth" id="header-auth"></div>
@@ -442,7 +483,7 @@
         <span class="filter-label">Item type</span>
         <select class="filter-select" id="ff-wk-type" onchange="render()">
           <option value="">All types</option>
-          <option value="favor">Wikelo Favor</option>
+          <option value="favor">Favor</option>
           <option value="rare">Rare Resource</option>
           <option value="currency">Special Currency</option>
           <option value="loot">Mission Loot</option>
@@ -512,16 +553,8 @@
       </div>
     </div>
 
-    <!-- Events filter -->
-    <div class="filter-panel" id="ofp-events">
-      <div class="filter-row" style="align-items:center;">
-        <span class="tick-label">Status</span>
-        <div class="tick-row">
-          <label class="tick-option"><input type="checkbox" id="off-ev-open" checked onchange="renderOrg()"><span>Open</span></label>
-          <label class="tick-option"><input type="checkbox" id="off-ev-closed" checked onchange="renderOrg()"><span>Past</span></label>
-        </div>
-      </div>
-    </div>
+    <!-- Events filter — nav is embedded in the calendar itself -->
+    <div class="filter-panel" id="ofp-events" style="display:none;"></div>
 
     <!-- Leaderboard filter (none) -->
     <div class="filter-panel" id="ofp-leaderboard" style="display:none;"></div>
@@ -579,7 +612,7 @@
         <option value="component">Ship Component</option>
         <option value="material">Material / Resource</option>
         <option value="blueprint">Blueprint</option>
-        <option value="wikelo">Wikelo Item</option>
+        <option value="wikelo">Loot Item</option>
       </select>
     </div>
     <div class="form-group" id="nameGroup">
@@ -685,7 +718,7 @@
         <div class="form-group">
           <label class="form-label">Item Type</label>
           <select class="form-select" id="f-wk-type">
-            <option value="favor">Wikelo Favor</option><option value="rare">Rare Resource</option>
+            <option value="favor">Favor</option><option value="rare">Rare Resource</option>
             <option value="currency">Special Currency</option><option value="loot">Mission Loot</option>
           </select>
         </div>
@@ -702,6 +735,38 @@
         <div class="form-group">
           <label class="form-label">Held By / Location</label>
           <input class="form-input" id="f-wk-holder" type="text" placeholder="e.g. Cmdr_Ryker">
+        </div>
+      </div>
+      <!-- Listing section — visible to officers only, shown by onCatChange() -->
+      <div id="f-listing-section" style="display:none;">
+        <div class="listing-section-divider">
+          <div class="listing-section-label">🏷 Listing <span style="color:var(--color-text-tertiary);font-weight:normal;text-transform:none;letter-spacing:0;">(officer)</span></div>
+          <div class="form-group">
+            <label class="form-label">Listing Type</label>
+            <select class="form-select" id="f-listing-type" onchange="onListingTypeChange()">
+              <option value="none">Not Listed</option>
+              <option value="sale">Fixed Sale Price</option>
+              <option value="auction">Auction</option>
+            </select>
+          </div>
+          <div id="f-sale-fields" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Sale Price (DKP)</label>
+              <input class="form-input" id="f-listing-price" type="number" min="1" placeholder="e.g. 150">
+            </div>
+          </div>
+          <div id="f-auction-fields" style="display:none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Minimum Bid (DKP)</label>
+                <input class="form-input" id="f-auction-min" type="number" min="1" placeholder="e.g. 100">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ends (local time)</label>
+                <input class="form-input" id="f-auction-end" type="datetime-local">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -796,6 +861,45 @@
     </div>
     <div id="admin-pw-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
     <button class="submit-btn" id="admin-pw-btn" onclick="verifyAdminPassword()">Unlock</button>
+  </div>
+</div>
+
+<!-- BUY CONFIRM MODAL -->
+<div class="modal-bg" id="buyModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <span class="modal-title">Confirm Purchase</span>
+      <button class="close-btn" onclick="closeModal('buyModal')">×</button>
+    </div>
+    <div style="font-size:13px;margin-bottom:0.5rem;" id="buy-item-name"></div>
+    <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;" id="buy-item-desc"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:1.25rem;">
+      <span style="font-size:11px;color:#9e9b96;text-transform:uppercase;letter-spacing:.08em;">Cost</span>
+      <span style="font-size:20px;font-weight:500;color:#a89cf7;" id="buy-price"></span>
+    </div>
+    <div style="font-size:11px;color:#9e9b96;margin-bottom:0.5rem;" id="buy-balance-line"></div>
+    <div id="buy-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" id="buy-btn" onclick="confirmBuy()" style="background:#1e2e14;color:#5a9e3f;border:0.5px solid #5a9e3f;">Confirm Purchase</button>
+  </div>
+</div>
+
+<!-- BID MODAL -->
+<div class="modal-bg" id="bidModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <span class="modal-title">Place Bid</span>
+      <button class="close-btn" onclick="closeModal('bidModal')">×</button>
+    </div>
+    <div style="font-size:13px;font-weight:500;margin-bottom:4px;" id="bid-item-name"></div>
+    <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;" id="bid-current"></div>
+    <div class="form-group">
+      <label class="form-label">Your Bid (DKP)</label>
+      <input class="form-input" id="bid-amount" type="number" min="1" placeholder="Enter bid…"
+        onkeydown="if(event.key==='Enter')placeBid()">
+    </div>
+    <div style="font-size:11px;color:#9e9b96;margin-bottom:0.5rem;" id="bid-balance-line"></div>
+    <div id="bid-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" id="bid-btn" onclick="placeBid()" style="background:#2e1e0a;color:#c47a2a;border:0.5px solid #c47a2a;">Place Bid</button>
   </div>
 </div>
 
@@ -1004,10 +1108,16 @@ function fromDB(row, cat) {
     it.bpRuns    = row.bp_runs    || 0;
     it.bpHolder  = row.bp_holder  || '';
   } else if (cat === 'wikelo') {
-    it.wkType    = row.wk_type    || 'favor';
-    it.wkQty     = row.wk_qty     || 0;
-    it.wkDkp     = row.wk_dkp     || 0;
-    it.wkHolder  = row.wk_holder  || '';
+    it.wkType       = row.wk_type           || 'favor';
+    it.wkQty        = row.wk_qty            || 0;
+    it.wkDkp        = row.wk_dkp            || 0;
+    it.wkHolder     = row.wk_holder         || '';
+    it.listingType  = row.listing_type      || 'none';
+    it.listingPrice = row.listing_price_dkp || 0;
+    it.auctionMin   = row.auction_min_bid   || 0;
+    it.auctionCur   = row.auction_current_bid || 0;
+    it.auctionWho   = row.auction_bidder_name || '';
+    it.auctionEnd   = row.auction_end       || null;
   }
   return it;
 }
@@ -1032,10 +1142,19 @@ function toDB(item) {
     row.bp_runs    = item.bpRuns    || 0;
     row.bp_holder  = item.bpHolder  || null;
   } else if (item.cat === 'wikelo') {
-    row.wk_type    = item.wkType    || 'favor';
-    row.wk_qty     = item.wkQty     || 0;
-    row.wk_dkp     = item.wkDkp     || 0;
-    row.wk_holder  = item.wkHolder  || null;
+    row.wk_type           = item.wkType      || 'favor';
+    row.wk_qty            = item.wkQty       || 0;
+    row.wk_dkp            = item.wkDkp       || 0;
+    row.wk_holder         = item.wkHolder    || null;
+    row.listing_type      = item.listingType || 'none';
+    row.listing_price_dkp = item.listingType === 'sale'    ? (item.listingPrice || null) : null;
+    row.auction_min_bid   = item.listingType === 'auction' ? (item.auctionMin || null)   : null;
+    row.auction_end       = item.listingType === 'auction' ? (item.auctionEnd || null)   : null;
+    // Don't reset live auction bid state when officer edits other fields
+    if (item.listingType !== 'auction') {
+      row.auction_current_bid  = 0;
+      row.auction_bidder_name  = null;
+    }
   }
   return row;
 }
@@ -1240,7 +1359,7 @@ function fmtQty(cSCU){if(cSCU<100)return cSCU+' cSCU';return+(cSCU/100).toFixed(
 const GRADE_TEXT={A:'A',B:'B',C:'C',D:'D',AAA:'Pristine AAA',AA:'Grade AA',Pure:'Pure',Irradiated:'Irradiated'};
 const BP_STATUS={owned:'Owned',researching:'Researching',wanted:'Wanted'};
 const BP_CLASS={owned:'bp-owned',researching:'bp-researching',wanted:'bp-wanted'};
-const WK_TYPE_LBL={favor:'Wikelo Favor',rare:'Rare Resource',currency:'Special Currency',loot:'Mission Loot'};
+const WK_TYPE_LBL={favor:'Favor',rare:'Rare Resource',currency:'Special Currency',loot:'Mission Loot'};
 const WK_TYPE_CLS={favor:'wk-favor',rare:'wk-rare',currency:'wk-currency',loot:'wk-loot'};
 
 function populateOreDropdowns(){
@@ -1397,9 +1516,41 @@ function render(){
       return`<div class="card cat-blueprint" onclick="openDetail('${it.id}')"><div class="card-cat">Blueprint</div><div class="card-name">${it.name}</div><div class="card-sub">${it.bpOutput||'—'}</div><div class="card-footer"><span class="bp-status ${BP_CLASS[it.bpStatus]}">${BP_STATUS[it.bpStatus]}</span><span class="owner">${it.bpHolder||''}</span></div></div>`;
     }
     if(it.cat==='wikelo'){
-      const dkpR=it.wkDkp||0,totDkp=dkpR*(it.wkQty||0);
+      const dkpR=it.wkDkp||0, totDkp=dkpR*(it.wkQty||0);
       const dkpEl=dkpR>0?`<span class="dkp-badge">${dkpR} DKP</span>`:'';
-      return`<div class="card cat-wikelo" onclick="openDetail('${it.id}')"><div class="card-cat">Wikelo</div><div class="card-name">${it.name}</div><div class="card-sub" style="display:flex;align-items:center;gap:6px;">${WK_TYPE_LBL[it.wkType]||''}${dkpEl}</div><div style="font-size:11px;color:#9e9b96;margin-top:6px;">×${it.wkQty} held</div>${totDkp>0?`<div style="margin-top:6px;"><span class="dkp-total-badge">${totDkp} DKP held</span></div>`:''}</div>`;
+      let listingHTML='';
+      if (it.listingType==='sale') {
+        const canBuy = !!authMember;
+        listingHTML=`<div class="listing-strip">
+          <div class="listing-label listing-label-sale">For Sale</div>
+          <div class="listing-price">${it.listingPrice} DKP</div>
+          ${canBuy
+            ? `<button class="buy-btn" onclick="openBuyConfirm('${it.id}');event.stopPropagation();">Buy →</button>`
+            : `<span style="font-size:10px;color:#6b6864;">Sign in to purchase</span>`}
+        </div>`;
+      } else if (it.listingType==='auction') {
+        const ended = it.auctionEnd && new Date(it.auctionEnd) < new Date();
+        const endFmt = it.auctionEnd ? new Date(it.auctionEnd).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) : 'TBD';
+        const bidLine = it.auctionCur>0
+          ? `<div class="listing-meta">Current bid: <strong style="color:#a89cf7;">${it.auctionCur} DKP</strong><br>by ${esc(it.auctionWho)}</div>`
+          : `<div class="listing-meta">Min bid: ${it.auctionMin||1} DKP</div>`;
+        listingHTML=`<div class="listing-strip">
+          <div class="listing-label listing-label-auction">${ended?'Auction Ended':'Auction'}</div>
+          ${bidLine}
+          <div class="listing-end">Ends ${endFmt} ET</div>
+          ${!ended&&authMember?`<button class="bid-btn" onclick="openBidModal('${it.id}');event.stopPropagation();">Bid →</button>`:''}
+        </div>`;
+      } else if (it.listingType==='sold') {
+        listingHTML=`<div class="listing-strip"><div class="listing-label listing-label-sold">Sold</div></div>`;
+      }
+      return`<div class="card cat-wikelo" onclick="openDetail('${it.id}')">
+        <div class="card-cat">Loot</div>
+        <div class="card-name">${it.name}</div>
+        <div class="card-sub" style="display:flex;align-items:center;gap:6px;">${WK_TYPE_LBL[it.wkType]||''}${dkpEl}</div>
+        <div style="font-size:11px;color:#9e9b96;margin-top:6px;">×${it.wkQty} held</div>
+        ${totDkp>0?`<div style="margin-top:6px;"><span class="dkp-total-badge">${totDkp} DKP held</span></div>`:''}
+        ${listingHTML}
+      </div>`;
     }
   }).join('');
   updateStats();
@@ -1415,7 +1566,7 @@ function updateStats(){
     <div class="stat"><div class="stat-label">Components</div><div class="stat-value" style="color:#5a9e3f">${comps}</div></div>
     <div class="stat"><div class="stat-label">Materials</div><div class="stat-value" style="color:#c47a2a">${matsSCU}<span style="font-size:13px;margin-left:3px;">SCU</span></div></div>
     <div class="stat"><div class="stat-label">Blueprints</div><div class="stat-value" style="color:#8b72e8">${bps}</div></div>
-    <div class="stat"><div class="stat-label">Wikelo DKP</div><div class="stat-value" style="color:#a89cf7">${totDkp}</div></div>`;
+    <div class="stat"><div class="stat-label">Loot DKP</div><div class="stat-value" style="color:#a89cf7">${totDkp}</div></div>`;
 }
 
 function onCatChange(){
@@ -1425,11 +1576,22 @@ function onCatChange(){
   document.getElementById('fields-bp').style.display=cat==='blueprint'?'block':'none';
   document.getElementById('fields-wk').style.display=cat==='wikelo'?'block':'none';
   document.getElementById('nameGroup').style.display=cat==='material'?'none':'block';
-  const ph={component:'e.g. Kroneg FL-33',blueprint:'e.g. Parallax Rifle',wikelo:'e.g. Wikelo Favor'};
+  const ph={component:'e.g. Kroneg FL-33',blueprint:'e.g. Parallax Rifle',wikelo:'e.g. Wikelo Favor (item name)'};
   document.getElementById('f-name').placeholder=ph[cat]||'';
-  if(cat==='wikelo'){document.getElementById('f-name').oninput=function(){const a=lookupDKP(this.value);if(a>0)document.getElementById('f-wk-dkp').value=a;};}
-  else document.getElementById('f-name').oninput=null;
+  if(cat==='wikelo'){
+    document.getElementById('f-name').oninput=function(){const a=lookupDKP(this.value);if(a>0)document.getElementById('f-wk-dkp').value=a;};
+    document.getElementById('f-listing-section').style.display = (isOfficer||isAdmin) ? 'block' : 'none';
+  } else {
+    document.getElementById('f-name').oninput=null;
+    document.getElementById('f-listing-section').style.display = 'none';
+  }
 }
+function onListingTypeChange() {
+  const t = document.getElementById('f-listing-type')?.value || 'none';
+  document.getElementById('f-sale-fields').style.display    = t === 'sale'    ? 'block' : 'none';
+  document.getElementById('f-auction-fields').style.display = t === 'auction' ? 'block' : 'none';
+}
+
 function openAddModal(){
   editId=null;document.getElementById('modalTitle').textContent='Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
   ['f-name','f-owner','f-notes','f-mat-owner','f-bp-output','f-bp-holder','f-wk-holder'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -1440,6 +1602,7 @@ function openAddModal(){
   document.getElementById('f-cat').value=activeTab;
   ['f-grade','f-size','f-function','f-class'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-bp-status').value='owned';document.getElementById('f-wk-type').value='favor';
+  document.getElementById('f-listing-type').value='none'; onListingTypeChange();
   onCatChange();document.getElementById('addModal').classList.add('open');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1454,7 +1617,21 @@ async function submitItem(){
   if(cat==='component'){item.function=document.getElementById('f-function').value;item.compClass=document.getElementById('f-class').value;item.grade=document.getElementById('f-grade').value;item.size=document.getElementById('f-size').value;item.qty=parseInt(document.getElementById('f-qty').value)||1;item.owner=document.getElementById('f-owner').value.trim();}
   else if(cat==='material'){item.oreType=document.getElementById('f-mat-type').value;item.name=item.oreType;item.quality=Math.max(1,Math.min(1000,parseInt(document.getElementById('f-mat-quality').value)||1));item.qty=parseInt(document.getElementById('f-mat-qty').value)||1;item.owner=document.getElementById('f-mat-owner').value.trim();}
   else if(cat==='blueprint'){item.bpOutput=document.getElementById('f-bp-output').value.trim();item.bpStatus=document.getElementById('f-bp-status').value;item.bpRuns=parseInt(document.getElementById('f-bp-runs').value)||0;item.bpHolder=document.getElementById('f-bp-holder').value.trim();}
-  else if(cat==='wikelo'){item.wkType=document.getElementById('f-wk-type').value;item.wkQty=parseInt(document.getElementById('f-wk-qty').value)||0;item.wkDkp=parseInt(document.getElementById('f-wk-dkp').value)||0;item.wkHolder=document.getElementById('f-wk-holder').value.trim();}
+  else if(cat==='wikelo'){
+    item.wkType=document.getElementById('f-wk-type').value;
+    item.wkQty=parseInt(document.getElementById('f-wk-qty').value)||0;
+    item.wkDkp=parseInt(document.getElementById('f-wk-dkp').value)||0;
+    item.wkHolder=document.getElementById('f-wk-holder').value.trim();
+    if (isOfficer || isAdmin) {
+      item.listingType  = document.getElementById('f-listing-type').value;
+      item.listingPrice = parseInt(document.getElementById('f-listing-price').value)||0;
+      item.auctionMin   = parseInt(document.getElementById('f-auction-min').value)||0;
+      const endVal = document.getElementById('f-auction-end').value;
+      item.auctionEnd = endVal ? new Date(endVal).toISOString() : null;
+    } else {
+      item.listingType = item.listingType || 'none';
+    }
+  }
   try {
     if(editId){ await sbUpdate(item); } else { await sbInsert(item); }
     closeModal('addModal'); render();
@@ -1494,17 +1671,173 @@ function editItem(id){
   if(it.cat==='component'){document.getElementById('f-function').value=it.function||'';document.getElementById('f-class').value=it.compClass||'';document.getElementById('f-grade').value=it.grade||'';document.getElementById('f-size').value=it.size||'';document.getElementById('f-qty').value=it.qty;document.getElementById('f-owner').value=it.owner||'';}
   else if(it.cat==='material'){document.getElementById('f-mat-type').value=it.oreType||'';document.getElementById('f-mat-quality').value=it.quality||'';document.getElementById('f-mat-qty').value=it.qty;document.getElementById('f-mat-owner').value=it.owner||'';}
   else if(it.cat==='blueprint'){document.getElementById('f-bp-output').value=it.bpOutput||'';document.getElementById('f-bp-status').value=it.bpStatus||'owned';document.getElementById('f-bp-runs').value=it.bpRuns||0;document.getElementById('f-bp-holder').value=it.bpHolder||'';}
-  else if(it.cat==='wikelo'){document.getElementById('f-wk-type').value=it.wkType||'favor';document.getElementById('f-wk-qty').value=it.wkQty||0;document.getElementById('f-wk-dkp').value=it.wkDkp||0;document.getElementById('f-wk-holder').value=it.wkHolder||'';}
+  else if(it.cat==='wikelo'){
+    document.getElementById('f-wk-type').value=it.wkType||'favor';
+    document.getElementById('f-wk-qty').value=it.wkQty||0;
+    document.getElementById('f-wk-dkp').value=it.wkDkp||0;
+    document.getElementById('f-wk-holder').value=it.wkHolder||'';
+    if (isOfficer || isAdmin) {
+      document.getElementById('f-listing-type').value = it.listingType || 'none';
+      document.getElementById('f-listing-price').value = it.listingPrice || '';
+      document.getElementById('f-auction-min').value  = it.auctionMin  || '';
+      if (it.auctionEnd) {
+        // Convert UTC ISO to local datetime-local string
+        const d = new Date(it.auctionEnd);
+        const pad = n => String(n).padStart(2,'0');
+        document.getElementById('f-auction-end').value =
+          `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } else {
+        document.getElementById('f-auction-end').value = '';
+      }
+      onListingTypeChange();
+    }
+  }
   document.getElementById('addModal').classList.add('open');
 }
 
 populateOreDropdowns();initDualRange();loadAll();
 
 // ============================================================
+// LOOT MARKETPLACE — Buy & Bid
+// ============================================================
+let _buyItemId = null, _bidItemId = null;
+
+function openBuyConfirm(itemId) {
+  if (!authMember) { showError('Sign in with Discord to purchase items.'); return; }
+  const it = items.find(x => x.id === itemId);
+  if (!it || it.listingType !== 'sale') return;
+  _buyItemId = itemId;
+  document.getElementById('buy-item-name').textContent = it.name;
+  document.getElementById('buy-item-desc').textContent = WK_TYPE_LBL[it.wkType] || '';
+  document.getElementById('buy-price').textContent = it.listingPrice + ' DKP';
+  document.getElementById('buy-balance-line').textContent =
+    `Your balance: ${authMember.dkp_balance} DKP  →  ${authMember.dkp_balance - it.listingPrice} DKP after purchase`;
+  document.getElementById('buy-error').style.display = 'none';
+  document.getElementById('buy-btn').disabled = false;
+  document.getElementById('buy-btn').textContent = 'Confirm Purchase';
+  document.getElementById('buyModal').classList.add('open');
+}
+
+async function confirmBuy() {
+  if (!authMember || !_buyItemId) return;
+  const it = items.find(x => x.id === _buyItemId);
+  if (!it) return;
+  const errEl = document.getElementById('buy-error');
+  errEl.style.display = 'none';
+
+  if ((authMember.dkp_balance || 0) < it.listingPrice) {
+    errEl.textContent = `Insufficient DKP. You have ${authMember.dkp_balance}, need ${it.listingPrice}.`;
+    errEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('buy-btn');
+  btn.disabled = true; btn.textContent = 'Processing…';
+
+  try {
+    const newBalance = authMember.dkp_balance - it.listingPrice;
+    const [itemRes, balRes, txRes] = await Promise.all([
+      sb.from('wikelo_items').update({ listing_type: 'sold' }).eq('id', _buyItemId),
+      sb.from('members').update({ dkp_balance: newBalance }).eq('id', authMember.id),
+      sb.from('dkp_transactions').insert({
+        member_id: authMember.id, amount: -it.listingPrice,
+        reason: `Loot purchase: ${it.name}`,
+      }),
+    ]);
+    if (itemRes.error) throw itemRes.error;
+    if (balRes.error)  throw balRes.error;
+    // tx insert failure is non-fatal
+
+    // Update local state
+    it.listingType = 'sold';
+    authMember.dkp_balance = newBalance;
+    closeModal('buyModal');
+    render();
+
+    const el = document.getElementById('errorBanner');
+    el.textContent = `✅ Purchased "${it.name}" for ${it.listingPrice} DKP. New balance: ${newBalance} DKP.`;
+    el.style.background='#102e22'; el.style.borderColor='#2dbd8f'; el.style.color='#2dbd8f';
+    el.style.display='block';
+    setTimeout(()=>{el.style.display='none';el.style.background='';el.style.borderColor='';el.style.color='';},6000);
+  } catch(err) {
+    errEl.textContent = 'Purchase failed: ' + (err.message || String(err));
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Confirm Purchase';
+  }
+}
+
+function openBidModal(itemId) {
+  if (!authMember) { showError('Sign in with Discord to place a bid.'); return; }
+  const it = items.find(x => x.id === itemId);
+  if (!it || it.listingType !== 'auction') return;
+  _bidItemId = itemId;
+  document.getElementById('bid-item-name').textContent = it.name;
+  const minNext = Math.max(it.auctionMin || 1, (it.auctionCur || 0) + 1);
+  document.getElementById('bid-current').textContent = it.auctionCur > 0
+    ? `Current bid: ${it.auctionCur} DKP by ${it.auctionWho} — minimum next bid: ${minNext} DKP`
+    : `No bids yet — minimum bid: ${it.auctionMin || 1} DKP`;
+  document.getElementById('bid-amount').value = minNext;
+  document.getElementById('bid-balance-line').textContent = `Your balance: ${authMember.dkp_balance} DKP`;
+  document.getElementById('bid-error').style.display = 'none';
+  document.getElementById('bid-btn').disabled = false;
+  document.getElementById('bid-btn').textContent = 'Place Bid';
+  document.getElementById('bidModal').classList.add('open');
+  setTimeout(() => document.getElementById('bid-amount').select(), 60);
+}
+
+async function placeBid() {
+  if (!authMember || !_bidItemId) return;
+  const it = items.find(x => x.id === _bidItemId);
+  if (!it) return;
+  const errEl = document.getElementById('bid-error');
+  errEl.style.display = 'none';
+
+  const bid = parseInt(document.getElementById('bid-amount').value) || 0;
+  const minNext = Math.max(it.auctionMin || 1, (it.auctionCur || 0) + 1);
+
+  if (bid < minNext) {
+    errEl.textContent = `Bid must be at least ${minNext} DKP.`;
+    errEl.style.display = 'block'; return;
+  }
+  if (bid > (authMember.dkp_balance || 0)) {
+    errEl.textContent = `You only have ${authMember.dkp_balance} DKP.`;
+    errEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('bid-btn');
+  btn.disabled = true; btn.textContent = 'Placing bid…';
+
+  try {
+    const bidderName = authMember.display_name || authMember.username;
+    const { error } = await sb.from('wikelo_items').update({
+      auction_current_bid:  bid,
+      auction_bidder_name:  bidderName,
+    }).eq('id', _bidItemId);
+    if (error) throw error;
+
+    // Update local state
+    it.auctionCur = bid;
+    it.auctionWho = bidderName;
+    closeModal('bidModal');
+    render();
+
+    const el = document.getElementById('errorBanner');
+    el.textContent = `🏷 Bid of ${bid} DKP placed on "${it.name}". You'll be notified when the auction closes.`;
+    el.style.background='#2e1e0a'; el.style.borderColor='#c47a2a'; el.style.color='#c47a2a';
+    el.style.display='block';
+    setTimeout(()=>{el.style.display='none';el.style.background='';el.style.borderColor='';el.style.color='';},7000);
+  } catch(err) {
+    errEl.textContent = 'Bid failed: ' + (err.message || String(err));
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Place Bid';
+  }
+}
+
+// ============================================================
 // ORG TOOLS
 // ============================================================
 let orgMembers=[], orgEvents=[], orgCerts=[];
 let activeOrgTab='members', activeSection='inventory', orgLoaded=false;
+let calWeekOffset = 0;  // 0 = current week, ±n = weeks from today
 
 const ORG_COURSES = {
   'BFS-01':'Air Wing','BFS-02':'Air Wing','AWC-01':'Air Wing','AWC-02':'Air Wing','AWC-03':'Air Wing',
@@ -1585,30 +1918,90 @@ function renderMembers(grid) {
     </div>`).join('');
 }
 
-// ── Events ──
+// ── Events — weekly calendar ──────────────────────────────────────────────────
+const CAL_DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const CAL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function calWeekStart(offset) {
+  // Returns the Sunday that starts the target week (local midnight)
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  d.setDate(d.getDate() - d.getDay() + offset * 7);
+  return d;
+}
+
 function renderEvents(grid) {
-  const showOpen   = document.getElementById('off-ev-open')?.checked !== false;
-  const showClosed = document.getElementById('off-ev-closed')?.checked !== false;
-  const list = orgEvents.filter(e=>(e.status==='open'&&showOpen)||(e.status==='closed'&&showClosed));
   document.getElementById('org-result-count').textContent = '';
-  if (!list.length) { grid.innerHTML='<div class="empty">No events found.</div>'; grid.className=''; return; }
-  grid.className = 'org-grid';
-  grid.innerHTML = list.map(e=>{
-    const when = e.scheduled_start_time
-      ? new Date(e.scheduled_start_time).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'})
-      : 'Time TBD';
-    const loc = e.location ? `<br>📍 ${esc(e.location)}` : '';
-    const statusCls = e.status==='open' ? 'ev-open' : 'ev-closed';
-    const statusTxt = e.status==='open' ? 'Open' : 'Past';
-    return `<div class="event-card">
-      <div class="event-title">${esc(e.title)}</div>
-      <div class="event-meta">📅 ${when}${loc}</div>
-      <div class="event-footer">
-        <span class="dkp-badge">${e.dkp_reward} DKP</span>
-        <span class="${statusCls}">${statusTxt}</span>
+  grid.className = '';
+
+  const weekStart = calWeekStart(calWeekOffset);
+  const weekDays  = Array.from({length: 7}, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d;
+  });
+  const weekEnd = new Date(weekDays[6]);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  const todayStr = new Date().toDateString();
+
+  // Label: "Apr 28 – May 4, 2026"
+  const s = weekDays[0], e = weekDays[6];
+  const weekLabel = s.getMonth() === e.getMonth()
+    ? `${CAL_MONTHS[s.getMonth()]} ${s.getDate()} – ${e.getDate()}, ${e.getFullYear()}`
+    : `${CAL_MONTHS[s.getMonth()]} ${s.getDate()} – ${CAL_MONTHS[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
+
+  // Bucket events into days
+  const byDay = Array.from({length: 7}, () => []);
+  for (const ev of orgEvents) {
+    if (!ev.scheduled_start_time) continue;
+    const evDate = new Date(ev.scheduled_start_time);
+    // Compare against local date representation of each day
+    const idx = weekDays.findIndex(d => evDate.toLocaleDateString() === d.toLocaleDateString());
+    if (idx >= 0) byDay[idx].push(ev);
+  }
+  // Sort each day by time
+  byDay.forEach(arr => arr.sort((a, b) => new Date(a.scheduled_start_time) - new Date(b.scheduled_start_time)));
+
+  const totalThisWeek = byDay.reduce((n, arr) => n + arr.length, 0);
+
+  grid.innerHTML = `
+    <div class="cal-container">
+      <div class="cal-header">
+        <button class="cal-nav-btn" onclick="calWeekOffset--;renderOrg()">‹</button>
+        <span class="cal-week-label">${weekLabel}</span>
+        <button class="cal-nav-btn" onclick="calWeekOffset++;renderOrg()">›</button>
+        <button class="cal-today-btn" onclick="calWeekOffset=0;renderOrg()">Today</button>
       </div>
+      <div class="cal-grid">
+        ${weekDays.map((d, i) => {
+          const isToday = d.toDateString() === todayStr;
+          const dayNumEl = isToday
+            ? `<span class="cal-today-num">${d.getDate()}</span>`
+            : `<span class="cal-day-num">${d.getDate()}</span>`;
+          const evCards = byDay[i].map(ev => {
+            const time = new Date(ev.scheduled_start_time)
+              .toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/New_York'});
+            const loc = ev.location ? `<div class="cal-ev-time">📍 ${esc(ev.location)}</div>` : '';
+            const cls = ev.status === 'open' ? 'cal-ev-open' : 'cal-ev-past';
+            return `<div class="cal-event ${cls}">
+              <div class="cal-ev-time">${time} ET</div>
+              ${loc}
+              <div class="cal-ev-title">${esc(ev.title)}</div>
+              <div class="cal-ev-dkp">${ev.dkp_reward} DKP</div>
+            </div>`;
+          }).join('');
+          return `<div class="cal-day-col${isToday ? ' cal-today-col' : ''}">
+            <div class="cal-day-head">
+              <div class="cal-day-name">${CAL_DAYS[i]}</div>
+              ${dayNumEl}
+            </div>
+            <div class="cal-day-body">${evCards}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${totalThisWeek === 0 ? `<div class="cal-no-events">No events scheduled this week.</div>` : ''}
     </div>`;
-  }).join('');
 }
 
 // ── Leaderboard ──
@@ -1715,7 +2108,7 @@ function renderQuests(grid) {
       const dkpAmt     = s.quests?.dkp_reward || 0;
       const dateStr    = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
       const actionHTML = canApprove
-        ? `<button class="approve-btn" onclick="approveSubmission('${esc(s.id)}')">Approve +${dkpAmt} DKP</button>
+        ? `<button class="approve-btn" onclick="expandApprove('${esc(s.id)}',${dkpAmt})">Approve +${dkpAmt} DKP</button>
            <button class="deny-btn"    onclick="denySubmission('${esc(s.id)}')">Deny</button>`
         : `<span style="font-size:10px;color:#6b6864;align-self:center;">Sign in as officer to approve</span>`;
       return `<div class="submission-card">
@@ -1725,7 +2118,7 @@ function renderQuests(grid) {
           ${s.notes ? `<div class="submission-notes">"${esc(s.notes)}"</div>` : ''}
           <div class="submission-date">${dateStr}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
+        <div id="sub-actions-${esc(s.id)}" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
           ${actionHTML}
         </div>
       </div>`;
@@ -1873,6 +2266,24 @@ async function submitTurnIn() {
       member = data;
     }
 
+    // Guard: don't allow a second pending submission for the same quest
+    const { data: existing } = await sb
+      .from('quest_submissions')
+      .select('id')
+      .eq('quest_id', turnInQuestId)
+      .eq('member_id', member.id)
+      .maybeSingle();
+    if (existing) {
+      btn.disabled = false; btn.textContent = 'Submit Turn-In';
+      closeModal('turnInModal');
+      const el = document.getElementById('errorBanner');
+      el.textContent = '⚠ You already have a pending turn-in for this quest. An officer will review it soon.';
+      el.style.background = '#2e1e0a'; el.style.borderColor = '#854F0B'; el.style.color = '#c47a2a';
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display='none'; el.style.background=''; el.style.borderColor=''; el.style.color=''; }, 6000);
+      return;
+    }
+
     const { error } = await sb.from('quest_submissions').insert({
       quest_id:  turnInQuestId,
       member_id: member.id,
@@ -1895,18 +2306,50 @@ async function submitTurnIn() {
   }
 }
 
-// ── Approve submission (officer only — requires Discord JWT) ──
-async function approveSubmission(subId) {
+// ── Approve flow: expand button into editable DKP input ──────────────────────
+function expandApprove(subId, defaultDkp) {
+  const el = document.getElementById('sub-actions-' + subId);
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+      <div style="display:flex;align-items:center;gap:5px;">
+        <input id="sub-dkp-${subId}" type="number" value="${defaultDkp}" min="0"
+          style="width:64px;padding:4px 7px;font-family:var(--font-mono);font-size:12px;font-weight:500;
+                 background:var(--color-background-primary);border:0.5px solid #2dbd8f;
+                 border-radius:var(--border-radius-md);color:#2dbd8f;text-align:center;"
+          onkeydown="if(event.key==='Enter')confirmApprove('${subId}');if(event.key==='Escape')cancelApprove('${subId}',${defaultDkp})">
+        <span style="font-size:10px;color:#9e9b96;">DKP</span>
+      </div>
+      <div style="display:flex;gap:5px;">
+        <button class="approve-btn" onclick="confirmApprove('${subId}')">Confirm</button>
+        <button class="deny-btn" style="padding:5px 10px;" onclick="cancelApprove('${subId}',${defaultDkp})">✕</button>
+      </div>
+    </div>`;
+  document.getElementById('sub-dkp-' + subId)?.select();
+}
+
+function cancelApprove(subId, defaultDkp) {
+  const el = document.getElementById('sub-actions-' + subId);
+  if (!el) return;
+  el.innerHTML = `
+    <button class="approve-btn" onclick="expandApprove('${subId}',${defaultDkp})">Approve +${defaultDkp} DKP</button>
+    <button class="deny-btn"    onclick="denySubmission('${subId}')">Deny</button>`;
+}
+
+// ── Confirm approval with (possibly edited) DKP amount ───────────────────────
+async function confirmApprove(subId) {
   if (!isOfficer) { showError('Only Discord-authenticated officers can approve submissions.'); return; }
   const sub = orgSubmissions.find(s => s.id === subId);
   if (!sub) return;
 
-  const quest   = orgQuests.find(q => q.id === sub.quest_id);
-  const dkpAmt  = quest?.dkp_reward || sub.quests?.dkp_reward || 0;
+  const dkpInput   = document.getElementById('sub-dkp-' + subId);
+  const dkpAmt     = Math.max(0, parseInt(dkpInput?.value) || 0);
+  const quest      = orgQuests.find(q => q.id === sub.quest_id);
   const questTitle = quest?.title || sub.quests?.title || 'Quest';
 
-  // Disable both buttons for this card immediately
-  document.querySelectorAll(`button[onclick*="${subId}"]`).forEach(b => { b.disabled = true; b.textContent = 'Working…'; });
+  // Lock the action area while working
+  const actEl = document.getElementById('sub-actions-' + subId);
+  if (actEl) actEl.innerHTML = `<span style="font-size:11px;color:#9e9b96;">Working…</span>`;
 
   try {
     // 1. Fetch current member balance
@@ -1916,8 +2359,8 @@ async function approveSubmission(subId) {
 
     const newBalance = (member.dkp_balance || 0) + dkpAmt;
 
-    // 2. Apply everything in parallel
-    const [balRes, txRes, compRes] = await Promise.all([
+    // 2. Award DKP + log transaction + record completion — all in parallel
+    const [balRes, txRes] = await Promise.all([
       sb.from('members').update({ dkp_balance: newBalance }).eq('id', sub.member_id),
       sb.from('dkp_transactions').insert({
         member_id: sub.member_id, amount: dkpAmt,
@@ -1925,18 +2368,18 @@ async function approveSubmission(subId) {
       }),
       sb.from('quest_completions').insert({
         quest_id: sub.quest_id, member_id: sub.member_id,
-      }),
+      }).then(() => {}).catch(() => {}),  // ignore unique-violation if already completed
     ]);
     if (balRes.error) throw balRes.error;
-    if (txRes.error && !txRes.error.message?.includes('unique')) throw txRes.error; // ignore duplicate completion
+    if (txRes.error) throw txRes.error;
 
-    // 3. Mark quest completed & delete submission
+    // 3. Mark quest completed & remove submission
     await Promise.all([
       sb.from('quests').update({ status: 'completed' }).eq('id', sub.quest_id),
       sb.from('quest_submissions').delete().eq('id', subId),
     ]);
 
-    // 4. Update local state
+    // 4. Update local state — no page reload needed
     orgSubmissions = orgSubmissions.filter(s => s.id !== subId);
     const qi = orgQuests.findIndex(q => q.id === sub.quest_id);
     if (qi !== -1) orgQuests[qi].status = 'completed';
@@ -1946,9 +2389,8 @@ async function approveSubmission(subId) {
     renderOrg();
     updateOrgStats();
 
-    // Success flash
-    const el = document.getElementById('errorBanner');
     const memberName = sub.members?.display_name || sub.members?.username || sub.member_id;
+    const el = document.getElementById('errorBanner');
     el.textContent = `✅ Approved! ${memberName} awarded ${dkpAmt} DKP for "${questTitle}".`;
     el.style.background = '#102e22'; el.style.borderColor = '#2dbd8f'; el.style.color = '#2dbd8f';
     el.style.display = 'block';
@@ -1956,7 +2398,12 @@ async function approveSubmission(subId) {
 
   } catch (err) {
     showError('Approval failed: ' + (err.message || String(err)));
-    document.querySelectorAll(`button[onclick*="${subId}"]`).forEach(b => { b.disabled = false; b.textContent = b.classList.contains('approve-btn') ? `Approve +${dkpAmt} DKP` : 'Deny'; });
+    // Restore the expand state so officer can retry
+    if (actEl) {
+      actEl.innerHTML = `
+        <button class="approve-btn" onclick="expandApprove('${subId}',${dkpAmt})">Approve +${dkpAmt} DKP</button>
+        <button class="deny-btn" onclick="denySubmission('${subId}')">Deny</button>`;
+    }
   }
 }
 
