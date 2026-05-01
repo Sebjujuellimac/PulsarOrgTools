@@ -12,7 +12,7 @@
     background: #1a1a1f;
     color: #e8e6e3;
     min-height: 100vh;
-    padding: 1.5rem;
+    padding: 0;
   }
 
   /* ── CSS variables (hardcoded for standalone use) ── */
@@ -32,13 +32,26 @@
     --font-mono: 'Courier New', Courier, monospace;
   }
 
-  .app { max-width: 1100px; margin: 0 auto; padding: 1rem 0; }
+  /* ── App shell ── */
+  .app { display: flex; min-height: 100vh; max-width: none; margin: 0; padding: 0; }
 
-  /* ── Header ── */
-  .header { display: flex; align-items: center; margin-bottom: 1.5rem; }
-  .logo-icon { width: 32px; height: 32px; margin-right: 10px; }
-  .logo-text { font-size: 15px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
-  .logo-sub { font-size: 11px; color: var(--color-text-secondary); letter-spacing: 0.12em; text-transform: uppercase; }
+  /* ── Sidebar ── */
+  .sidebar { width: 188px; min-width: 188px; flex-shrink: 0; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .sidebar-logo { padding: 1.5rem 1.25rem 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .sidebar-logo-img { width: 88px; height: 88px; object-fit: contain; display: block; margin-bottom: 14px; }
+  .sidebar-logo-text { font-size: 14px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3; }
+  .sidebar-nav { padding: 0.6rem 0; flex: 1; }
+  .sidebar-section-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.75rem 1.25rem 0.3rem; }
+  .sidebar-item { padding: 8px 1.25rem; font-size: 12px; font-family: var(--font-mono); cursor: pointer; color: var(--color-text-secondary); transition: all 0.12s; border-left: 2px solid transparent; user-select: none; }
+  .sidebar-item.active { color: var(--color-text-info); background: var(--color-background-info); border-left-color: var(--color-text-info); }
+  .sidebar-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--color-text-primary); }
+  .sidebar-auth { padding: 1rem 1.25rem; border-top: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; gap: 7px; }
+  .sidebar-auth .login-btn,
+  .sidebar-auth .admin-btn { width: 100%; text-align: center; }
+  .sidebar-auth .user-pill { width: 100%; box-sizing: border-box; border-radius: var(--border-radius-md); }
+
+  /* ── Main content ── */
+  .main-content { flex: 1; padding: 1.5rem; overflow-y: auto; min-width: 0; }
 
   /* ── Stats ── */
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
@@ -251,6 +264,20 @@
   .cert-tags { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
   .cert-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: #1a2a3a; color: #7eb8f7; font-weight: 500; }
 
+  /* ── Submission cards ── */
+  .submission-list { display: flex; flex-direction: column; gap: 8px; }
+  .submission-card { background: var(--color-background-secondary); border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 12px 14px; display: flex; align-items: flex-start; gap: 14px; }
+  .submission-meta { flex: 1; min-width: 0; }
+  .submission-member { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .submission-quest { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 5px; }
+  .submission-notes { font-size: 11px; color: var(--color-text-tertiary); font-style: italic; margin-bottom: 4px; }
+  .submission-date { font-size: 10px; color: var(--color-text-tertiary); }
+  .approve-btn { padding: 6px 14px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: #102e22; border: 0.5px solid #2dbd8f; border-radius: var(--border-radius-md); color: #2dbd8f; cursor: pointer; white-space: nowrap; flex-shrink: 0; align-self: center; }
+  .approve-btn:hover:not(:disabled) { opacity: 0.85; }
+  .approve-btn:disabled { opacity: 0.5; cursor: default; }
+  .deny-btn { padding: 6px 14px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: 0.5px solid #7a2020; border-radius: var(--border-radius-md); color: #c44a4a; cursor: pointer; white-space: nowrap; flex-shrink: 0; align-self: center; }
+  .deny-btn:hover:not(:disabled) { background: #2e1010; }
+
   /* ── TODO banner (shown until Supabase connected) ── */
   .todo-banner { background: #2e1e0a; border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 10px 14px; margin-bottom: 1rem; font-size: 12px; color: #c47a2a; }
   .todo-banner strong { color: #e8a44a; }
@@ -280,14 +307,35 @@
 <body>
 <div class="app">
 
-  <div class="header">
-    <img src="img/PulsarLogo.png" class="logo-icon" alt="Pulsar" style="object-fit:contain;">
-    <div>
-      <div class="logo-text">Pulsar Org Tools</div>
-      <div class="logo-sub">Kelz Hounds Division · Star Citizen 4.7.1</div>
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="img/PulsarLogo.png" class="sidebar-logo-img" alt="Pulsar">
+      <div class="sidebar-logo-text">Pulsar Org Tools</div>
     </div>
-    <div class="header-auth" id="header-auth"></div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Inventory</div>
+      <div class="sidebar-item active" id="nav-component" onclick="setTab('component')">Components</div>
+      <div class="sidebar-item" id="nav-material" onclick="setTab('material')">Materials</div>
+      <div class="sidebar-item" id="nav-blueprint" onclick="setTab('blueprint')">Blueprints</div>
+      <div class="sidebar-item" id="nav-wikelo" onclick="setTab('wikelo')">Wikelo</div>
+
+      <div class="sidebar-section-label" style="margin-top:0.5rem;">Org Tools</div>
+      <div class="sidebar-item" id="nav-members" onclick="setOrgTab('members')">Members</div>
+      <div class="sidebar-item" id="nav-leaderboard" onclick="setOrgTab('leaderboard')">Leaderboard</div>
+      <div class="sidebar-item" id="nav-certifications" onclick="setOrgTab('certifications')">Certifications</div>
+      <div class="sidebar-item" id="nav-quests" onclick="setOrgTab('quests')">Quests</div>
+
+      <div class="sidebar-section-label" style="margin-top:0.5rem;">Calendar</div>
+      <div class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Org Events</div>
+    </nav>
+
+    <div class="sidebar-auth" id="header-auth"></div>
   </div>
+
+  <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+  <div class="main-content">
 
   <div class="todo-banner" id="todoBanner">
     <strong>⚠ Not connected to database.</strong> Data resets on refresh. Paste your Supabase anon key into the <code>SUPABASE_KEY</code> constant at the top of the script, then reload.
@@ -295,23 +343,11 @@
   <div class="error-banner" id="errorBanner"></div>
   <div class="loading-bar" id="loadingBar"></div>
 
-  <!-- Section switcher -->
-  <div class="section-nav">
-    <button class="section-btn active" id="nav-inventory" onclick="setSection('inventory')">📦 Inventory</button>
-    <button class="section-btn" id="nav-org" onclick="setSection('org')">🐺 Org Tools</button>
-  </div>
-
   <!-- ═══════════════ INVENTORY SECTION ═══════════════ -->
   <div id="section-inventory">
 
   <div class="stats" id="stats"></div>
 
-  <div class="tabs" id="inventory-tab-row">
-    <button class="tab active" onclick="setTab('component')">Components</button>
-    <button class="tab" onclick="setTab('material')">Materials</button>
-    <button class="tab" onclick="setTab('blueprint')">Blueprints</button>
-    <button class="tab" onclick="setTab('wikelo')">Wikelo</button>
-  </div>
 
   <!-- Component filters -->
   <div class="filter-panel visible" id="fp-component">
@@ -468,13 +504,6 @@
 
     <div class="stats" id="org-stats"></div>
 
-    <div class="tabs" id="org-tab-row">
-      <button class="tab active" onclick="setOrgTab('members')">Members</button>
-      <button class="tab" onclick="setOrgTab('events')">Events</button>
-      <button class="tab" onclick="setOrgTab('leaderboard')">Leaderboard</button>
-      <button class="tab" onclick="setOrgTab('certifications')">Certifications</button>
-      <button class="tab" onclick="setOrgTab('quests')">Quests</button>
-    </div>
 
     <!-- Members filter -->
     <div class="filter-panel visible" id="ofp-members">
@@ -534,6 +563,7 @@
 
   </div><!-- end section-org -->
 
+  </div><!-- end main-content -->
 </div><!-- end .app -->
 
 <!-- ADD / EDIT MODAL -->
@@ -722,6 +752,30 @@
       An officer will confirm your submission and award DKP via the bot.
     </div>
     <button class="submit-btn" id="ti-submit-btn" onclick="submitTurnIn()">Submit Turn-In</button>
+  </div>
+</div>
+
+<!-- POST QUEST MODAL (officers / admins) -->
+<div class="modal-bg" id="postQuestModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">Post Quest</span>
+      <button class="close-btn" onclick="closeModal('postQuestModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input class="form-input" id="pq-title" type="text" placeholder="e.g. Carinite Mining Run">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input class="form-input" id="pq-desc" type="text" placeholder="What needs to be done">
+    </div>
+    <div class="form-group">
+      <label class="form-label">DKP Reward</label>
+      <input class="form-input" id="pq-dkp" type="number" min="1" placeholder="e.g. 50">
+    </div>
+    <div id="pq-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" id="pq-btn" onclick="submitNewQuest()">Post Quest</button>
   </div>
 </div>
 
@@ -1220,8 +1274,14 @@ function initDualRange(){
 
 function setTab(t){
   activeTab=t;
-  document.querySelectorAll('#inventory-tab-row .tab').forEach((el,i)=>el.classList.toggle('active',['component','material','blueprint','wikelo'][i]===t));
-  ['component','material','blueprint','wikelo'].forEach(cat=>document.getElementById('fp-'+cat).classList.toggle('visible',cat===t));
+  setSection('inventory');
+  const invCats=['component','material','blueprint','wikelo'];
+  const orgTabs=['members','events','leaderboard','certifications','quests'];
+  invCats.forEach(cat=>{
+    document.getElementById('nav-'+cat)?.classList.toggle('active',cat===t);
+    document.getElementById('fp-'+cat)?.classList.toggle('visible',cat===t);
+  });
+  orgTabs.forEach(tab=>document.getElementById('nav-'+tab)?.classList.remove('active'));
   render();
 }
 
@@ -1461,13 +1521,11 @@ const ORG_TRACK_EMOJI = {'Air Wing':'✈️','Ground Forces':'🪖','MSF':'⚓',
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// ── Section switcher ──
+// ── Section switcher (internal — called by setTab / setOrgTab) ──
 function setSection(s) {
   activeSection = s;
   document.getElementById('section-inventory').style.display = s==='inventory' ? '' : 'none';
   document.getElementById('section-org').style.display = s==='org' ? '' : 'none';
-  document.getElementById('nav-inventory').classList.toggle('active', s==='inventory');
-  document.getElementById('nav-org').classList.toggle('active', s==='org');
   if (s==='org' && !orgLoaded) loadOrg();
 }
 
@@ -1486,12 +1544,15 @@ function updateOrgStats() {
 // ── Org tab switcher ──
 function setOrgTab(t) {
   activeOrgTab = t;
-  const tabs = ['members','events','leaderboard','certifications','quests'];
-  document.querySelectorAll('#org-tab-row .tab').forEach((el,i)=>el.classList.toggle('active',tabs[i]===t));
-  tabs.forEach(tab=>{
+  setSection('org');
+  const invCats=['component','material','blueprint','wikelo'];
+  const orgTabs=['members','events','leaderboard','certifications','quests'];
+  orgTabs.forEach(tab=>{
+    document.getElementById('nav-'+tab)?.classList.toggle('active',tab===t);
     const fp=document.getElementById('ofp-'+tab);
     if(fp&&fp.style.display!=='none') fp.classList.toggle('visible',tab===t);
   });
+  invCats.forEach(cat=>document.getElementById('nav-'+cat)?.classList.remove('active'));
   renderOrg();
 }
 
@@ -1594,20 +1655,22 @@ function renderCertifications(grid) {
   }).join('');
 }
 
-// ── Quests ──
-let orgQuests = [];
+// ── Quests & Submissions ──
+let orgQuests       = [];
+let orgSubmissions  = [];  // pending quest turn-ins visible to officers
 
 async function loadOrg() {
   if (!sb) { renderOrg(); updateOrgStats(); return; }
   document.getElementById('loadingBar').style.display = 'block';
   document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
   try {
-    const [mRes,eRes,cRes,aRes,qRes] = await Promise.all([
+    const [mRes,eRes,cRes,aRes,qRes,sRes] = await Promise.all([
       sb.from('members').select('id,username,display_name,dkp_balance,joined_at').order('dkp_balance',{ascending:false}),
       sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,location').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
       sb.from('attendance').select('member_id').eq('attended',true),
       sb.from('quests').select('id,title,description,dkp_reward,status,created_at').order('created_at',{ascending:false}),
+      sb.from('quest_submissions').select('id,quest_id,member_id,notes,submitted_at,members(display_name,username),quests(title,dkp_reward)').order('submitted_at',{ascending:true}),
     ]);
     if (mRes.error) throw mRes.error;
     orgCerts = cRes.data || [];
@@ -1620,6 +1683,7 @@ async function loadOrg() {
     }));
     orgEvents = eRes.data || [];
     orgQuests = qRes.data || [];
+    orgSubmissions = sRes.data || [];  // ignore sRes.error — table may not exist in dev
     orgLoaded = true;
   } catch(err) {
     showError('Could not load org data: '+(err.message||String(err)));
@@ -1640,9 +1704,54 @@ function renderQuests(grid) {
     (q.status==='closed'    && showClosed)
   );
   document.getElementById('org-result-count').textContent = list.length ? `${list.length} quest${list.length!==1?'s':''}` : '';
-  if (!list.length) { grid.innerHTML='<div class="empty">No quests found. Officers can post quests via the Discord bot.</div>'; grid.className=''; return; }
+
+  // ── Pending submissions panel (officers / admins only) ──────────────────────
+  let submissionsHTML = '';
+  if ((isOfficer || isAdmin) && orgSubmissions.length) {
+    const canApprove = isOfficer; // requires real Discord officer JWT for RLS
+    const cards = orgSubmissions.map(s => {
+      const memberName = s.members?.display_name || s.members?.username || s.member_id;
+      const questTitle = s.quests?.title || '—';
+      const dkpAmt     = s.quests?.dkp_reward || 0;
+      const dateStr    = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+      const actionHTML = canApprove
+        ? `<button class="approve-btn" onclick="approveSubmission('${esc(s.id)}')">Approve +${dkpAmt} DKP</button>
+           <button class="deny-btn"    onclick="denySubmission('${esc(s.id)}')">Deny</button>`
+        : `<span style="font-size:10px;color:#6b6864;align-self:center;">Sign in as officer to approve</span>`;
+      return `<div class="submission-card">
+        <div class="submission-meta">
+          <div class="submission-member">${esc(memberName)}</div>
+          <div class="submission-quest">Quest: ${esc(questTitle)}</div>
+          ${s.notes ? `<div class="submission-notes">"${esc(s.notes)}"</div>` : ''}
+          <div class="submission-date">${dateStr}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
+          ${actionHTML}
+        </div>
+      </div>`;
+    }).join('');
+    submissionsHTML = `<div style="grid-column:1/-1;margin-bottom:1.25rem;">
+      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#c47a2a;margin-bottom:8px;font-weight:500;">
+        ⏳ Pending Turn-Ins (${orgSubmissions.length})
+      </div>
+      <div class="submission-list">${cards}</div>
+    </div>`;
+  }
+
+  // ── Officer toolbar ─────────────────────────────────────────────────────────
+  const canPost = isOfficer || isAdmin;
+  const toolbarHTML = canPost
+    ? `<div style="grid-column:1/-1;display:flex;justify-content:flex-end;margin-bottom:0.25rem;">
+        <button class="add-btn" onclick="openPostQuestModal()">+ Post Quest</button>
+       </div>`
+    : '';
+
   grid.className = 'org-grid';
-  grid.innerHTML = list.map(q => {
+  if (!list.length) {
+    grid.innerHTML = submissionsHTML + toolbarHTML + '<div class="empty" style="grid-column:1/-1;">No quests found.</div>';
+    return;
+  }
+  grid.innerHTML = submissionsHTML + toolbarHTML + list.map(q => {
     const statusCls = {open:'q-open',completed:'q-completed',closed:'q-closed'}[q.status]||'q-closed';
     const statusTxt = {open:'Open',completed:'Completed',closed:'Closed'}[q.status]||q.status;
     const turnInBtn = q.status==='open'
@@ -1658,6 +1767,59 @@ function renderQuests(grid) {
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Post Quest (officers / admins) ──
+function openPostQuestModal() {
+  if (!isOfficer && !isAdmin) return;
+  ['pq-title','pq-desc','pq-dkp'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pq-error').style.display = 'none';
+  document.getElementById('pq-btn').disabled = false;
+  document.getElementById('pq-btn').textContent = 'Post Quest';
+  document.getElementById('postQuestModal').classList.add('open');
+  setTimeout(() => document.getElementById('pq-title').focus(), 60);
+}
+
+async function submitNewQuest() {
+  if (!isOfficer && !isAdmin) return;
+  const title = document.getElementById('pq-title').value.trim();
+  const desc  = document.getElementById('pq-desc').value.trim();
+  const dkp   = parseInt(document.getElementById('pq-dkp').value);
+  const errEl = document.getElementById('pq-error');
+
+  if (!title || !desc || !dkp || dkp < 1) {
+    errEl.textContent = 'Title, description, and a positive DKP reward are all required.';
+    errEl.style.display = 'block'; return;
+  }
+
+  if (!authUser && isAdmin) {
+    errEl.textContent = 'Quest posting requires signing in with Discord as an officer. The admin password grants view-only access to quest management.';
+    errEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('pq-btn');
+  btn.disabled = true; btn.textContent = 'Posting…';
+  errEl.style.display = 'none';
+
+  try {
+    const { data, error } = await sb.from('quests').insert({
+      title,
+      description: desc,
+      dkp_reward:  dkp,
+      status:      'open',
+      created_by:  authMember?.id || null,
+    }).select().single();
+
+    if (error) throw error;
+
+    orgQuests.unshift(data);
+    closeModal('postQuestModal');
+    renderOrg();
+  } catch (err) {
+    errEl.textContent = 'Failed to post quest: ' + (err.message || String(err));
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Post Quest';
+  }
 }
 
 let turnInQuestId = null;
@@ -1730,6 +1892,90 @@ async function submitTurnIn() {
   } catch(err) {
     showError('Submission failed: ' + (err.message || String(err)));
     btn.disabled = false; btn.textContent = 'Submit Turn-In';
+  }
+}
+
+// ── Approve submission (officer only — requires Discord JWT) ──
+async function approveSubmission(subId) {
+  if (!isOfficer) { showError('Only Discord-authenticated officers can approve submissions.'); return; }
+  const sub = orgSubmissions.find(s => s.id === subId);
+  if (!sub) return;
+
+  const quest   = orgQuests.find(q => q.id === sub.quest_id);
+  const dkpAmt  = quest?.dkp_reward || sub.quests?.dkp_reward || 0;
+  const questTitle = quest?.title || sub.quests?.title || 'Quest';
+
+  // Disable both buttons for this card immediately
+  document.querySelectorAll(`button[onclick*="${subId}"]`).forEach(b => { b.disabled = true; b.textContent = 'Working…'; });
+
+  try {
+    // 1. Fetch current member balance
+    const { data: member, error: mErr } = await sb
+      .from('members').select('id,dkp_balance').eq('id', sub.member_id).maybeSingle();
+    if (mErr || !member) throw mErr || new Error('Member not found.');
+
+    const newBalance = (member.dkp_balance || 0) + dkpAmt;
+
+    // 2. Apply everything in parallel
+    const [balRes, txRes, compRes] = await Promise.all([
+      sb.from('members').update({ dkp_balance: newBalance }).eq('id', sub.member_id),
+      sb.from('dkp_transactions').insert({
+        member_id: sub.member_id, amount: dkpAmt,
+        reason: `Quest: ${questTitle}`, quest_id: sub.quest_id,
+      }),
+      sb.from('quest_completions').insert({
+        quest_id: sub.quest_id, member_id: sub.member_id,
+      }),
+    ]);
+    if (balRes.error) throw balRes.error;
+    if (txRes.error && !txRes.error.message?.includes('unique')) throw txRes.error; // ignore duplicate completion
+
+    // 3. Mark quest completed & delete submission
+    await Promise.all([
+      sb.from('quests').update({ status: 'completed' }).eq('id', sub.quest_id),
+      sb.from('quest_submissions').delete().eq('id', subId),
+    ]);
+
+    // 4. Update local state
+    orgSubmissions = orgSubmissions.filter(s => s.id !== subId);
+    const qi = orgQuests.findIndex(q => q.id === sub.quest_id);
+    if (qi !== -1) orgQuests[qi].status = 'completed';
+    const mi = orgMembers.findIndex(m => m.id === sub.member_id);
+    if (mi !== -1) orgMembers[mi].dkp_balance = newBalance;
+
+    renderOrg();
+    updateOrgStats();
+
+    // Success flash
+    const el = document.getElementById('errorBanner');
+    const memberName = sub.members?.display_name || sub.members?.username || sub.member_id;
+    el.textContent = `✅ Approved! ${memberName} awarded ${dkpAmt} DKP for "${questTitle}".`;
+    el.style.background = '#102e22'; el.style.borderColor = '#2dbd8f'; el.style.color = '#2dbd8f';
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display='none'; el.style.background=''; el.style.borderColor=''; el.style.color=''; }, 5000);
+
+  } catch (err) {
+    showError('Approval failed: ' + (err.message || String(err)));
+    document.querySelectorAll(`button[onclick*="${subId}"]`).forEach(b => { b.disabled = false; b.textContent = b.classList.contains('approve-btn') ? `Approve +${dkpAmt} DKP` : 'Deny'; });
+  }
+}
+
+// ── Deny submission (officer only) ──
+async function denySubmission(subId) {
+  if (!isOfficer) { showError('Only Discord-authenticated officers can deny submissions.'); return; }
+  if (!confirm('Deny and remove this turn-in submission?')) return;
+
+  const sub = orgSubmissions.find(s => s.id === subId);
+  document.querySelectorAll(`button[onclick*="${subId}"]`).forEach(b => { b.disabled = true; });
+
+  try {
+    const { error } = await sb.from('quest_submissions').delete().eq('id', subId);
+    if (error) throw error;
+    orgSubmissions = orgSubmissions.filter(s => s.id !== subId);
+    renderOrg();
+  } catch (err) {
+    showError('Could not deny submission: ' + (err.message || String(err)));
+    document.querySelectorAll(`button[onclick*="${subId}"]`).forEach(b => { b.disabled = false; });
   }
 }
 
