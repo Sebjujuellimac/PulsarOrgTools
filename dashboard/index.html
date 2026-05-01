@@ -44,7 +44,7 @@
   /* ── Sidebar ── */
   .sidebar { width: clamp(13rem, 18vw, 22rem); min-width: clamp(13rem, 18vw, 22rem); flex-shrink: 0; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
   .sidebar-logo { padding: 2rem 1.75rem 1.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
-  .sidebar-logo-img { width: 6.5rem; height: 6.5rem; object-fit: cover; object-position: center 60%; display: block; margin-bottom: 1.1rem; border-radius: 50%; }
+  .sidebar-logo-img { width: 6.5rem; height: 6.5rem; object-fit: cover; object-position: center 75%; display: block; margin-bottom: 1.1rem; border-radius: 50%; }
   .sidebar-logo-text { font-size: 1.125rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3; }
   .sidebar-nav { padding: 0.75rem 0; flex: 1; }
   .sidebar-section-label { font-size: 0.69rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 1rem 1.75rem 0.4rem; }
@@ -319,29 +319,50 @@
   .deny-btn:hover:not(:disabled) { background: #2e1010; }
 
   /* ── Calendar ── */
-  .cal-container { width: 100%; }
-  .cal-header { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.75rem; }
+  .cal-container { width: 100%; display: flex; flex-direction: column; }
+  .cal-header { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.5rem; }
   .cal-nav-btn { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); font-size: 1.125rem; line-height: 1; cursor: pointer; padding: 0.2rem 0.7rem 0.3rem; }
   .cal-nav-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
   .cal-week-label { flex: 1; text-align: center; font-size: 0.81rem; font-weight: 500; letter-spacing: 0.04em; }
-  .cal-today-btn { padding: 0.3rem 0.75rem; font-family: var(--font-mono); font-size: 0.69rem; letter-spacing: 0.06em; text-transform: uppercase; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+  .cal-today-btn { padding: 0.3rem 0.75rem; font-size: 0.69rem; letter-spacing: 0.06em; text-transform: uppercase; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
   .cal-today-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
-  .cal-day-col { border-right: 0.5px solid var(--color-border-tertiary); min-height: 13.75rem; display: flex; flex-direction: column; }
-  .cal-day-col:last-child { border-right: none; }
-  .cal-day-col.cal-today-col { background: rgba(30,42,58,0.35); }
-  .cal-day-head { padding: 0.5rem 0.375rem 0.44rem; border-bottom: 0.5px solid var(--color-border-tertiary); text-align: center; background: var(--color-background-secondary); flex-shrink: 0; }
-  .cal-day-name { font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 0.3rem; }
-  .cal-day-num { font-size: 0.94rem; font-weight: 500; color: var(--color-text-secondary); line-height: 1; }
+
+  /* Time-grid shell */
+  .cal-tgrid-outer { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; display: flex; flex-direction: column; }
+
+  /* Sticky column headers */
+  .cal-thead { display: grid; grid-template-columns: 2.75rem repeat(7, 1fr); background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-primary); flex-shrink: 0; }
+  .cal-time-gutter-head { border-right: 0.5px solid var(--color-border-tertiary); }
+  .cal-col-head { padding: 0.5rem 0.375rem 0.44rem; text-align: center; border-right: 0.5px solid var(--color-border-tertiary); }
+  .cal-col-head:last-child { border-right: none; }
+  .cal-col-head.cal-today-col { background: rgba(30,42,58,0.35); }
+  .cal-day-name { font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 0.25rem; }
+  .cal-day-num  { font-size: 0.94rem; font-weight: 500; color: var(--color-text-secondary); line-height: 1; }
   .cal-today-num { display: inline-flex; align-items: center; justify-content: center; width: 1.625rem; height: 1.625rem; border-radius: 50%; background: var(--color-background-info); color: var(--color-text-info); font-size: 0.81rem; }
-  .cal-day-body { flex: 1; padding: 0.375rem 0.3rem; display: flex; flex-direction: column; gap: 0.3rem; }
-  .cal-event { border-radius: 4px; padding: 0.3rem 0.44rem; border-left: 2px solid transparent; }
+
+  /* Scrollable body */
+  .cal-tbody-scroll { overflow-y: auto; height: calc(100vh - 17rem); }
+  .cal-tbody { display: grid; grid-template-columns: 2.75rem repeat(7, 1fr); }
+
+  /* Hour labels */
+  .cal-hour-label { height: 3rem; font-size: 0.5rem; color: var(--color-text-tertiary); text-align: right; padding: 0.2rem 0.375rem 0 0; border-right: 0.5px solid var(--color-border-tertiary); border-bottom: 0.5px solid var(--color-border-tertiary); line-height: 1; letter-spacing: 0.04em; }
+
+  /* Day columns */
+  .cal-day-col { position: relative; border-right: 0.5px solid var(--color-border-tertiary); }
+  .cal-day-col:last-child { border-right: none; }
+  .cal-day-col.cal-today-col { background: rgba(30,42,58,0.2); }
+  .cal-hour-slot { height: 3rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .cal-hour-slot.cal-hour-half { border-bottom-color: transparent; border-bottom-style: dashed; }
+
+  /* Event blocks — absolutely positioned in the day column */
+  .cal-ev-block { position: absolute; left: 0.2rem; right: 0.2rem; border-radius: 3px; padding: 0.2rem 0.375rem; border-left: 2px solid transparent; overflow: hidden; z-index: 1; min-height: 1.5rem; }
   .cal-ev-open { background: #182a18; border-left-color: #5a9e3f; }
-  .cal-ev-past { background: var(--color-background-secondary); border-left-color: var(--color-border-secondary); opacity: 0.7; }
-  .cal-ev-time  { font-size: 0.56rem; color: var(--color-text-tertiary); letter-spacing: 0.04em; margin-bottom: 0.125rem; }
-  .cal-ev-title { font-size: 0.69rem; font-weight: 500; line-height: 1.35; color: var(--color-text-primary); margin-bottom: 0.2rem; word-break: break-word; }
-  .cal-ev-dkp   { font-size: 0.56rem; color: #a89cf7; }
-  .cal-no-events { font-size: 0.69rem; color: var(--color-text-tertiary); text-align: center; padding: 2rem 0.5rem; }
+  .cal-ev-past { background: #22222a; border-left-color: var(--color-border-secondary); }
+  .cal-ev-time  { font-size: 0.5rem; color: var(--color-text-tertiary); letter-spacing: 0.04em; white-space: nowrap; }
+  .cal-ev-title { font-size: 0.625rem; font-weight: 600; line-height: 1.3; color: var(--color-text-primary); word-break: break-word; margin-top: 0.1rem; }
+  .cal-ev-loc   { font-size: 0.5rem; color: var(--color-text-tertiary); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-ev-dkp   { font-size: 0.5rem; color: #a89cf7; margin-top: 0.1rem; }
+  .cal-no-events { font-size: 0.69rem; color: var(--color-text-tertiary); text-align: center; padding: 1rem 0.5rem; }
 
   /* ── TODO banner ── */
   .todo-banner { background: #2e1e0a; border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 0.625rem 0.875rem; margin-bottom: 1rem; font-size: 0.75rem; color: #c47a2a; }
@@ -1961,14 +1982,14 @@ function renderEvents(grid) {
   document.getElementById('org-result-count').textContent = '';
   grid.className = '';
 
+  const HOUR_H = 3; // rem per hour slot
+
   const weekStart = calWeekStart(calWeekOffset);
   const weekDays  = Array.from({length: 7}, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
     return d;
   });
-  const weekEnd = new Date(weekDays[6]);
-  weekEnd.setHours(23, 59, 59, 999);
 
   const todayStr = new Date().toDateString();
 
@@ -1978,19 +1999,64 @@ function renderEvents(grid) {
     ? `${CAL_MONTHS[s.getMonth()]} ${s.getDate()} – ${e.getDate()}, ${e.getFullYear()}`
     : `${CAL_MONTHS[s.getMonth()]} ${s.getDate()} – ${CAL_MONTHS[e.getMonth()]} ${e.getDate()}, ${e.getFullYear()}`;
 
-  // Bucket events into days
+  // Bucket events into days (using local date matching)
   const byDay = Array.from({length: 7}, () => []);
   for (const ev of orgEvents) {
     if (!ev.scheduled_start_time) continue;
     const evDate = new Date(ev.scheduled_start_time);
-    // Compare against local date representation of each day
     const idx = weekDays.findIndex(d => evDate.toLocaleDateString() === d.toLocaleDateString());
     if (idx >= 0) byDay[idx].push(ev);
   }
-  // Sort each day by time
   byDay.forEach(arr => arr.sort((a, b) => new Date(a.scheduled_start_time) - new Date(b.scheduled_start_time)));
-
   const totalThisWeek = byDay.reduce((n, arr) => n + arr.length, 0);
+
+  // Helper: get hour + fractional minute in ET for positioning
+  const etFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: false
+  });
+  function etDecimalHour(dt) {
+    const parts = etFormatter.formatToParts(dt);
+    const h = parseInt(parts.find(p => p.type === 'hour').value)   % 24;
+    const m = parseInt(parts.find(p => p.type === 'minute').value) || 0;
+    return h + m / 60;
+  }
+
+  // Hour labels — left gutter
+  const timeColHTML = Array.from({length: 24}, (_, h) => {
+    const label = h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`;
+    return `<div class="cal-hour-label">${label}</div>`;
+  }).join('');
+
+  // Day columns: 24 empty hour slots + absolutely-positioned event blocks
+  const daysHTML = weekDays.map((d, i) => {
+    const isToday = d.toDateString() === todayStr;
+    const slots = Array.from({length: 24}, () => `<div class="cal-hour-slot"></div>`).join('');
+    const evBlocks = byDay[i].map(ev => {
+      const dt  = new Date(ev.scheduled_start_time);
+      const top = etDecimalHour(dt) * HOUR_H;
+      const cls = ev.status === 'open' ? 'cal-ev-open' : 'cal-ev-past';
+      const timeStr = dt.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York'});
+      const locLine = ev.location ? `<div class="cal-ev-loc">📍 ${esc(ev.location)}</div>` : '';
+      return `<div class="cal-ev-block ${cls}" style="top:${top}rem;height:${HOUR_H}rem;">
+        <div class="cal-ev-time">${timeStr} ET</div>
+        <div class="cal-ev-title">${esc(ev.title)}</div>
+        ${locLine}
+        <div class="cal-ev-dkp">${ev.dkp_reward} DKP</div>
+      </div>`;
+    }).join('');
+    return `<div class="cal-day-col${isToday ? ' cal-today-col' : ''}">${slots}${evBlocks}</div>`;
+  }).join('');
+
+  // Column headers
+  const theadHTML = weekDays.map((d, i) => {
+    const isToday = d.toDateString() === todayStr;
+    const numEl   = isToday
+      ? `<span class="cal-today-num">${d.getDate()}</span>`
+      : `<span class="cal-day-num">${d.getDate()}</span>`;
+    return `<div class="cal-col-head${isToday ? ' cal-today-col' : ''}">
+      <div class="cal-day-name">${CAL_DAYS[i]}</div>${numEl}
+    </div>`;
+  }).join('');
 
   grid.innerHTML = `
     <div class="cal-container">
@@ -2000,35 +2066,27 @@ function renderEvents(grid) {
         <button class="cal-nav-btn" onclick="calWeekOffset++;renderOrg()">›</button>
         <button class="cal-today-btn" onclick="calWeekOffset=0;renderOrg()">Today</button>
       </div>
-      <div class="cal-grid">
-        ${weekDays.map((d, i) => {
-          const isToday = d.toDateString() === todayStr;
-          const dayNumEl = isToday
-            ? `<span class="cal-today-num">${d.getDate()}</span>`
-            : `<span class="cal-day-num">${d.getDate()}</span>`;
-          const evCards = byDay[i].map(ev => {
-            const time = new Date(ev.scheduled_start_time)
-              .toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/New_York'});
-            const loc = ev.location ? `<div class="cal-ev-time">📍 ${esc(ev.location)}</div>` : '';
-            const cls = ev.status === 'open' ? 'cal-ev-open' : 'cal-ev-past';
-            return `<div class="cal-event ${cls}">
-              <div class="cal-ev-time">${time} ET</div>
-              ${loc}
-              <div class="cal-ev-title">${esc(ev.title)}</div>
-              <div class="cal-ev-dkp">${ev.dkp_reward} DKP</div>
-            </div>`;
-          }).join('');
-          return `<div class="cal-day-col${isToday ? ' cal-today-col' : ''}">
-            <div class="cal-day-head">
-              <div class="cal-day-name">${CAL_DAYS[i]}</div>
-              ${dayNumEl}
-            </div>
-            <div class="cal-day-body">${evCards}</div>
-          </div>`;
-        }).join('')}
+      <div class="cal-tgrid-outer">
+        <div class="cal-thead">
+          <div class="cal-time-gutter-head"></div>
+          ${theadHTML}
+        </div>
+        <div class="cal-tbody-scroll" id="cal-scroll">
+          <div class="cal-tbody">
+            <div class="cal-time-col">${timeColHTML}</div>
+            ${daysHTML}
+          </div>
+        </div>
       </div>
-      ${totalThisWeek === 0 ? `<div class="cal-no-events">No events scheduled this week.</div>` : ''}
+      ${totalThisWeek === 0 ? '<div class="cal-no-events">No events this week.</div>' : ''}
     </div>`;
+
+  // Scroll to 8am on load
+  const scrollEl = document.getElementById('cal-scroll');
+  if (scrollEl) {
+    const basePx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    scrollEl.scrollTop = 8 * HOUR_H * basePx;
+  }
 }
 
 // ── Leaderboard ──
