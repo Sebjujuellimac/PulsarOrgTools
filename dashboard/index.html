@@ -1498,7 +1498,7 @@ function updateAuthUI() {
     // Show RSI link button only for Discord-auth members who haven't linked yet
     const isDiscordAuth = authUser?.app_metadata?.provider === 'discord';
     const rsiLinked     = authMember?.rsi_verified && authMember?.rsi_handle;
-    const rsiBtn = isDiscordAuth && !rsiLinked && orgRsiKey
+    const rsiBtn = isDiscordAuth && !rsiLinked
       ? `<button class="rsi-link-btn" onclick="openRsiLinkModal()" title="Link your RSI account">🌌 Link RSI</button>`
       : rsiLinked
         ? `<a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(authMember.rsi_handle)}" target="_blank" rel="noopener" title="RSI: ${esc(authMember.rsi_handle)}">🌌 ${esc(authMember.rsi_handle)}</a>`
@@ -3848,11 +3848,12 @@ function openMemberModal(id) {
 
 // ── RSI account linking (webapp flow) ────────────────────────────────────────
 
+const RSI_PROXY = 'https://young-union-327f.sdecarbonnel.workers.dev';
+
 async function rsiApiFetch(endpoint, mode = 'live') {
-  if (!orgRsiKey) throw new Error('RSI API key not loaded.');
-  const url = `https://starcitizen-api.com/${orgRsiKey}/v1/${mode}/${endpoint}`;
-  const res  = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!res.ok) throw new Error(`RSI API HTTP ${res.status}`);
+  const url = `${RSI_PROXY}?endpoint=${encodeURIComponent(endpoint)}&mode=${mode}`;
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error(`RSI proxy HTTP ${res.status}`);
   const json = await res.json();
   if (json.code !== 200) throw new Error(`RSI API: ${json.message ?? json.code}`);
   return json.data;
