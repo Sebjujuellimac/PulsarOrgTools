@@ -15,3 +15,15 @@ ALTER TABLE members ADD COLUMN IF NOT EXISTS rsi_last_synced     timestamptz;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_members_rsi_handle
   ON members (lower(rsi_handle))
   WHERE rsi_handle IS NOT NULL;
+
+-- Store RSI API key so the web dashboard can make RSI API calls.
+-- Replace the value with your key from https://starcitizen-api.com
+INSERT INTO org_config (key, value)
+VALUES ('rsi_api_key', 'YOUR_STARCITIZEN_API_KEY_HERE')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+-- Also allow members to update their own RSI fields (for the webapp link flow)
+DROP POLICY IF EXISTS "self update rsi" ON members;
+CREATE POLICY "self update rsi" ON members FOR UPDATE
+  USING (id = get_discord_id())
+  WITH CHECK (id = get_discord_id());

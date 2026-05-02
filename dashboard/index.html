@@ -501,6 +501,13 @@
   .badge-admin   { background: #2e1010; color: #c44a4a; }
   .logout-btn { background: none; border: none; font-size: 0.875rem; cursor: pointer; color: var(--color-text-tertiary); padding: 0 0 0 0.25rem; line-height: 1; }
   .logout-btn:hover { color: var(--color-text-secondary); }
+  .btn-primary { padding: 0.44rem 1rem; font-family: var(--font-mono); font-size: 0.69rem; letter-spacing: 0.06em; text-transform: uppercase; background: #1a6496; border: none; border-radius: var(--border-radius-md); color: #fff; cursor: pointer; white-space: nowrap; }
+  .btn-primary:hover { background: #1a80c0; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { padding: 0.44rem 1rem; font-family: var(--font-mono); font-size: 0.69rem; letter-spacing: 0.06em; text-transform: uppercase; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+  .btn-secondary:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .rsi-link-btn { padding: 0.25rem 0.6rem; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; background: #0d1a2a; border: 0.5px solid #1a4a6a; border-radius: var(--border-radius-md); color: #1a90c8; cursor: pointer; white-space: nowrap; }
+  .rsi-link-btn:hover { background: #0d2236; color: #4ab8f0; border-color: #1a6496; }
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1219,6 +1226,49 @@
   </div>
 </div>
 
+<!-- RSI LINK MODAL -->
+<div class="modal-bg" id="rsiLinkModal">
+  <div class="modal" style="max-width:30rem;">
+    <div class="modal-header">
+      <span class="modal-title">🌌 Link RSI Account</span>
+      <button class="close-btn" onclick="closeModal('rsiLinkModal')">×</button>
+    </div>
+
+    <!-- Step 1: enter handle -->
+    <div id="rsi-step1">
+      <p style="font-size:13px;color:var(--color-text-secondary);margin:0 0 1rem;">
+        Enter your RSI handle to start the verification process.
+      </p>
+      <label class="form-label">RSI Handle</label>
+      <input id="rsi-handle-input" class="form-input" placeholder="YourHandle" style="margin-bottom:0.75rem;"
+             onkeydown="if(event.key==='Enter')startRsiLink()">
+      <div id="rsi-step1-error" style="display:none;color:#c05050;font-size:12px;margin-bottom:0.75rem;"></div>
+      <button class="btn-primary" id="rsi-step1-btn" onclick="startRsiLink()" style="width:100%;">Check Handle</button>
+    </div>
+
+    <!-- Step 2: bio token -->
+    <div id="rsi-step2" style="display:none;">
+      <p style="font-size:13px;color:var(--color-text-secondary);margin:0 0 0.75rem;">
+        Handle confirmed: <strong id="rsi-confirmed-handle"></strong>
+      </p>
+      <p style="font-size:13px;color:var(--color-text-secondary);margin:0 0 0.75rem;">
+        Add this token anywhere in your <a id="rsi-bio-link" href="#" target="_blank" rel="noopener" style="color:#7eb8f7;">RSI profile bio</a>, then click Verify.
+      </p>
+      <div style="background:#0d1218;border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:0.625rem 0.875rem;font-family:monospace;font-size:13px;letter-spacing:0.04em;color:#7eb8f7;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+        <span id="rsi-token-display"></span>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('rsi-token-display').textContent)"
+                style="background:none;border:none;color:#9e9b96;cursor:pointer;font-size:11px;padding:0;" title="Copy">📋</button>
+      </div>
+      <p style="font-size:11px;color:#6b6864;margin:0 0 0.875rem;">You can remove the token from your bio after verifying.</p>
+      <div id="rsi-step2-error" style="display:none;color:#c05050;font-size:12px;margin-bottom:0.75rem;"></div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn-secondary" onclick="rsiGoBack()" style="flex:1;">← Back</button>
+        <button class="btn-primary" id="rsi-step2-btn" onclick="verifyRsiLink()" style="flex:2;">Verify Bio</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN PASSWORD MODAL -->
 <div class="modal-bg" id="adminModal">
   <div class="modal" style="max-width:380px;">
@@ -1307,6 +1357,9 @@ let sb = null;
 if (SUPABASE_URL && SUPABASE_KEY) {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   document.getElementById('todoBanner').style.display = 'none';
+  // Load RSI API key from org_config (best-effort, non-blocking)
+  sb.from('org_config').select('value').eq('key','rsi_api_key').maybeSingle()
+    .then(({ data }) => { if (data?.value) { orgRsiKey = data.value; updateAuthUI(); } });
 }
 
 // ── Sidebar resize ────────────────────────────────────────────────────────────
@@ -1356,6 +1409,7 @@ let authUser   = null;   // Supabase auth user
 let authMember = null;   // Row from members table
 let isOfficer  = false;  // from members.is_officer
 let isAdmin    = false;  // from org_config admin_password check
+let orgRsiKey  = null;   // starcitizen-api.com key, loaded from org_config
 
 if (sb) {
   // Handle session present after OAuth redirect or page reload
@@ -1390,7 +1444,7 @@ async function handleAuthSession(session) {
   if (memberId && sb) {
     const { data: member } = await sb
       .from('members')
-      .select('id, username, display_name, is_officer, discord_avatar, dkp_balance')
+      .select('id, username, display_name, is_officer, discord_avatar, dkp_balance, rsi_handle, rsi_verified')
       .eq('id', memberId)
       .maybeSingle();
 
@@ -1441,11 +1495,20 @@ function updateAuthUI() {
       : isOfficer
         ? `<span class="user-badge badge-officer">Officer</span>`
         : '';
+    // Show RSI link button only for Discord-auth members who haven't linked yet
+    const isDiscordAuth = authUser?.app_metadata?.provider === 'discord';
+    const rsiLinked     = authMember?.rsi_verified && authMember?.rsi_handle;
+    const rsiBtn = isDiscordAuth && !rsiLinked && orgRsiKey
+      ? `<button class="rsi-link-btn" onclick="openRsiLinkModal()" title="Link your RSI account">🌌 Link RSI</button>`
+      : rsiLinked
+        ? `<a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(authMember.rsi_handle)}" target="_blank" rel="noopener" title="RSI: ${esc(authMember.rsi_handle)}">🌌 ${esc(authMember.rsi_handle)}</a>`
+        : '';
     container.innerHTML = `
       <div class="user-pill">
         ${avatarEl}
         <span class="user-name">${esc(name)}</span>
         ${badgeEl}
+        ${rsiBtn}
         <button class="logout-btn" onclick="doLogout()" title="Sign out">✕</button>
       </div>`;
   } else {
@@ -3781,6 +3844,132 @@ function openMemberModal(id) {
     ${awardSection}`;
 
   document.getElementById('memberModal').classList.add('open');
+}
+
+// ── RSI account linking (webapp flow) ────────────────────────────────────────
+
+async function rsiApiFetch(endpoint, mode = 'live') {
+  if (!orgRsiKey) throw new Error('RSI API key not loaded.');
+  const url = `https://starcitizen-api.com/${orgRsiKey}/v1/${mode}/${endpoint}`;
+  const res  = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error(`RSI API HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.code !== 200) throw new Error(`RSI API: ${json.message ?? json.code}`);
+  return json.data;
+}
+
+function openRsiLinkModal() {
+  // Reset to step 1
+  document.getElementById('rsi-handle-input').value = '';
+  document.getElementById('rsi-step1-error').style.display = 'none';
+  document.getElementById('rsi-step2-error').style.display = 'none';
+  document.getElementById('rsi-step1').style.display = '';
+  document.getElementById('rsi-step2').style.display = 'none';
+  document.getElementById('rsiLinkModal').classList.add('open');
+  setTimeout(() => document.getElementById('rsi-handle-input').focus(), 60);
+}
+
+function rsiGoBack() {
+  document.getElementById('rsi-step1').style.display = '';
+  document.getElementById('rsi-step2').style.display = 'none';
+}
+
+async function startRsiLink() {
+  if (!authMember) return;
+  const handle = document.getElementById('rsi-handle-input').value.trim();
+  const errEl  = document.getElementById('rsi-step1-error');
+  if (!handle) { errEl.textContent = 'Enter your RSI handle.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('rsi-step1-btn');
+  btn.disabled = true; btn.textContent = 'Checking…';
+  errEl.style.display = 'none';
+
+  try {
+    // Check handle exists on RSI
+    const data    = await rsiApiFetch(`user/${encodeURIComponent(handle)}`);
+    const profile = data?.profile ?? {};
+    if (!profile.handle) throw new Error('No profile found for that handle.');
+
+    const canonical = profile.handle; // RSI's canonical casing
+
+    // Check not already claimed by another member
+    const { data: clash } = await sb.from('members').select('id')
+      .ilike('rsi_handle', canonical).neq('id', authMember.id).maybeSingle();
+    if (clash) throw new Error('That handle is already linked to another member.');
+
+    // Generate bio token and save to DB
+    const token   = 'khd-' + Math.random().toString(36).slice(2, 10);
+    const expires = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    const { error } = await sb.from('members').update({
+      rsi_handle:         canonical,
+      rsi_verified:       false,
+      rsi_verify_token:   token,
+      rsi_verify_expires: expires,
+    }).eq('id', authMember.id);
+    if (error) throw new Error(error.message);
+
+    // Advance to step 2
+    document.getElementById('rsi-confirmed-handle').textContent = canonical;
+    document.getElementById('rsi-token-display').textContent    = token;
+    document.getElementById('rsi-bio-link').href =
+      `https://robertsspaceindustries.com/citizens/${encodeURIComponent(canonical)}/edit`;
+    document.getElementById('rsi-step1').style.display = 'none';
+    document.getElementById('rsi-step2').style.display = '';
+    // Keep local authMember in sync so the handle is available for verify
+    authMember.rsi_handle        = canonical;
+    authMember.rsi_verify_token  = token;
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Check Handle';
+  }
+}
+
+async function verifyRsiLink() {
+  if (!authMember?.rsi_handle) return;
+  const errEl = document.getElementById('rsi-step2-error');
+  const btn   = document.getElementById('rsi-step2-btn');
+  btn.disabled = true; btn.textContent = 'Checking bio…';
+  errEl.style.display = 'none';
+
+  try {
+    const data = await rsiApiFetch(`user/${encodeURIComponent(authMember.rsi_handle)}`);
+    const bio  = data?.profile?.bio ?? '';
+    const token = authMember.rsi_verify_token ||
+      (await sb.from('members').select('rsi_verify_token').eq('id', authMember.id).maybeSingle()).data?.rsi_verify_token;
+
+    if (!token) throw new Error('No pending token found. Start over with the back button.');
+    if (!bio.includes(token)) {
+      throw new Error(`Token not found in your bio yet. Make sure you saved the RSI page after adding it.`);
+    }
+
+    // Mark verified and store profile data
+    const profile = data?.profile ?? {};
+    const { error } = await sb.from('members').update({
+      rsi_verified:       true,
+      rsi_verify_token:   null,
+      rsi_verify_expires: null,
+      rsi_citizen_number: profile.id   ?? null,
+      rsi_avatar_url:     profile.image ?? null,
+      rsi_enlisted:       profile.enlisted ?? null,
+      rsi_org_rank:       data?.organization?.rank ?? null,
+      rsi_last_synced:    new Date().toISOString(),
+    }).eq('id', authMember.id);
+    if (error) throw new Error(error.message);
+
+    // Update local authMember so the header refreshes
+    authMember.rsi_verified = true;
+    closeModal('rsiLinkModal');
+    updateAuthUI();
+    // Reload org data so member list shows the RSI badge
+    if (orgLoaded) { orgLoaded = false; loadOrg(); }
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Verify Bio';
+  }
 }
 
 let _certModalMemberId = null;
