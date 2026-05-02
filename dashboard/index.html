@@ -2817,7 +2817,8 @@ function renderCertMemberList(pane) {
     const rsiBadge = m.rsi_verified && m.rsi_handle
       ? `<a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(m.rsi_handle)}" target="_blank" rel="noopener" title="RSI Profile">🌌 ${esc(m.rsi_handle)}</a>`
       : '';
-    return `<div class="cert-row" style="margin: 0 0.5rem;">
+    const clickable = (isOfficer||isAdmin) ? `onclick="openMemberModal('${esc(m.id)}')" style="cursor:pointer;" title="Manage certs"` : '';
+    return `<div class="cert-row" ${clickable} style="margin: 0 0.5rem;${(isOfficer||isAdmin)?'cursor:pointer;':''}">
       <div class="cert-member">${esc(m.display_name||m.username)}${rsiBadge ? '<br>'+rsiBadge : ''}</div>
       <div class="cert-tags">${certs.map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')}</div>
     </div>`;
@@ -3716,21 +3717,56 @@ async function denySubmission(subId) {
 function openMemberModal(id) {
   const m = orgMembers.find(x=>x.id===id);
   if (!m) return;
-  const certs = orgCerts.filter(c=>c.member_id===id);
-  const byTrack = {};
+
+  _certModalMemberId = id;
+  const canManage    = isOfficer || isAdmin;
+
+  const certs    = orgCerts.filter(c=>c.member_id===id);
+  const heldSet  = new Set(certs.map(c=>c.course_code));
+  const byTrack  = {};
   for (const c of certs) {
-    const track = ORG_COURSES[c.course_code]||'Other';
-    if (!byTrack[track]) byTrack[track]=[];
+    const track = ORG_COURSES[c.course_code] || 'Other';
+    if (!byTrack[track]) byTrack[track] = [];
     byTrack[track].push(c.course_code);
   }
+
   const certLines = ORG_TRACK_ORDER.filter(t=>byTrack[t]?.length).map(t=>`
     <div class="info-item" style="grid-column:1/-1;">
-      <div class="label">${ORG_TRACK_EMOJI[t]} ${t}</div>
+      <div class="label">${ORG_TRACK_EMOJI[t]} ${esc(t)}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
-        ${byTrack[t].map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')}
+        ${byTrack[t].map(code=>`
+          <span class="cert-tag" style="display:inline-flex;align-items:center;gap:4px;">
+            ${esc(code)}
+            ${canManage
+              ? `<button onclick="revokeCert('${esc(id)}','${esc(code)}')"
+                   style="background:none;border:none;color:#a05050;cursor:pointer;padding:0 1px;font-size:11px;line-height:1;"
+                   title="Revoke ${esc(code)}">×</button>`
+              : ''}
+          </span>`).join('')}
       </div>
     </div>`).join('');
-  document.getElementById('member-modal-name').textContent = m.display_name||m.username;
+
+  // Available courses for the award picker (not held, not retired)
+  const available    = orgCourses.filter(c => !c.retired_at && !heldSet.has(c.code));
+  const courseOptions = available.map(c =>
+    `<option value="${esc(c.code)}">${esc(c.code)} — ${esc(c.title)}</option>`
+  ).join('');
+
+  const awardSection = canManage ? `
+    <div style="margin-top:1.25rem;padding-top:1rem;border-top:0.5px solid var(--color-border-tertiary);">
+      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9e9b96;margin-bottom:0.625rem;">Award Certification</div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        <select id="mm-cert-select" class="form-input" style="flex:1;min-width:13rem;">
+          <option value="">— select course —</option>
+          ${courseOptions}
+        </select>
+        <input id="mm-cert-notes" class="form-input" placeholder="Notes (optional)" style="flex:1;min-width:9rem;">
+        <button class="btn-primary" onclick="awardCert('${esc(id)}')">Award</button>
+      </div>
+      <div id="mm-cert-error" style="display:none;color:#c05050;font-size:12px;margin-top:0.5rem;"></div>
+    </div>` : '';
+
+  document.getElementById('member-modal-name').textContent = m.display_name || m.username;
   document.getElementById('member-modal-body').innerHTML = `
     <div class="info-grid" style="margin-bottom:1.25rem;">
       <div class="info-item"><div class="label">DKP Balance</div><div class="value" style="color:#a89cf7">${m.dkp_balance}</div></div>
@@ -3741,8 +3777,59 @@ function openMemberModal(id) {
     ${certs.length
       ? `<div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9e9b96;margin-bottom:10px;">Certifications</div>
          <div class="info-grid">${certLines}</div>`
-      : '<div style="color:#6b6864;font-size:13px;">No certifications held yet.</div>'}`;
+      : `<div style="color:#6b6864;font-size:13px;margin-bottom:${canManage?'0':'0'};">No certifications held yet.</div>`}
+    ${awardSection}`;
+
   document.getElementById('memberModal').classList.add('open');
+}
+
+let _certModalMemberId = null;
+
+async function awardCert(memberId) {
+  const code  = document.getElementById('mm-cert-select')?.value;
+  const notes = document.getElementById('mm-cert-notes')?.value?.trim() || null;
+  const errEl = document.getElementById('mm-cert-error');
+  if (!code) { errEl.textContent = 'Select a course first.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  const { error } = await sb.from('certifications').insert({
+    member_id:   memberId,
+    course_code: code,
+    awarded_by:  authMember?.id || null,
+    notes,
+  });
+
+  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+
+  // Update local cache
+  orgCerts.push({ member_id: memberId, course_code: code, awarded_at: new Date().toISOString() });
+  const mi = orgMembers.findIndex(m => m.id === memberId);
+  if (mi !== -1) orgMembers[mi].cert_count = (orgMembers[mi].cert_count || 0) + 1;
+
+  openMemberModal(memberId);
+  if (document.getElementById('cert-members-pane')) {
+    renderCertMemberList(document.getElementById('cert-members-pane'));
+  }
+}
+
+async function revokeCert(memberId, code) {
+  if (!confirm(`Revoke ${code} from this member?`)) return;
+
+  const { error } = await sb.from('certifications').delete()
+    .eq('member_id', memberId).eq('course_code', code);
+
+  if (error) { showError(error.message); return; }
+
+  // Update local cache
+  const ci = orgCerts.findIndex(c => c.member_id === memberId && c.course_code === code);
+  if (ci !== -1) orgCerts.splice(ci, 1);
+  const mi = orgMembers.findIndex(m => m.id === memberId);
+  if (mi !== -1) orgMembers[mi].cert_count = Math.max(0, (orgMembers[mi].cert_count || 0) - 1);
+
+  openMemberModal(memberId);
+  if (document.getElementById('cert-members-pane')) {
+    renderCertMemberList(document.getElementById('cert-members-pane'));
+  }
 }
 </script>
 </body>
