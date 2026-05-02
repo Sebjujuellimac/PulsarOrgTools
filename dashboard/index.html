@@ -3246,7 +3246,7 @@ async function loadOrg() {
   document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
   try {
     const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes] = await Promise.all([
-      sb.from('members').select('id,username,display_name,dkp_balance,joined_at,rsi_handle,rsi_verified,rsi_citizen_number,rsi_avatar_url').order('dkp_balance',{ascending:false}),
+      sb.from('members').select('id,username,display_name,dkp_balance,joined_at,rsi_handle,rsi_verified,rsi_citizen_number,rsi_avatar_url').eq('is_system',false).order('dkp_balance',{ascending:false}),
       sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
       sb.from('attendance').select('member_id').eq('attended',true),

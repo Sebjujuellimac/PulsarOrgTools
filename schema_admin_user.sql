@@ -15,14 +15,18 @@
 --         Supabase account to sign into.
 --   Replace <PASTE_EMAIL_HERE> with the email you used in Step 1.
 
-INSERT INTO members (id, username, display_name, is_officer)
+-- Add is_system flag (safe to re-run)
+ALTER TABLE members ADD COLUMN IF NOT EXISTS is_system boolean NOT NULL DEFAULT false;
+
+INSERT INTO members (id, username, display_name, is_officer, is_system)
 VALUES (
   '<PASTE_UUID_HERE>',   -- Supabase user UUID from Step 2
   'admin',
   'Org Admin',
+  true,
   true
 )
-ON CONFLICT (id) DO UPDATE SET is_officer = true;
+ON CONFLICT (id) DO UPDATE SET is_officer = true, is_system = true;
 
 INSERT INTO org_config (key, value)
 VALUES ('admin_email', '<PASTE_EMAIL_HERE>')
