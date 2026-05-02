@@ -28,8 +28,8 @@ async function rsiGet(endpoint, mode = 'live') {
   if (!res.ok) throw new Error(`RSI API HTTP ${res.status} for ${endpoint}`);
 
   const json = await res.json();
-  if (json.code !== 200) {
-    throw new Error(`RSI API error ${json.code}: ${json.message ?? 'unknown'}`);
+  if (!json.success) {
+    throw new Error(`RSI API error: ${json.message ?? 'unknown'}`);
   }
   return json.data;
 }
