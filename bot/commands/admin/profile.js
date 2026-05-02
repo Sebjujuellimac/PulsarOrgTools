@@ -17,7 +17,7 @@ export default {
 
     // Fetch member, certs, and recent DKP transactions in parallel
     const [memberRes, certsRes, txRes, eventsRes] = await Promise.all([
-      db.from('members').select('*').eq('id', target.id).maybeSingle(),
+      db.from('members').select('*, rsi_handle, rsi_verified, rsi_citizen_number, rsi_enlisted, rsi_org_rank, rsi_avatar_url').eq('id', target.id).maybeSingle(),
       db.from('certifications').select('course_code, awarded_at').eq('member_id', target.id),
       db.from('dkp_transactions').select('amount, reason, created_at')
         .eq('member_id', target.id).order('created_at', { ascending: false }).limit(5),
@@ -55,9 +55,22 @@ export default {
     });
 
     // ── Build embed ──
+    // RSI profile line (if linked)
+    const rsiLine = member.rsi_verified && member.rsi_handle
+      ? [
+          `**Handle:** [${member.rsi_handle}](https://robertsspaceindustries.com/citizens/${encodeURIComponent(member.rsi_handle)})`,
+          member.rsi_citizen_number ? `**Citizen #:** ${member.rsi_citizen_number}` : null,
+          member.rsi_enlisted       ? `**Enlisted:** ${member.rsi_enlisted}`         : null,
+          member.rsi_org_rank       ? `**Org Rank:** ${member.rsi_org_rank}`         : null,
+        ].filter(Boolean).join('\n')
+      : null;
+
+    // Prefer RSI avatar if available, otherwise Discord avatar
+    const thumbnail = member.rsi_avatar_url ?? target.displayAvatarURL();
+
     const embed = new EmbedBuilder()
       .setTitle(`${member.display_name}`)
-      .setThumbnail(target.displayAvatarURL())
+      .setThumbnail(thumbnail)
       .setColor(0x5865F2)
       .addFields(
         {
@@ -78,9 +91,14 @@ export default {
           name: '💰 Recent DKP Activity',
           value: txLines.length ? txLines.join('\n') : '*No transactions yet*',
           inline: false,
-        }
-      )
-      .setFooter({ text: `Member since ${new Date(member.joined_at).toLocaleDateString()}` });
+        },
+      );
+
+    if (rsiLine) {
+      embed.addFields({ name: '🌌 RSI Profile', value: rsiLine, inline: false });
+    }
+
+    embed.setFooter({ text: `Member since ${new Date(member.joined_at).toLocaleDateString()}` });
 
     return interaction.editReply({ embeds: [embed] });
   },

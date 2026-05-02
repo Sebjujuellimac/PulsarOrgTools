@@ -292,6 +292,8 @@
   .cert-member { font-size: 0.81rem; font-weight: 500; min-width: 9rem; flex-shrink: 0; padding-top: 0.2rem; }
   .cert-tags { display: flex; flex-wrap: wrap; gap: 0.375rem; flex: 1; }
   .cert-tag { font-size: 0.625rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: #1a2a3a; color: #7eb8f7; font-weight: 500; }
+  .rsi-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6rem; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 3px; background: #0d1a2a; color: #1a90c8; border: 0.5px solid #1a4a6a; letter-spacing: 0.04em; text-decoration: none; white-space: nowrap; }
+  .rsi-badge:hover { color: #4ab8f0; border-color: #1a6496; }
 
   /* ── Cert split layout (flowchart + member list) ── */
   #cert-split { display: flex; gap: 1rem; align-items: flex-start; }
@@ -2558,6 +2560,9 @@ function renderMembers(grid) {
     <div class="member-card" onclick="openMemberModal('${esc(m.id)}')">
       <div class="member-name">${esc(m.display_name||m.username)}</div>
       <div class="member-username">${esc(m.username)}</div>
+      ${m.rsi_verified && m.rsi_handle
+        ? `<div style="margin-top:0.3rem;"><a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(m.rsi_handle)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="RSI Profile">🌌 ${esc(m.rsi_handle)}</a></div>`
+        : ''}
       <div class="member-stats">
         <div class="member-stat"><span class="member-stat-label">DKP</span><span class="member-stat-value" style="color:#a89cf7">${m.dkp_balance}</span></div>
         <div class="member-stat"><span class="member-stat-label">Certs</span><span class="member-stat-value" style="color:#7eb8f7">${m.cert_count}</span></div>
@@ -2743,7 +2748,7 @@ function renderLeaderboard(grid) {
   grid.innerHTML = `<div class="leaderboard">`+sorted.map((m,i)=>`
     <div class="lb-row" onclick="openMemberModal('${esc(m.id)}')" style="cursor:pointer;">
       <span class="lb-rank">${medals[i]||'#'+(i+1)}</span>
-      <span class="lb-name">${esc(m.display_name||m.username)}</span>
+      <span class="lb-name">${esc(m.display_name||m.username)}${m.rsi_verified&&m.rsi_handle?` <a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(m.rsi_handle)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="RSI Profile">🌌 ${esc(m.rsi_handle)}</a>`:''}</span>
       <span class="lb-meta">${m.cert_count} cert${m.cert_count!==1?'s':''} · ${m.event_count} event${m.event_count!==1?'s':''}</span>
       <span class="lb-dkp">${m.dkp_balance} DKP</span>
     </div>`).join('')+`</div>`;
@@ -2784,9 +2789,12 @@ function renderCertMemberList(pane) {
   if (!list.length) { pane.innerHTML = hdr + '<div class="empty">No certifications match.</div>'; return; }
 
   pane.innerHTML = hdr + list.map(m=>{
-    const certs = certsByMember[m.id]||[];
+    const certs   = certsByMember[m.id]||[];
+    const rsiBadge = m.rsi_verified && m.rsi_handle
+      ? `<a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(m.rsi_handle)}" target="_blank" rel="noopener" title="RSI Profile">🌌 ${esc(m.rsi_handle)}</a>`
+      : '';
     return `<div class="cert-row" style="margin: 0 0.5rem;">
-      <div class="cert-member">${esc(m.display_name||m.username)}</div>
+      <div class="cert-member">${esc(m.display_name||m.username)}${rsiBadge ? '<br>'+rsiBadge : ''}</div>
       <div class="cert-tags">${certs.map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')}</div>
     </div>`;
   }).join('');
@@ -3214,7 +3222,7 @@ async function loadOrg() {
   document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
   try {
     const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes] = await Promise.all([
-      sb.from('members').select('id,username,display_name,dkp_balance,joined_at').order('dkp_balance',{ascending:false}),
+      sb.from('members').select('id,username,display_name,dkp_balance,joined_at,rsi_handle,rsi_verified,rsi_citizen_number,rsi_avatar_url').order('dkp_balance',{ascending:false}),
       sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
       sb.from('attendance').select('member_id').eq('attended',true),
