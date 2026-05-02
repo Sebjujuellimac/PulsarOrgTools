@@ -1,11 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { db } from '../../db.js';
-import { COURSES, TRACK_ORDER, TRACK_EMOJI, checkPrereqs } from '../../courseData.js';
-
-const COURSE_CHOICES = Object.entries(COURSES).map(([code, c]) => ({
-  name: `${code} — ${c.title}`,
-  value: code,
-}));
+import { getCourses, getTrackOrder, getTrackEmoji, checkPrereqs, autocompleteCourses } from '../../courseData.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -20,7 +15,7 @@ export default {
         )
         .addStringOption(opt =>
           opt.setName('course').setDescription('Course code').setRequired(true)
-            .addChoices(...COURSE_CHOICES)
+            .setAutocomplete(true)
         )
         .addStringOption(opt =>
           opt.setName('notes').setDescription('Optional notes (override reason, special circumstance)').setRequired(false)
@@ -35,7 +30,7 @@ export default {
         )
         .addStringOption(opt =>
           opt.setName('course').setDescription('Course code').setRequired(true)
-            .addChoices(...COURSE_CHOICES)
+            .setAutocomplete(true)
         )
     )
 
@@ -62,6 +57,14 @@ export default {
     if (sub === 'list')     return handleList(interaction);
     if (sub === 'eligible') return handleEligible(interaction);
   },
+
+  async autocomplete(interaction) {
+    const focused = interaction.options.getFocused(true);
+    if (focused.name === 'course') {
+      const choices = await autocompleteCourses(focused.value);
+      await interaction.respond(choices);
+    }
+  },
 };
 
 function isOfficer(interaction) {
@@ -79,7 +82,9 @@ async function handleAward(interaction) {
   const target = interaction.options.getUser('member');
   const courseCode = interaction.options.getString('course');
   const notes = interaction.options.getString('notes') ?? null;
+  const COURSES = await getCourses();
   const course = COURSES[courseCode];
+  if (!course) return interaction.editReply(`Unknown course code: \`${courseCode}\`.`);
 
   // Member must be registered
   const { data: member } = await db
@@ -95,7 +100,7 @@ async function handleAward(interaction) {
   const { data: heldRows } = await db
     .from('certifications').select('course_code').eq('member_id', target.id);
   const held = (heldRows ?? []).map(r => r.course_code);
-  const { ok, missing } = checkPrereqs(courseCode, held);
+  const { ok, missing } = await checkPrereqs(courseCode, held);
 
   if (!ok) {
     return interaction.editReply(
@@ -167,13 +172,15 @@ async function handleList(interaction) {
   }
 
   const held = new Set(certs.map(c => c.course_code));
+  const [COURSES, TRACK_ORDER, TRACK_EMOJI] = await Promise.all([
+    getCourses(), getTrackOrder(), getTrackEmoji(),
+  ]);
   const lines = [];
 
   for (const track of TRACK_ORDER) {
     const trackCerts = Object.entries(COURSES)
-      .filter(([, c]) => c.track === track && held.has(Object.keys(COURSES).find(k => COURSES[k] === c)))
-      .map(([code]) => code)
-      .filter(code => held.has(code));
+      .filter(([code, c]) => c.track === track && held.has(code))
+      .map(([code]) => code);
 
     if (trackCerts.length) {
       lines.push(`${TRACK_EMOJI[track]} **${track}:** ${trackCerts.join(', ')}`);
@@ -203,10 +210,14 @@ async function handleEligible(interaction) {
   const held = (certs ?? []).map(r => r.course_code);
   const heldSet = new Set(held);
 
-  const eligible = Object.entries(COURSES)
-    .filter(([code]) => !heldSet.has(code))
-    .filter(([code]) => checkPrereqs(code, held).ok)
-    .map(([code, c]) => `\`${code}\` — ${c.title} *(${c.track})*`);
+  const COURSES = await getCourses();
+  const eligibleEntries = [];
+  for (const [code, c] of Object.entries(COURSES)) {
+    if (heldSet.has(code) || c.retired_at) continue;
+    const { ok } = await checkPrereqs(code, held);
+    if (ok) eligibleEntries.push(`\`${code}\` — ${c.title} *(${c.track})*`);
+  }
+  const eligible = eligibleEntries;
 
   if (!eligible.length) {
     return interaction.editReply(

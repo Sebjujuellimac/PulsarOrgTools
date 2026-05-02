@@ -293,6 +293,74 @@
   .cert-tags { display: flex; flex-wrap: wrap; gap: 0.375rem; flex: 1; }
   .cert-tag { font-size: 0.625rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: #1a2a3a; color: #7eb8f7; font-weight: 500; }
 
+  /* ── Cert split layout (flowchart + member list) ── */
+  #cert-split { display: flex; gap: 1rem; align-items: flex-start; }
+  #cert-flowchart-pane { flex: 1.4; min-width: 0; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: auto; position: relative; max-height: calc(100vh - 18rem); }
+  #cert-members-pane { flex: 1; min-width: 0; max-height: calc(100vh - 18rem); overflow-y: auto; display: flex; flex-direction: column; gap: 0.625rem; }
+  .pane-hdr { font-size: 0.625rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.75rem 0.875rem 0.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); position: sticky; top: 0; background: var(--color-background-secondary); z-index: 5; }
+
+  /* Flowchart grid */
+  .flow-canvas { position: relative; padding: 1rem; min-width: max-content; }
+  .flow-tracks { display: flex; gap: 1rem; align-items: flex-start; position: relative; z-index: 2; }
+  .flow-track-col { width: 10.5rem; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.625rem; }
+  .flow-track-hdr { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); padding: 0.375rem 0.5rem; background: var(--color-background-primary); border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); text-align: center; }
+  .flow-course-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 0.5rem 0.625rem; cursor: default; transition: border-color 0.12s, transform 0.12s; position: relative; }
+  .flow-course-card:hover { border-color: #7eb8f7; transform: translateY(-1px); }
+  .flow-course-action { position: absolute; top: 0.25rem; right: 0.25rem; opacity: 0; transition: opacity 0.12s; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: 4px; padding: 0.05rem 0.4rem; font-size: 0.625rem; line-height: 1; cursor: pointer; color: var(--color-text-secondary); font-family: var(--font-mono); }
+  .flow-course-card:hover .flow-course-action { opacity: 1; }
+  .flow-course-action.retire:hover   { background: #2e1010; color: #c44a4a; border-color: #7a2020; }
+  .flow-course-action.unretire { opacity: 0.7; }
+  .flow-course-action.unretire:hover { background: #102e22; color: #2dbd8f; border-color: #2dbd8f; opacity: 1; }
+  .flow-course-code { font-size: 0.75rem; font-weight: 700; color: #7eb8f7; letter-spacing: 0.04em; }
+  .flow-course-title { font-size: 0.625rem; color: var(--color-text-secondary); margin-top: 0.15rem; line-height: 1.25; }
+  .flow-course-meta { font-size: 0.5rem; color: var(--color-text-tertiary); margin-top: 0.3rem; letter-spacing: 0.04em; }
+  .flow-course-card.is-root { border-left: 2px solid #5a9e3f; }
+  .flow-course-card.is-retired { opacity: 0.45; border-style: dashed; }
+
+  /* Retired pop-up */
+  .flow-retired { margin-top: 1.5rem; padding-top: 0.875rem; border-top: 0.5px dashed var(--color-border-tertiary); }
+  .flow-retired-toggle { background: none; border: none; color: var(--color-text-tertiary); font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; padding: 0.25rem 0.5rem; }
+  .flow-retired-toggle:hover { color: var(--color-text-primary); }
+  .flow-retired-body { display: none; margin-top: 0.625rem; }
+  .flow-retired-body.open { display: flex; gap: 0.625rem; flex-wrap: wrap; }
+
+  /* Editor toolbar */
+  .flow-toolbar { display: flex; gap: 0.5rem; padding: 0.625rem 0.875rem; border-bottom: 0.5px solid var(--color-border-tertiary); position: sticky; top: 1.6rem; background: var(--color-background-secondary); z-index: 6; }
+  .flow-toolbar-btn { padding: 0.3rem 0.625rem; font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-background-info); border: none; border-radius: var(--border-radius-md); color: var(--color-text-info); cursor: pointer; font-weight: 500; }
+  .flow-toolbar-btn:hover { opacity: 0.85; }
+  .flow-toolbar-btn.secondary { background: var(--color-background-primary); color: var(--color-text-secondary); border: 0.5px solid var(--color-border-secondary); }
+
+  /* Prereq picker (course modal) */
+  .prereq-picker { max-height: 14rem; overflow-y: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.5rem; background: var(--color-background-secondary); }
+  .prereq-track-grp { margin-bottom: 0.625rem; }
+  .prereq-track-grp:last-child { margin-bottom: 0; }
+  .prereq-track-name { font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 0.25rem; }
+  .prereq-opt { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.3rem; border-radius: 4px; cursor: pointer; user-select: none; }
+  .prereq-opt:hover { background: var(--color-background-primary); }
+  .prereq-opt input { margin: 0; }
+  .prereq-opt.disabled { opacity: 0.35; cursor: not-allowed; }
+  .prereq-opt-code { font-size: 0.69rem; font-weight: 600; color: var(--color-text-info); }
+  .prereq-opt-title { font-size: 0.625rem; color: var(--color-text-secondary); }
+
+  /* Breadth rows */
+  .breadth-row { display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+  .breadth-row select { flex: 1; padding: 0.3rem 0.5rem; font-size: 0.69rem; font-family: var(--font-mono); background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); color: var(--color-text-primary); }
+  .breadth-row .breadth-arrow { font-size: 0.69rem; color: var(--color-text-tertiary); }
+  .breadth-row .breadth-del { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; color: var(--color-text-secondary); padding: 0.1rem 0.4rem; cursor: pointer; font-size: 0.81rem; line-height: 1; }
+  .breadth-row .breadth-del:hover { background: #2e1010; color: #c44a4a; border-color: #7a2020; }
+  .breadth-add-btn { font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; background: var(--color-background-secondary); border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); padding: 0.3rem 0.625rem; cursor: pointer; font-family: var(--font-mono); }
+  .breadth-add-btn:hover { color: var(--color-text-primary); border-style: solid; }
+
+  /* Officer-clickable course card */
+  .flow-course-card.editable { cursor: pointer; }
+  .flow-course-card.editable:hover { box-shadow: 0 0 0 1px #7eb8f7; }
+
+  /* SVG arrow overlay */
+  .flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .flow-arrow { fill: none; stroke: #4a5560; stroke-width: 1.25; opacity: 0.55; }
+  .flow-arrow-breadth { fill: none; stroke: #c47a2a; stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.5; }
+  .flow-arrow-head { fill: #4a5560; opacity: 0.55; }
+
   /* ── Loot listing ── */
   .listing-strip { margin-top: 0.625rem; padding-top: 0.625rem; border-top: 0.5px solid var(--color-border-tertiary); }
   .listing-label { font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; margin-bottom: 0.3rem; }
@@ -1061,6 +1129,91 @@
 
     <div id="pq-error" style="display:none;font-size:0.75rem;color:#c44a4a;margin-bottom:0.75rem;"></div>
     <button class="submit-btn" id="pq-btn" onclick="submitNewQuest()">Post Quest</button>
+  </div>
+</div>
+
+<!-- COURSE EDIT / ADD MODAL -->
+<div class="modal-bg" id="courseModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="cm-title">Edit Course</span>
+      <button class="close-btn" onclick="closeModal('courseModal')">×</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Code</label>
+        <input class="form-input" id="cm-code" type="text" placeholder="e.g. BFS-01" maxlength="16">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Display Order</label>
+        <input class="form-input" id="cm-order" type="number" min="0" value="0">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input class="form-input" id="cm-coursetitle" type="text" placeholder="Course title">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Track</label>
+      <select class="form-select" id="cm-track"></select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Prerequisites</label>
+      <div class="prereq-picker" id="cm-prereqs"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Breadth Requirements <span style="color:#c47a2a;font-weight:400;text-transform:none;letter-spacing:0;font-size:0.625rem;">(optional — track ↦ required course)</span></label>
+      <div id="cm-breadth-rows"></div>
+      <button type="button" class="breadth-add-btn" onclick="addBreadthRow()">+ Add Breadth</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-input" id="cm-desc" rows="2" placeholder="Optional notes about this course"></textarea>
+    </div>
+
+    <div id="cm-error" style="display:none;font-size:0.75rem;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="submit-btn" style="flex:1;" onclick="submitCourse()">Save</button>
+      <button class="submit-btn" style="flex:0;background:none;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);" onclick="closeModal('courseModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRACK ADD / EDIT MODAL -->
+<div class="modal-bg" id="trackModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <span class="modal-title" id="tm-title">Add Track</span>
+      <button class="close-btn" onclick="closeModal('trackModal')">×</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="tm-name" type="text" placeholder="e.g. Mining" maxlength="40">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <input class="form-input" id="tm-emoji" type="text" placeholder="⛏️" maxlength="6">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Display Order</label>
+        <input class="form-input" id="tm-order" type="number" min="0" value="0">
+      </div>
+    </div>
+
+    <div id="tm-error" style="display:none;font-size:0.75rem;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="submit-btn" style="flex:1;" onclick="submitTrack()">Save</button>
+      <button class="submit-btn" style="flex:0;background:none;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);" onclick="closeModal('trackModal')">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -2246,18 +2399,28 @@ let orgMembers=[], orgEvents=[], orgCerts=[];
 let activeOrgTab='members', activeSection='inventory', orgLoaded=false;
 let calWeekOffset = 0;  // 0 = current week, ±n = weeks from today
 
-const ORG_COURSES = {
-  'BFS-01':'Air Wing','BFS-02':'Air Wing','AWC-01':'Air Wing','AWC-02':'Air Wing','AWC-03':'Air Wing',
-  'GFC-01':'Ground Forces','GVO-01':'Ground Forces',
-  'MSF-01':'MSF','MSF-02':'MSF',
-  'ENG-01':'Fleet','FLT-01':'Fleet','FLT-02':'Fleet',
-  'COM-01':'Comms','COM-02':'Comms',
-  'MNG-01':'Mining','MNG-02':'Mining',
-  'SAL-01':'Salvage','SAL-02':'Salvage',
-  'LOG-01':'Logistics',
-};
-const ORG_TRACK_ORDER = ['Air Wing','Ground Forces','MSF','Fleet','Comms','Mining','Salvage','Logistics'];
-const ORG_TRACK_EMOJI = {'Air Wing':'✈️','Ground Forces':'🪖','MSF':'⚓','Fleet':'🚀','Comms':'📡','Mining':'⛏️','Salvage':'🔧','Logistics':'📦'};
+// Course catalog — loaded from DB in loadOrg(). Empty until then.
+let orgCourses = [];   // [{ code, title, track, prereqs, breadth, display_order, retired_at, ... }]
+let orgTracks  = [];   // [{ name, emoji, display_order, retired_at, ... }]
+const ORG_COURSES      = {};   // legacy lookup: code → track (rebuilt after load)
+const ORG_TRACK_EMOJI  = {};   // rebuilt after load
+let   ORG_TRACK_ORDER  = [];   // rebuilt after load
+
+function rebuildCourseLookups() {
+  for (const k of Object.keys(ORG_COURSES))     delete ORG_COURSES[k];
+  for (const k of Object.keys(ORG_TRACK_EMOJI)) delete ORG_TRACK_EMOJI[k];
+  for (const c of orgCourses) ORG_COURSES[c.code] = c.track;
+  for (const t of orgTracks)  ORG_TRACK_EMOJI[t.name] = t.emoji;
+  ORG_TRACK_ORDER = orgTracks.filter(t => !t.retired_at).map(t => t.name);
+
+  // Repopulate cert track filter dropdown
+  const sel = document.getElementById('off-cert-track');
+  if (sel) {
+    const current = sel.value;
+    sel.innerHTML = '<option value="">All tracks</option>' +
+      ORG_TRACK_ORDER.map(t => `<option${t===current?' selected':''}>${esc(t)}</option>`).join('');
+  }
+}
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
@@ -2588,6 +2751,19 @@ function renderLeaderboard(grid) {
 
 // ── Certifications ──
 function renderCertifications(grid) {
+  grid.className = '';
+  grid.innerHTML = `
+    <div id="cert-split">
+      <div id="cert-flowchart-pane"></div>
+      <div id="cert-members-pane"></div>
+    </div>
+  `;
+  renderCourseFlowchart(document.getElementById('cert-flowchart-pane'));
+  renderCertMemberList(document.getElementById('cert-members-pane'));
+}
+
+// ── Member cert list (right pane) ──
+function renderCertMemberList(pane) {
   const trackFilter = document.getElementById('off-cert-track')?.value||'';
   const q = (document.getElementById('cert-search')?.value||'').toLowerCase();
   const certsByMember = {};
@@ -2602,16 +2778,430 @@ function renderCertifications(grid) {
     const matchQ = !q||(m.display_name||m.username).toLowerCase().includes(q);
     return hasCerts&&matchQ;
   });
-  document.getElementById('org-result-count').textContent = list.length ? `${list.length} member${list.length!==1?'s':''} with certs` : '';
-  if (!list.length) { grid.innerHTML='<div class="empty">No certifications found.</div>'; grid.className=''; return; }
-  grid.className = '';
-  grid.innerHTML = list.map(m=>{
+  document.getElementById('org-result-count').textContent = list.length ? `${list.length} certified member${list.length!==1?'s':''}` : '';
+
+  const hdr = `<div class="pane-hdr">Certified Members ${list.length ? `<span style="color:#7eb8f7;font-weight:600;">${list.length}</span>` : ''}</div>`;
+  if (!list.length) { pane.innerHTML = hdr + '<div class="empty">No certifications match.</div>'; return; }
+
+  pane.innerHTML = hdr + list.map(m=>{
     const certs = certsByMember[m.id]||[];
-    return `<div class="cert-row">
+    return `<div class="cert-row" style="margin: 0 0.5rem;">
       <div class="cert-member">${esc(m.display_name||m.username)}</div>
       <div class="cert-tags">${certs.map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')}</div>
     </div>`;
   }).join('');
+}
+
+// ── Course flowchart (left pane) ──
+function renderCourseFlowchart(pane) {
+  if (!orgCourses.length) {
+    pane.innerHTML = `<div class="pane-hdr">Course Map</div><div class="empty" style="padding:1.5rem;">No courses defined yet. Run <code>schema_courses.sql</code> in Supabase to seed.</div>`;
+    return;
+  }
+
+  // Group active courses by track
+  const active  = orgCourses.filter(c => !c.retired_at);
+  const retired = orgCourses.filter(c =>  c.retired_at);
+  const byTrack = {};
+  for (const tr of orgTracks) byTrack[tr.name] = [];
+  for (const c of active) {
+    if (!byTrack[c.track]) byTrack[c.track] = [];
+    byTrack[c.track].push(c);
+  }
+
+  // Render track columns
+  const trackOrder = orgTracks.filter(t => !t.retired_at).map(t => t.name);
+  const tracksHTML = trackOrder.map(track => {
+    const courses = (byTrack[track] || []).sort((a,b) => (a.display_order||0) - (b.display_order||0));
+    const emoji   = ORG_TRACK_EMOJI[track] || '';
+    const canEdit = isOfficer || isAdmin;
+    const cards   = courses.map(c => {
+      const isRoot   = !(c.prereqs?.length);
+      const prereqs  = (c.prereqs || []).slice(0, 4);  // truncate display
+      const meta     = prereqs.length ? `Prereq: ${prereqs.join(', ')}` : 'No prereqs';
+      const breadth  = c.breadth ? `<div class="flow-course-meta" style="color:#c47a2a;">+ ${Object.keys(c.breadth).length} breadth</div>` : '';
+      const retireBtn = canEdit ? `<button class="flow-course-action retire" title="Retire course" onclick="event.stopPropagation();retireCourse('${esc(c.code)}')">×</button>` : '';
+      const editAttr  = canEdit ? ` onclick="openCourseModal('${esc(c.code)}')"` : '';
+      const editCls   = canEdit ? ' editable' : '';
+      return `<div class="flow-course-card${isRoot ? ' is-root' : ''}${editCls}" data-code="${esc(c.code)}"${editAttr}>
+        ${retireBtn}
+        <div class="flow-course-code">${esc(c.code)}</div>
+        <div class="flow-course-title">${esc(c.title)}</div>
+        <div class="flow-course-meta">${esc(meta)}</div>
+        ${breadth}
+      </div>`;
+    }).join('');
+    return `<div class="flow-track-col" data-track="${esc(track)}">
+      <div class="flow-track-hdr">${emoji} ${esc(track)}</div>
+      ${cards || '<div class="empty" style="font-size:0.625rem;padding:1rem 0;">—</div>'}
+    </div>`;
+  }).join('');
+
+  // Retired pop-up
+  const retiredHTML = retired.length ? `
+    <div class="flow-retired">
+      <button class="flow-retired-toggle" onclick="toggleRetiredCourses()">▸ Retired Courses (${retired.length})</button>
+      <div class="flow-retired-body" id="flow-retired-body">
+        ${retired.map(c => {
+          const unretireBtn = (isOfficer || isAdmin)
+            ? `<button class="flow-course-action unretire" title="Reactivate course" onclick="unretireCourse('${esc(c.code)}')">⟲</button>`
+            : '';
+          return `<div class="flow-course-card is-retired" data-code="${esc(c.code)}" style="width:10.5rem;">
+            ${unretireBtn}
+            <div class="flow-course-code">${esc(c.code)}</div>
+            <div class="flow-course-title">${esc(c.title)}</div>
+            <div class="flow-course-meta">Retired · ${esc(c.track)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  const canEditPane = isOfficer || isAdmin;
+  const toolbarHTML = canEditPane ? `
+    <div class="flow-toolbar">
+      <button class="flow-toolbar-btn" onclick="openCourseModal('')">+ Add Course</button>
+      <button class="flow-toolbar-btn secondary" onclick="openTrackModal()">+ Add Track</button>
+    </div>
+  ` : '';
+
+  pane.innerHTML = `
+    <div class="pane-hdr">Course Map</div>
+    ${toolbarHTML}
+    <div class="flow-canvas">
+      <svg class="flow-svg" id="flow-svg"></svg>
+      <div class="flow-tracks">${tracksHTML}</div>
+      ${retiredHTML}
+    </div>
+  `;
+
+  // Draw arrows after layout settles
+  requestAnimationFrame(() => drawFlowArrows(pane));
+}
+
+function toggleRetiredCourses() {
+  const el = document.getElementById('flow-retired-body');
+  const btn = el?.previousElementSibling;
+  if (!el) return;
+  const isOpen = el.classList.toggle('open');
+  if (btn) btn.textContent = btn.textContent.replace(/^[▸▾]/, isOpen ? '▾' : '▸');
+}
+
+async function retireCourse(code) {
+  if (!isOfficer && !isAdmin) return;
+  const course = orgCourses.find(c => c.code === code);
+  if (!course) return;
+
+  // Count members holding this cert so the warning is concrete
+  const certCount = orgCerts.filter(c => c.course_code === code).length;
+  const certNote = certCount
+    ? `\n\n${certCount} member${certCount===1?'':'s'} currently hold this cert — they'll keep it, but the course will move to the Retired section and won't be available for new awards.`
+    : `\n\nIt will move to the Retired section and won't be available for new awards.`;
+
+  if (!confirm(`Retire ${code} — ${course.title}?${certNote}`)) return;
+
+  const stamp = new Date().toISOString();
+  const { error } = await sb.from('courses').update({ retired_at: stamp }).eq('code', code);
+  if (error) { showError(`Failed to retire: ${error.message}`); return; }
+
+  course.retired_at = stamp;
+  rebuildCourseLookups();
+  renderOrg();
+}
+
+async function unretireCourse(code) {
+  if (!isOfficer && !isAdmin) return;
+  const course = orgCourses.find(c => c.code === code);
+  if (!course) return;
+
+  if (!confirm(`Reactivate ${code} — ${course.title}?\n\nThe course will return to the ${course.track} track and become available for new cert awards.`)) return;
+
+  const { error } = await sb.from('courses').update({ retired_at: null }).eq('code', code);
+  if (error) { showError(`Failed to reactivate: ${error.message}`); return; }
+
+  course.retired_at = null;
+  rebuildCourseLookups();
+  renderOrg();
+}
+
+// ── Cycle prevention ─────────────────────────────────────────────────────────
+// Returns the set of course codes that depend (directly or transitively) on
+// `code` — these can't be used as prereqs of `code` without creating a cycle.
+function getCoursesDependingOn(code) {
+  const dependents = new Set([code]);
+  let added = true;
+  while (added) {
+    added = false;
+    for (const c of orgCourses) {
+      if (dependents.has(c.code)) continue;
+      const hardDeps = c.prereqs || [];
+      const breadthDeps = c.breadth ? Object.values(c.breadth) : [];
+      if (hardDeps.some(p => dependents.has(p)) || breadthDeps.some(p => dependents.has(p))) {
+        dependents.add(c.code);
+        added = true;
+      }
+    }
+  }
+  return dependents;
+}
+
+// ── Course modal: open ───────────────────────────────────────────────────────
+let _editingCourseCode = null;
+
+function openCourseModal(code) {
+  if (!isOfficer && !isAdmin) { showError('Only officers can edit courses.'); return; }
+
+  _editingCourseCode = code || null;
+  const isNew  = !code;
+  const course = isNew ? null : orgCourses.find(c => c.code === code);
+  if (!isNew && !course) { showError('Course not found.'); return; }
+
+  document.getElementById('cm-title').textContent = isNew ? 'Add Course' : `Edit ${course.code}`;
+  document.getElementById('cm-error').style.display = 'none';
+
+  // Code (locked when editing)
+  const codeInput = document.getElementById('cm-code');
+  codeInput.value = course?.code || '';
+  codeInput.readOnly = !isNew;
+  codeInput.style.opacity = isNew ? 1 : 0.6;
+
+  document.getElementById('cm-coursetitle').value = course?.title || '';
+  document.getElementById('cm-order').value = course?.display_order ?? 0;
+  document.getElementById('cm-desc').value  = course?.description || '';
+
+  // Track dropdown — populated from active tracks
+  const trackSel = document.getElementById('cm-track');
+  trackSel.innerHTML = orgTracks
+    .filter(t => !t.retired_at)
+    .map(t => `<option value="${esc(t.name)}"${t.name === course?.track ? ' selected' : ''}>${esc(t.name)}</option>`)
+    .join('');
+
+  // Prereq picker — group by track, exclude self & dependents (cycle prevention)
+  const blocked = isNew ? new Set() : getCoursesDependingOn(code);
+  const heldPrereqs = new Set(course?.prereqs || []);
+  const picker = document.getElementById('cm-prereqs');
+  const groups = orgTracks.filter(t => !t.retired_at).map(t => {
+    const tCourses = orgCourses
+      .filter(c => c.track === t.name && !c.retired_at)
+      .sort((a,b) => (a.display_order||0) - (b.display_order||0));
+    if (!tCourses.length) return '';
+    const opts = tCourses.map(c => {
+      const disabled = blocked.has(c.code);
+      const checked  = heldPrereqs.has(c.code);
+      return `<label class="prereq-opt${disabled ? ' disabled' : ''}">
+        <input type="checkbox" value="${esc(c.code)}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
+        <span class="prereq-opt-code">${esc(c.code)}</span>
+        <span class="prereq-opt-title">${esc(c.title)}</span>
+      </label>`;
+    }).join('');
+    return `<div class="prereq-track-grp">
+      <div class="prereq-track-name">${esc(ORG_TRACK_EMOJI[t.name] || '')} ${esc(t.name)}</div>
+      ${opts}
+    </div>`;
+  }).join('');
+  picker.innerHTML = groups || '<div class="empty" style="font-size:0.69rem;padding:0.5rem;">No other courses available.</div>';
+
+  // Breadth rows
+  const breadthRows = document.getElementById('cm-breadth-rows');
+  breadthRows.innerHTML = '';
+  if (course?.breadth) {
+    for (const [trackName, requiredCode] of Object.entries(course.breadth)) {
+      addBreadthRow(trackName, requiredCode);
+    }
+  }
+
+  document.getElementById('courseModal').classList.add('open');
+}
+
+function addBreadthRow(track = '', requiredCode = '') {
+  const container = document.getElementById('cm-breadth-rows');
+  const row = document.createElement('div');
+  row.className = 'breadth-row';
+
+  const trackOpts = orgTracks.filter(t => !t.retired_at)
+    .map(t => `<option value="${esc(t.name)}"${t.name === track ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
+  const courseOpts = orgCourses.filter(c => !c.retired_at)
+    .map(c => `<option value="${esc(c.code)}"${c.code === requiredCode ? ' selected' : ''}>${esc(c.code)} — ${esc(c.title)}</option>`).join('');
+
+  row.innerHTML = `
+    <select class="breadth-track"><option value="">-- track --</option>${trackOpts}</select>
+    <span class="breadth-arrow">↦</span>
+    <select class="breadth-course"><option value="">-- course --</option>${courseOpts}</select>
+    <button type="button" class="breadth-del" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(row);
+}
+
+// ── Course modal: submit ─────────────────────────────────────────────────────
+async function submitCourse() {
+  if (!isOfficer && !isAdmin) return;
+  const errEl = document.getElementById('cm-error');
+  const showCmError = (msg) => { errEl.textContent = msg; errEl.style.display = 'block'; };
+  errEl.style.display = 'none';
+
+  const code  = document.getElementById('cm-code').value.trim().toUpperCase();
+  const title = document.getElementById('cm-coursetitle').value.trim();
+  const track = document.getElementById('cm-track').value;
+  const order = parseInt(document.getElementById('cm-order').value) || 0;
+  const desc  = document.getElementById('cm-desc').value.trim();
+
+  if (!code)  return showCmError('Code is required.');
+  if (!title) return showCmError('Title is required.');
+  if (!track) return showCmError('Track is required.');
+
+  const isNew = !_editingCourseCode;
+  if (isNew && orgCourses.some(c => c.code === code)) {
+    return showCmError(`Course code ${code} already exists.`);
+  }
+
+  // Collect prereqs from picker
+  const prereqs = [...document.querySelectorAll('#cm-prereqs input[type=checkbox]:checked')]
+    .map(el => el.value);
+
+  // Collect breadth rows
+  const breadth = {};
+  for (const row of document.querySelectorAll('#cm-breadth-rows .breadth-row')) {
+    const tr = row.querySelector('.breadth-track').value;
+    const co = row.querySelector('.breadth-course').value;
+    if (tr && co) breadth[tr] = co;
+  }
+  const breadthValue = Object.keys(breadth).length ? breadth : null;
+
+  // Cycle sanity check (the picker disables blocked options, but be defensive)
+  if (!isNew) {
+    const blocked = getCoursesDependingOn(code);
+    for (const p of prereqs) {
+      if (blocked.has(p)) return showCmError(`Cycle detected: ${p} depends on ${code}.`);
+    }
+  }
+
+  const payload = {
+    code, title, track,
+    prereqs: prereqs,
+    breadth: breadthValue,
+    description: desc || null,
+    display_order: order,
+  };
+
+  let res;
+  if (isNew) {
+    res = await sb.from('courses').insert(payload).select().single();
+  } else {
+    res = await sb.from('courses').update(payload).eq('code', _editingCourseCode).select().single();
+  }
+  if (res.error) return showCmError(`Save failed: ${res.error.message}`);
+
+  // Update local state
+  if (isNew) {
+    orgCourses.push(res.data);
+  } else {
+    const idx = orgCourses.findIndex(c => c.code === _editingCourseCode);
+    if (idx !== -1) orgCourses[idx] = res.data;
+  }
+  rebuildCourseLookups();
+  closeModal('courseModal');
+  renderOrg();
+}
+
+// ── Track modal ──────────────────────────────────────────────────────────────
+function openTrackModal() {
+  if (!isOfficer && !isAdmin) { showError('Only officers can add tracks.'); return; }
+  document.getElementById('tm-name').value = '';
+  document.getElementById('tm-emoji').value = '';
+  document.getElementById('tm-order').value = (orgTracks.length || 0) + 1;
+  document.getElementById('tm-error').style.display = 'none';
+  document.getElementById('trackModal').classList.add('open');
+}
+
+async function submitTrack() {
+  if (!isOfficer && !isAdmin) return;
+  const errEl = document.getElementById('tm-error');
+  const showTmError = (msg) => { errEl.textContent = msg; errEl.style.display = 'block'; };
+  errEl.style.display = 'none';
+
+  const name  = document.getElementById('tm-name').value.trim();
+  const emoji = document.getElementById('tm-emoji').value.trim() || null;
+  const order = parseInt(document.getElementById('tm-order').value) || 0;
+
+  if (!name) return showTmError('Name is required.');
+  if (orgTracks.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+    return showTmError(`Track "${name}" already exists.`);
+  }
+
+  const { data, error } = await sb.from('tracks').insert({
+    name, emoji, display_order: order,
+  }).select().single();
+  if (error) return showTmError(`Save failed: ${error.message}`);
+
+  orgTracks.push(data);
+  orgTracks.sort((a,b) => (a.display_order||0) - (b.display_order||0));
+  rebuildCourseLookups();
+  closeModal('trackModal');
+  renderOrg();
+}
+
+function drawFlowArrows(pane) {
+  const svg    = pane.querySelector('#flow-svg');
+  const canvas = pane.querySelector('.flow-canvas');
+  if (!svg || !canvas) return;
+
+  // Size SVG to canvas
+  const cw = canvas.scrollWidth;
+  const ch = canvas.scrollHeight;
+  svg.setAttribute('width',  cw);
+  svg.setAttribute('height', ch);
+  svg.setAttribute('viewBox', `0 0 ${cw} ${ch}`);
+
+  // Map code → card rect (relative to canvas)
+  const cards = canvas.querySelectorAll('.flow-course-card[data-code]');
+  const canvasRect = canvas.getBoundingClientRect();
+  const rectByCode = {};
+  cards.forEach(card => {
+    if (card.classList.contains('is-retired')) return;
+    const r = card.getBoundingClientRect();
+    rectByCode[card.dataset.code] = {
+      x: r.left - canvasRect.left + canvas.scrollLeft,
+      y: r.top  - canvasRect.top  + canvas.scrollTop,
+      w: r.width, h: r.height,
+    };
+  });
+
+  // Build arrows: prereq → course
+  const paths = [];
+  for (const c of orgCourses) {
+    if (c.retired_at) continue;
+    const dst = rectByCode[c.code];
+    if (!dst) continue;
+    for (const pr of (c.prereqs || [])) {
+      const src = rectByCode[pr];
+      if (!src) continue;
+      paths.push(arrowPath(src, dst, false));
+    }
+    if (c.breadth) {
+      for (const required of Object.values(c.breadth)) {
+        const src = rectByCode[required];
+        if (!src) continue;
+        paths.push(arrowPath(src, dst, true));
+      }
+    }
+  }
+
+  svg.innerHTML = paths.join('');
+}
+
+function arrowPath(src, dst, isBreadth) {
+  // Source bottom-center → destination top-center, cubic bezier
+  const sx = src.x + src.w / 2;
+  const sy = src.y + src.h;
+  const dx = dst.x + dst.w / 2;
+  const dy = dst.y;
+  const dyDelta = Math.max(20, Math.abs(dy - sy) * 0.5);
+  const c1y = sy + dyDelta;
+  const c2y = dy - dyDelta;
+  const cls = isBreadth ? 'flow-arrow-breadth' : 'flow-arrow';
+  // Arrow head: small triangle at destination
+  const hx = dx, hy = dy;
+  const head = `<polygon class="flow-arrow-head" points="${hx-3},${hy-5} ${hx+3},${hy-5} ${hx},${hy-1}"/>`;
+  return `<path class="${cls}" d="M ${sx} ${sy} C ${sx} ${c1y} ${dx} ${c2y} ${dx} ${dy-2}"/>${isBreadth ? '' : head}`;
 }
 
 // ── Quests & Submissions ──
@@ -2623,15 +3213,20 @@ async function loadOrg() {
   document.getElementById('loadingBar').style.display = 'block';
   document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
   try {
-    const [mRes,eRes,cRes,aRes,qRes,sRes] = await Promise.all([
+    const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes] = await Promise.all([
       sb.from('members').select('id,username,display_name,dkp_balance,joined_at').order('dkp_balance',{ascending:false}),
       sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
       sb.from('attendance').select('member_id').eq('attended',true),
       sb.from('quests').select('id,title,description,dkp_reward,status,created_at,quest_type,faction,location,goal,item_name,item_wk_type,item_qty,item_dkp,item_listing_type,item_listing_price').order('created_at',{ascending:false}),
       sb.from('quest_submissions').select('id,quest_id,member_id,notes,submitted_at,members(display_name,username),quests(title,dkp_reward)').order('submitted_at',{ascending:true}),
+      sb.from('courses').select('*').order('display_order',{ascending:true}),
+      sb.from('tracks').select('*').order('display_order',{ascending:true}),
     ]);
     if (mRes.error) throw mRes.error;
+    orgCourses = coursesRes.data || [];
+    orgTracks  = tracksRes.data  || [];
+    rebuildCourseLookups();
     orgCerts = cRes.data || [];
     const attendCounts = {};
     for (const r of (aRes.data||[])) attendCounts[r.member_id] = (attendCounts[r.member_id]||0)+1;

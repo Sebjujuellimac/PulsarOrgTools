@@ -10,6 +10,8 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildScheduledEvents,
+    GatewayIntentBits.GuildVoiceStates,   // for voice-channel auto-attendance
+    GatewayIntentBits.GuildMembers,       // needed to resolve voice members
   ],
 });
 
@@ -29,23 +31,44 @@ for (const folder of commandFolders) {
   }
 }
 
-// Handle slash command interactions
+// Handle slash commands AND button interactions (cert confirmation)
 client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
-
-  try {
-    await command.execute(interaction);
-  } catch (err) {
-    console.error(`Error in /${interaction.commandName}:`, err);
-    const msg = { content: 'Something went wrong running that command.', ephemeral: true };
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(msg).catch(() => {});
-    } else {
-      await interaction.reply(msg).catch(() => {});
+  // ── Slash commands ─────────────────────────────────────────────────────────
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
+    try {
+      await command.execute(interaction);
+    } catch (err) {
+      console.error(`Error in /${interaction.commandName}:`, err);
+      const msg = { content: 'Something went wrong running that command.', ephemeral: true };
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(msg).catch(() => {});
+      } else {
+        await interaction.reply(msg).catch(() => {});
+      }
     }
+    return;
+  }
+
+  // ── Autocomplete (e.g. course code dropdowns) ─────────────────────────────
+  if (interaction.isAutocomplete()) {
+    const command = client.commands.get(interaction.commandName);
+    if (command?.autocomplete) {
+      try { await command.autocomplete(interaction); }
+      catch (err) { console.error(`autocomplete error in /${interaction.commandName}:`, err); }
+    }
+    return;
+  }
+
+  // ── Cert confirmation buttons (cert-approve-<eventId> / cert-skip-<eventId>) ──
+  if (interaction.isButton() && interaction.customId.startsWith('cert-')) {
+    const { handleCertButton } = await import('./certButtons.js');
+    await handleCertButton(interaction).catch(err => {
+      console.error('handleCertButton error:', err);
+      if (!interaction.replied) interaction.reply({ content: 'Button handler errored.', ephemeral: true }).catch(() => {});
+    });
+    return;
   }
 });
 
@@ -54,10 +77,19 @@ client.on(Events.GuildScheduledEventUpdate, async (oldEvent, newEvent) => {
   // Status 4 = COMPLETED (event ended)
   if (newEvent.status === 4 && oldEvent.status !== 4) {
     const { autoCloseEvent } = await import('./eventHelpers.js');
-    await autoCloseEvent(newEvent).catch(err =>
+    await autoCloseEvent(newEvent, client).catch(err =>
       console.error('autoCloseEvent error:', err)
     );
   }
+});
+
+// Voice channel auto-attendance — mark members attended when they join
+// a voice channel linked to an open event within its attendance window.
+client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
+  const { handleVoiceStateUpdate } = await import('./voiceTracker.js');
+  await handleVoiceStateUpdate(oldState, newState).catch(err =>
+    console.error('voiceTracker error:', err)
+  );
 });
 
 client.once(Events.ClientReady, c => {

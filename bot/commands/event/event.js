@@ -1,6 +1,8 @@
-import { SlashCommandBuilder, GuildScheduledEventPrivacyLevel, GuildScheduledEventEntityType } from 'discord.js';
+import { SlashCommandBuilder, GuildScheduledEventPrivacyLevel, GuildScheduledEventEntityType, ChannelType } from 'discord.js';
 import { db } from '../../db.js';
 import { TIMEZONE_MAP, parseEventTime } from '../../utils/timeUtils.js';
+import { getCourses, autocompleteCourses } from '../../courseData.js';
+import { awardCertsToAttendees } from '../../eventHelpers.js';
 
 // ──────────────────────────────────────────────
 // Command definition
@@ -55,6 +57,18 @@ export default {
           opt.setName('description')
             .setDescription('Event description').setRequired(false)
         )
+        .addChannelOption(opt =>
+          opt.setName('voice_channel')
+            .setDescription('Voice channel for auto-attendance (members joining get marked attended)')
+            .addChannelTypes(ChannelType.GuildVoice, ChannelType.GuildStageVoice)
+            .setRequired(false)
+        )
+        .addStringOption(opt =>
+          opt.setName('course')
+            .setDescription('Course this event teaches (prompts officers to award cert on close)')
+            .setRequired(false)
+            .setAutocomplete(true)
+        )
     )
 
     .addSubcommand(sub =>
@@ -66,6 +80,32 @@ export default {
         )
         .addIntegerOption(opt =>
           opt.setName('dkp').setDescription('DKP reward for attending').setRequired(true)
+        )
+        .addChannelOption(opt =>
+          opt.setName('voice_channel')
+            .setDescription('Voice channel for auto-attendance')
+            .addChannelTypes(ChannelType.GuildVoice, ChannelType.GuildStageVoice)
+            .setRequired(false)
+        )
+        .addStringOption(opt =>
+          opt.setName('course')
+            .setDescription('Course this event teaches')
+            .setRequired(false)
+            .setAutocomplete(true)
+        )
+    )
+
+    .addSubcommand(sub =>
+      sub.setName('certify')
+        .setDescription('[Officer] Award the linked course cert to attendees of a closed event.')
+        .addStringOption(opt =>
+          opt.setName('event_id').setDescription('Bot event ID (the training session)').setRequired(true)
+        )
+        .addUserOption(opt =>
+          opt.setName('only').setDescription('Only certify this one member (default: all attendees)').setRequired(false)
+        )
+        .addBooleanOption(opt =>
+          opt.setName('override').setDescription('Skip prereq check (default: false)').setRequired(false)
         )
     )
 
@@ -109,6 +149,15 @@ export default {
     if (sub === 'close')     return handleClose(interaction);
     if (sub === 'attend')    return handleAttend(interaction);
     if (sub === 'list')      return handleList(interaction);
+    if (sub === 'certify')   return handleCertify(interaction);
+  },
+
+  async autocomplete(interaction) {
+    const focused = interaction.options.getFocused(true);
+    if (focused.name === 'course') {
+      const choices = await autocompleteCourses(focused.value);
+      await interaction.respond(choices);
+    }
   },
 };
 
@@ -125,14 +174,16 @@ async function handleCreate(interaction) {
   await interaction.deferReply({ ephemeral: true });
   if (!isOfficer(interaction)) return interaction.editReply('Officer role required.');
 
-  const title       = interaction.options.getString('title');
-  const dkpReward   = interaction.options.getInteger('dkp');
-  const dateStr     = interaction.options.getString('date');
-  const timeStr     = interaction.options.getString('time');
-  const tzAbbr      = interaction.options.getString('timezone') ?? 'EST';
-  const duration    = interaction.options.getInteger('duration') ?? 90;
-  const location    = interaction.options.getString('location') ?? 'Star Citizen';
-  const description = interaction.options.getString('description') ?? null;
+  const title        = interaction.options.getString('title');
+  const dkpReward    = interaction.options.getInteger('dkp');
+  const dateStr      = interaction.options.getString('date');
+  const timeStr      = interaction.options.getString('time');
+  const tzAbbr       = interaction.options.getString('timezone') ?? 'EST';
+  const duration     = interaction.options.getInteger('duration') ?? 90;
+  const location     = interaction.options.getString('location') ?? 'Star Citizen';
+  const description  = interaction.options.getString('description') ?? null;
+  const voiceChannel = interaction.options.getChannel('voice_channel');
+  const courseCode   = interaction.options.getString('course');
 
   const startTime = parseEventTime(dateStr, timeStr, tzAbbr);
   if (!startTime) {
@@ -183,6 +234,9 @@ async function handleCreate(interaction) {
     location,
     status: 'open',
     created_by: interaction.user.id,
+    voice_channel_id:   voiceChannel?.id ?? null,
+    course_code:        courseCode ?? null,
+    officer_channel_id: interaction.channelId,
   }).select().single();
 
   if (dbErr) return interaction.editReply(`Discord event created but DB save failed: ${dbErr.message}`);
@@ -194,12 +248,23 @@ async function handleCreate(interaction) {
     hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
   });
 
+  let courseTitle = null;
+  if (courseCode) {
+    const COURSES = await getCourses();
+    courseTitle = COURSES[courseCode]?.title ?? courseCode;
+  }
+  const extras = [
+    voiceChannel ? `🎙️ Auto-attendance from <#${voiceChannel.id}>` : '',
+    courseCode   ? `🎓 Course: **${courseCode} — ${courseTitle}** (cert prompt on close)` : '',
+  ].filter(Boolean).join('\n');
+
   return interaction.editReply(
     `✅ Event created and posted to the Discord calendar!\n\n` +
     `**${title}**\n` +
     `📅 ${displayTime}\n` +
     `⏱️ ${duration} min · 📍 ${location}\n` +
     `💰 ${dkpReward} DKP reward\n` +
+    (extras ? extras + '\n' : '') +
     `ID: \`${evt.id}\``
   );
 }
@@ -212,7 +277,9 @@ async function handleIntegrate(interaction) {
   if (!isOfficer(interaction)) return interaction.editReply('Officer role required.');
 
   const discordEventId = interaction.options.getString('discord_event_id');
-  const dkpReward = interaction.options.getInteger('dkp');
+  const dkpReward      = interaction.options.getInteger('dkp');
+  const voiceChannel   = interaction.options.getChannel('voice_channel');
+  const courseCode     = interaction.options.getString('course');
 
   // Check not already tracked
   const { data: existing } = await db
@@ -243,6 +310,9 @@ async function handleIntegrate(interaction) {
     location: discordEvent.entityMetadata?.location ?? null,
     status: 'open',
     created_by: interaction.user.id,
+    voice_channel_id:   voiceChannel?.id ?? null,
+    course_code:        courseCode ?? null,
+    officer_channel_id: interaction.channelId,
   }).select().single();
 
   if (dbErr) return interaction.editReply(`Database error: ${dbErr.message}`);
@@ -379,4 +449,66 @@ async function handleList(interaction) {
   });
 
   return interaction.editReply(`**Open Events**\n\n${lines.join('\n\n')}`);
+}
+
+// ──────────────────────────────────────────────
+// /event certify
+// ──────────────────────────────────────────────
+async function handleCertify(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+  if (!isOfficer(interaction)) return interaction.editReply('Officer role required.');
+
+  const eventId  = interaction.options.getString('event_id');
+  const onlyUser = interaction.options.getUser('only');
+  const override = interaction.options.getBoolean('override') ?? false;
+
+  const { data: evt } = await db
+    .from('events').select('id, title, course_code').eq('id', eventId).maybeSingle();
+  if (!evt) return interaction.editReply('Event not found.');
+  if (!evt.course_code) return interaction.editReply(
+    `**${evt.title}** has no course linked. Use \`/cert award\` directly, ` +
+    `or set a course on the event first.`
+  );
+
+  // Determine recipients
+  let memberIds;
+  if (onlyUser) {
+    // Verify they actually attended
+    const { data: att } = await db
+      .from('attendance').select('member_id').eq('event_id', eventId)
+      .eq('member_id', onlyUser.id).eq('attended', true).maybeSingle();
+    if (!att) return interaction.editReply(
+      `${onlyUser.username} isn't marked as attended for **${evt.title}**.`
+    );
+    memberIds = [onlyUser.id];
+  } else {
+    const { data: rows } = await db
+      .from('attendance').select('member_id').eq('event_id', eventId).eq('attended', true);
+    memberIds = (rows ?? []).map(r => r.member_id);
+  }
+
+  if (memberIds.length === 0) {
+    return interaction.editReply(`No attendees found for **${evt.title}**.`);
+  }
+
+  const result = await awardCertsToAttendees({
+    eventId,
+    courseCode: evt.course_code,
+    memberIds,
+    awardedBy: interaction.user.id,
+    override,
+  });
+
+  let reply = `**${evt.course_code}** for **${evt.title}**\n`;
+  if (result.awarded.length) {
+    reply += `✅ Awarded to ${result.awarded.length}: ${result.awarded.join(', ')}\n`;
+  }
+  if (result.skipped.length) {
+    reply += `⚠️ Skipped ${result.skipped.length}:\n` +
+      result.skipped.map(s => `  • ${s.name} — ${s.reason}`).join('\n');
+  }
+  if (!result.awarded.length && !result.skipped.length) {
+    reply += '*(no action taken)*';
+  }
+  return interaction.editReply(reply);
 }

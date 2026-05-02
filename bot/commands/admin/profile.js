@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { db } from '../../db.js';
-import { COURSES, TRACK_ORDER, TRACK_EMOJI } from '../../courseData.js';
+import { getCourses, getTrackOrder, getTrackEmoji } from '../../courseData.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -35,6 +35,9 @@ export default {
     const heldSet = new Set(certs.map(c => c.course_code));
 
     // ── Certifications by track ──
+    const [COURSES, TRACK_ORDER, TRACK_EMOJI] = await Promise.all([
+      getCourses(), getTrackOrder(), getTrackEmoji(),
+    ]);
     const certLines = [];
     for (const track of TRACK_ORDER) {
       const trackCerts = Object.keys(COURSES)

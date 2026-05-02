@@ -1,83 +1,94 @@
-// KHD Course definitions — source of truth for prereq enforcement.
-// Keep in sync with CLAUDE.md course map.
+// ============================================================
+// PULSAR ORG TOOLS — Course Data
+// DB-backed source of truth for courses, tracks, and prereq
+// validation. All exports are async; results are cached for
+// 60 seconds to keep slash command autocomplete snappy without
+// hammering the DB.
+//
+// Officers edit courses from the dashboard; the bot picks up
+// changes on the next cache miss (or call invalidateCourseCache()
+// after a known mutation).
+// ============================================================
 
-export const COURSES = {
-  // ── Air Wing ──────────────────────────────────────────────
-  'BFS-01': { title: 'First Time Pilot',           track: 'Air Wing',  prereqs: [] },
-  'BFS-02': { title: 'The Next Steps',              track: 'Air Wing',  prereqs: ['BFS-01'] },
-  'AWC-01': { title: 'Combat Basics',               track: 'Air Wing',  prereqs: ['BFS-02'] },
-  'AWC-02': { title: 'Element Tactics',             track: 'Air Wing',  prereqs: ['AWC-01', 'COM-01'] },
-  'AWC-03': { title: 'Escort and Overwatch',        track: 'Air Wing',  prereqs: ['AWC-02'] },
+import { db } from './db.js';
 
-  // ── Ground Forces ─────────────────────────────────────────
-  'GFC-01': { title: 'Formation and FPS Fundamentals', track: 'Ground Forces', prereqs: [] },
-  'GVO-01': { title: 'Ground Vehicle Operations',       track: 'Ground Forces', prereqs: ['GFC-01'] },
+let _cache     = null;
+let _cacheTime = 0;
+const CACHE_TTL = 60_000;  // 60s
 
-  // ── Marine Security Forces ────────────────────────────────
-  'MSF-01': { title: 'CQB and Shipboard Combat',   track: 'MSF',       prereqs: ['GFC-01', 'FLT-01', 'COM-01'] },
-  'MSF-02': { title: 'Boarding Operations',         track: 'MSF',       prereqs: ['MSF-01'] },
+async function loadAll() {
+  const now = Date.now();
+  if (_cache && now - _cacheTime < CACHE_TTL) return _cache;
 
-  // ── Fleet ─────────────────────────────────────────────────
-  'ENG-01': { title: 'Ship Systems and Repair Fundamentals', track: 'Fleet', prereqs: ['BFS-01'] },
-  'FLT-01': { title: 'Multicrew Fundamentals',      track: 'Fleet',     prereqs: ['ENG-01', 'COM-01'] },
-  'FLT-02': { title: 'Capital Operations',           track: 'Fleet',     prereqs: ['FLT-01'] },
+  const [coursesRes, tracksRes] = await Promise.all([
+    db.from('courses').select('*').order('display_order', { ascending: true }),
+    db.from('tracks').select('*').order('display_order',  { ascending: true }),
+  ]);
 
-  // ── Comms ─────────────────────────────────────────────────
-  'COM-01': { title: 'Comms Fundamentals',           track: 'Comms',     prereqs: [] },
-  // COM-02 requires breadth — handled separately in checkPrereqs()
-  'COM-02': { title: 'SRS and Officer Comms',        track: 'Comms',     prereqs: ['COM-01'],
-              breadth: { 'Air Wing': 'AWC-01', 'Ground Forces': 'GFC-01', 'Fleet': 'FLT-01' } },
+  if (coursesRes.error) console.error('courseData loadAll courses error:', coursesRes.error.message);
+  if (tracksRes.error)  console.error('courseData loadAll tracks error:',  tracksRes.error.message);
 
-  // ── Mining ────────────────────────────────────────────────
-  'MNG-01': { title: 'Mining Fundamentals',          track: 'Mining',    prereqs: [] },
-  'MNG-02': { title: 'Ship Mining and Crew Roles',   track: 'Mining',    prereqs: ['MNG-01'] },
+  const COURSES = {};
+  for (const c of coursesRes.data ?? []) {
+    COURSES[c.code] = {
+      title:      c.title,
+      track:      c.track,
+      prereqs:    Array.isArray(c.prereqs) ? c.prereqs : [],
+      breadth:    c.breadth ?? null,
+      retired_at: c.retired_at,
+    };
+  }
 
-  // ── Salvage ───────────────────────────────────────────────
-  'SAL-01': { title: 'Salvage Fundamentals',         track: 'Salvage',   prereqs: ['BFS-01'] },
-  'SAL-02': { title: 'Post-Engagement Recovery Operations', track: 'Salvage', prereqs: ['SAL-01'] },
+  const tracks      = tracksRes.data ?? [];
+  const TRACK_ORDER = tracks.filter(t => !t.retired_at).map(t => t.name);
+  const TRACK_EMOJI = {};
+  for (const t of tracks) TRACK_EMOJI[t.name] = t.emoji;
 
-  // ── Logistics ─────────────────────────────────────────────
-  'LOG-01': { title: 'Cargo and Transport',          track: 'Logistics', prereqs: ['BFS-01'] },
-};
+  _cache = { COURSES, TRACK_ORDER, TRACK_EMOJI };
+  _cacheTime = now;
+  return _cache;
+}
 
-// Track display order for profile embeds
-export const TRACK_ORDER = [
-  'Air Wing', 'Ground Forces', 'MSF', 'Fleet', 'Comms', 'Mining', 'Salvage', 'Logistics',
-];
+export async function getCourses()    { return (await loadAll()).COURSES; }
+export async function getTrackOrder() { return (await loadAll()).TRACK_ORDER; }
+export async function getTrackEmoji() { return (await loadAll()).TRACK_EMOJI; }
 
-// Track emoji
-export const TRACK_EMOJI = {
-  'Air Wing':      '✈️',
-  'Ground Forces': '🪖',
-  'MSF':           '⚓',
-  'Fleet':         '🚀',
-  'Comms':         '📡',
-  'Mining':        '⛏️',
-  'Salvage':       '🔧',
-  'Logistics':     '📦',
-};
+export function invalidateCourseCache() {
+  _cache = null; _cacheTime = 0;
+}
 
 /**
  * Check whether a member can receive a certification.
- * @param {string} courseCode
- * @param {string[]} heldCodes - array of course codes the member already holds
- * @returns {{ ok: boolean, missing: string[] }}
+ * @returns {Promise<{ ok: boolean, missing: string[] }>}
  */
-export function checkPrereqs(courseCode, heldCodes) {
-  const course = COURSES[courseCode];
+export async function checkPrereqs(courseCode, heldCodes) {
+  const COURSES = await getCourses();
+  const course  = COURSES[courseCode];
   if (!course) return { ok: false, missing: [`Unknown course: ${courseCode}`] };
 
-  const held = new Set(heldCodes);
-  const missing = course.prereqs.filter(p => !held.has(p));
+  const held    = new Set(heldCodes);
+  const missing = (course.prereqs ?? []).filter(p => !held.has(p));
 
-  // COM-02 breadth check: needs at least the listed cert from each breadth track
-  if (courseCode === 'COM-02' && course.breadth) {
+  if (course.breadth) {
     for (const [track, required] of Object.entries(course.breadth)) {
-      if (!held.has(required)) {
-        missing.push(`${required} (${track} breadth requirement)`);
-      }
+      if (!held.has(required)) missing.push(`${required} (${track} breadth requirement)`);
     }
   }
 
   return { ok: missing.length === 0, missing };
+}
+
+/**
+ * Returns the top N course matches for an autocomplete query string.
+ * Filters out retired courses by default. Searches both code and title.
+ */
+export async function autocompleteCourses(query, { limit = 25, includeRetired = false } = {}) {
+  const COURSES = await getCourses();
+  const q = (query ?? '').toLowerCase().trim();
+  const entries = Object.entries(COURSES)
+    .filter(([, c]) => includeRetired || !c.retired_at)
+    .filter(([code, c]) => !q || code.toLowerCase().includes(q) || c.title.toLowerCase().includes(q))
+    .slice(0, limit)
+    .map(([code, c]) => ({ name: `${code} — ${c.title}`, value: code }));
+  return entries;
 }
