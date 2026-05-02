@@ -12,7 +12,7 @@
 
 import 'dotenv/config';
 
-const BASE    = 'https://starcitizen-api.com';
+const BASE    = 'https://api.starcitizen-api.com';
 const API_KEY = process.env.STARCITIZEN_API_KEY;
 
 /** Low-level fetch with timeout + key check */
