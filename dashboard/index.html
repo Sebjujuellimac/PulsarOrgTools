@@ -1375,27 +1375,38 @@ if (sb) {
 async function handleAuthSession(session) {
   authUser = session.user;
 
-  // Discord user ID lives in user_metadata (Supabase stores it as provider_id)
-  const discordId =
-    authUser.user_metadata?.provider_id ||
-    authUser.identities?.[0]?.identity_data?.provider_id ||
-    authUser.identities?.[0]?.id;
+  // Detect auth provider — email = admin account, discord = normal member
+  const provider     = authUser.app_metadata?.provider ?? 'email';
+  const isEmailAdmin = provider === 'email';
 
-  if (discordId && sb) {
+  // For Discord OAuth users the member row key is their Discord snowflake ID.
+  // For the email-auth admin account the row key is the Supabase UUID (auth.uid).
+  const memberId = isEmailAdmin
+    ? authUser.id
+    : (authUser.user_metadata?.provider_id ||
+       authUser.identities?.[0]?.identity_data?.provider_id ||
+       authUser.identities?.[0]?.id);
+
+  if (memberId && sb) {
     const { data: member } = await sb
       .from('members')
       .select('id, username, display_name, is_officer, discord_avatar, dkp_balance')
-      .eq('id', discordId)
+      .eq('id', memberId)
       .maybeSingle();
 
     if (member) {
       authMember = member;
-      isOfficer  = !!member.is_officer;
-
-      // Keep avatar in sync silently
-      const freshAvatar = authUser.user_metadata?.avatar_url || null;
-      if (freshAvatar && freshAvatar !== member.discord_avatar) {
-        sb.from('members').update({ discord_avatar: freshAvatar }).eq('id', discordId);
+      // Email-auth admin → isAdmin flag; Discord officer → isOfficer flag
+      if (isEmailAdmin) {
+        isAdmin   = !!member.is_officer;
+        isOfficer = false;
+      } else {
+        isOfficer = !!member.is_officer;
+        // Keep avatar in sync silently
+        const freshAvatar = authUser.user_metadata?.avatar_url || null;
+        if (freshAvatar && freshAvatar !== member.discord_avatar) {
+          sb.from('members').update({ discord_avatar: freshAvatar }).eq('id', memberId);
+        }
       }
     }
   }
@@ -1476,24 +1487,37 @@ async function verifyAdminPassword() {
   if (!entered) return;
   if (!sb) { closeModal('adminModal'); return; }
 
-  const btn = document.getElementById('admin-pw-btn');
+  const btn   = document.getElementById('admin-pw-btn');
+  const errEl = document.getElementById('admin-pw-error');
   btn.disabled = true; btn.textContent = 'Checking…';
+  errEl.style.display = 'none';
 
   try {
-    const { data } = await sb
-      .from('org_config').select('value').eq('key', 'admin_password').maybeSingle();
+    // Fetch the admin account email from org_config
+    const { data: emailRow } = await sb
+      .from('org_config').select('value').eq('key', 'admin_email').maybeSingle();
 
-    if (data && data.value === entered) {
-      isAdmin = true;
-      closeModal('adminModal');
-      updateAuthUI();
-    } else {
-      const errEl = document.getElementById('admin-pw-error');
-      errEl.textContent = 'Incorrect password.';
+    if (!emailRow?.value) {
+      errEl.textContent = 'Admin account not configured. Run schema_admin_user.sql in Supabase.';
       errEl.style.display = 'block';
+      return;
+    }
+
+    // Authenticate as the dedicated admin Supabase user.
+    // On success, onAuthStateChange fires → handleAuthSession sets isAdmin = true.
+    const { error } = await sb.auth.signInWithPassword({
+      email:    emailRow.value,
+      password: entered,
+    });
+
+    if (error) {
+      errEl.textContent = error.message?.includes('Invalid') ? 'Incorrect password.' : error.message;
+      errEl.style.display = 'block';
+    } else {
+      closeModal('adminModal');
+      // updateAuthUI() called by handleAuthSession via onAuthStateChange
     }
   } catch (err) {
-    const errEl = document.getElementById('admin-pw-error');
     errEl.textContent = 'Error: ' + err.message;
     errEl.style.display = 'block';
   } finally {
