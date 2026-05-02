@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
+import { db } from './db.js';
 import { readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -90,6 +91,28 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
   await handleVoiceStateUpdate(oldState, newState).catch(err =>
     console.error('voiceTracker error:', err)
   );
+});
+
+// Sync officer status whenever a member's roles change.
+// Requires GuildMembers privileged intent (already enabled).
+const OFFICER_ROLES = new Set(['Worg', 'Lycan']);
+
+client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
+  const hadOfficer = oldMember.roles.cache.some(r => OFFICER_ROLES.has(r.name));
+  const hasOfficer = newMember.roles.cache.some(r => OFFICER_ROLES.has(r.name));
+  if (hadOfficer === hasOfficer) return; // no relevant change
+
+  // Only update members who have registered
+  const { error } = await db
+    .from('members')
+    .update({ is_officer: hasOfficer })
+    .eq('id', newMember.id);
+
+  if (error) {
+    console.error(`Failed to sync officer status for ${newMember.user.tag}:`, error.message);
+  } else {
+    console.log(`Officer status for ${newMember.user.tag} → ${hasOfficer}`);
+  }
 });
 
 client.once(Events.ClientReady, c => {
