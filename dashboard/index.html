@@ -247,7 +247,8 @@
   .member-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem; cursor: pointer; transition: border-color 0.15s; }
   .member-card:hover { border-color: var(--color-border-secondary); }
   .member-name { font-size: 0.94rem; font-weight: 500; margin-bottom: 0.2rem; }
-  .member-username { font-size: 0.69rem; color: var(--color-text-tertiary); margin-bottom: 0.875rem; }
+  .member-username { font-size: 0.69rem; color: var(--color-text-tertiary); margin-bottom: 0; }
+  .member-card-header { margin-bottom: 0.875rem; display: flex; flex-direction: column; gap: 0.3rem; }
   .member-stats { display: flex; gap: 1.25rem; }
   .member-stat { display: flex; flex-direction: column; gap: 0.125rem; }
   .member-stat-label { font-size: 0.625rem; color: var(--color-text-secondary); letter-spacing: 0.08em; text-transform: uppercase; }
@@ -2645,11 +2646,13 @@ function renderMembers(grid) {
   grid.className = 'org-grid';
   grid.innerHTML = list.map(m=>`
     <div class="member-card" onclick="openMemberModal('${esc(m.id)}')">
-      <div class="member-name">${esc(m.display_name||m.username)}</div>
-      <div class="member-username">${esc(m.username)}</div>
-      ${m.rsi_verified && m.rsi_handle
-        ? `<div style="margin-top:0.3rem;"><a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(m.rsi_handle)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="RSI Profile">🌌 ${esc(m.rsi_handle)}</a></div>`
-        : ''}
+      <div class="member-card-header">
+        <div class="member-name">${esc(m.display_name||m.username)}</div>
+        ${m.display_name && m.display_name !== m.username ? `<div class="member-username">${esc(m.username)}</div>` : ''}
+        ${m.rsi_verified && m.rsi_handle
+          ? `<a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(m.rsi_handle)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="RSI Profile">🌌 ${esc(m.rsi_handle)}</a>`
+          : ''}
+      </div>
       <div class="member-stats">
         <div class="member-stat"><span class="member-stat-label">DKP</span><span class="member-stat-value" style="color:#a89cf7">${m.dkp_balance}</span></div>
         <div class="member-stat"><span class="member-stat-label">Certs</span><span class="member-stat-value" style="color:#7eb8f7">${m.cert_count}</span></div>
