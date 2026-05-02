@@ -91,7 +91,7 @@
   .tick-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
   .tick-label { font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); }
   .tick-option { cursor: pointer; user-select: none; }
-  .tick-option input[type=checkbox] { display: none; }
+  .tick-option input[type=checkbox] { position: absolute; opacity: 0; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); }
   .tick-option span {
     display: inline-block;
     padding: 0.2rem 0.625rem;
@@ -511,10 +511,15 @@
   .btn-secondary:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
   .rsi-link-btn { padding: 0.25rem 0.6rem; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; background: #0d1a2a; border: 0.5px solid #1a4a6a; border-radius: var(--border-radius-md); color: #1a90c8; cursor: pointer; white-space: nowrap; }
   .rsi-link-btn:hover { background: #0d2236; color: #4ab8f0; border-color: #1a6496; }
+  .skip-link { position: absolute; left: -999px; top: 0; z-index: 9999; background: #1a6496; color: #fff; padding: 0.5rem 1rem; font-size: 0.875rem; border-radius: 0 0 4px 4px; }
+  .skip-link:focus { left: 50%; transform: translateX(-50%); }
+  :focus-visible { outline: 2px solid #7eb8f7; outline-offset: 2px; border-radius: 2px; }
+  button.sidebar-item { background: none; border: none; width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="app">
 
   <!-- ═══════════════ SIDEBAR ═══════════════ -->
@@ -525,28 +530,28 @@
       <div class="sidebar-logo-text">Pulsar Org Tools</div>
     </div>
 
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="Primary navigation">
       <div class="sidebar-section-label">Inventory</div>
-      <div class="sidebar-item active" id="nav-component" onclick="setTab('component')">Components</div>
-      <div class="sidebar-item" id="nav-material" onclick="setTab('material')">Materials</div>
-      <div class="sidebar-item" id="nav-blueprint" onclick="setTab('blueprint')">Blueprints</div>
-      <div class="sidebar-item" id="nav-wikelo" onclick="setTab('wikelo')">Loot</div>
+      <button class="sidebar-item active" id="nav-component" onclick="setTab('component')">Components</button>
+      <button class="sidebar-item" id="nav-material" onclick="setTab('material')">Materials</button>
+      <button class="sidebar-item" id="nav-blueprint" onclick="setTab('blueprint')">Blueprints</button>
+      <button class="sidebar-item" id="nav-wikelo" onclick="setTab('wikelo')">Loot</button>
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Social</div>
-      <div class="sidebar-item" id="nav-members" onclick="setOrgTab('members')">Members</div>
-      <div class="sidebar-item" id="nav-leaderboard" onclick="setOrgTab('leaderboard')">Leaderboard</div>
-      <div class="sidebar-item" id="nav-certifications" onclick="setOrgTab('certifications')">Certifications</div>
-      <div class="sidebar-item" id="nav-quests" onclick="setOrgTab('quests')">Quests</div>
+      <button class="sidebar-item" id="nav-members" onclick="setOrgTab('members')">Members</button>
+      <button class="sidebar-item" id="nav-leaderboard" onclick="setOrgTab('leaderboard')">Leaderboard</button>
+      <button class="sidebar-item" id="nav-certifications" onclick="setOrgTab('certifications')">Certifications</button>
+      <button class="sidebar-item" id="nav-quests" onclick="setOrgTab('quests')">Quests</button>
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Calendar</div>
-      <div class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Events</div>
+      <button class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Events</button>
     </nav>
 
     <div class="sidebar-auth" id="header-auth"></div>
   </div>
 
   <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
-  <div class="main-content">
+  <div class="main-content" id="main-content">
 
   <div class="todo-banner" id="todoBanner">
     <strong>⚠ Not connected to database.</strong> Data resets on refresh. Paste your Supabase anon key into the <code>SUPABASE_KEY</code> constant at the top of the script, then reload.
@@ -564,7 +569,7 @@
   <div class="filter-panel visible" id="fp-component">
     <div class="filter-row">
       <div class="filter-group">
-        <span class="filter-label">Type</span>
+        <label class="filter-label" for="ff-function">Type</label>
         <select class="filter-select" id="ff-function" onchange="render()">
           <option value="">All types</option>
           <option>Power Plant</option><option>Cooler</option><option>Shield Generator</option>
@@ -573,7 +578,7 @@
         </select>
       </div>
       <div class="filter-group">
-        <span class="filter-label">Class</span>
+        <label class="filter-label" for="ff-class">Class</label>
         <select class="filter-select" id="ff-class" onchange="render()">
           <option value="">All classes</option>
           <option>Stealth</option><option>Military</option><option>Competition</option>
@@ -581,7 +586,7 @@
         </select>
       </div>
       <div class="filter-group">
-        <span class="filter-label">Grade</span>
+        <label class="filter-label" for="ff-grade">Grade</label>
         <select class="filter-select" id="ff-grade" onchange="render()">
           <option value="">All grades</option>
           <option value="A">Grade A</option><option value="B">Grade B</option>
@@ -589,7 +594,7 @@
         </select>
       </div>
       <div class="filter-group">
-        <span class="filter-label">Size</span>
+        <label class="filter-label" for="ff-size">Size</label>
         <select class="filter-select" id="ff-size" onchange="render()">
           <option value="">All sizes</option>
           <option value="S0">Size 0</option><option value="S1">Size 1</option><option value="S2">Size 2</option>
@@ -606,11 +611,11 @@
   <div class="filter-panel" id="fp-material">
     <div class="filter-row">
       <div class="filter-group" style="min-width:120px;flex:3;">
-        <span class="filter-label">Ore / Resource type (up to 3)</span>
+        <label class="filter-label" for="ff-mat1">Ore / Resource type (up to 3)</label>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <select class="filter-select" id="ff-mat1" onchange="render()" style="flex:1;min-width:110px;"></select>
-          <select class="filter-select" id="ff-mat2" onchange="render()" style="flex:1;min-width:110px;"></select>
-          <select class="filter-select" id="ff-mat3" onchange="render()" style="flex:1;min-width:110px;"></select>
+          <select class="filter-select" id="ff-mat2" aria-label="Ore / Resource type 2" onchange="render()" style="flex:1;min-width:110px;"></select>
+          <select class="filter-select" id="ff-mat3" aria-label="Ore / Resource type 3" onchange="render()" style="flex:1;min-width:110px;"></select>
         </div>
       </div>
       <div class="dual-range">
@@ -644,7 +649,7 @@
   <div class="filter-panel" id="fp-wikelo">
     <div class="filter-row">
       <div class="filter-group" style="flex:2;min-width:160px;">
-        <span class="filter-label">Show items required for recipe</span>
+        <label class="filter-label" for="ff-wk-recipe">Show items required for recipe</label>
         <select class="filter-select" id="ff-wk-recipe" onchange="render()">
           <option value="">All items</option>
         </select>
@@ -659,8 +664,8 @@
       <div class="recipe-editor" id="recipeEditor">
         <div class="recipe-list" id="recipeList"></div>
         <div class="recipe-add-row">
-          <input type="text" id="new-recipe-name" placeholder="Recipe name">
-          <input type="text" id="new-recipe-items" placeholder="Items, comma-separated">
+          <input type="text" id="new-recipe-name" aria-label="Recipe name" placeholder="Recipe name">
+          <input type="text" id="new-recipe-items" aria-label="Recipe items, comma separated" placeholder="Items, comma-separated">
           <button class="recipe-add-btn" onclick="addRecipe()">Add</button>
         </div>
       </div>
@@ -749,7 +754,7 @@
     <div class="filter-panel" id="ofp-certifications">
       <div class="filter-row">
         <div class="filter-group" style="max-width:220px;">
-          <span class="filter-label">Track</span>
+          <label class="filter-label" for="off-cert-track">Track</label>
           <select class="filter-select" id="off-cert-track" onchange="renderOrg()">
             <option value="">All tracks</option>
             <option>Air Wing</option><option>Ground Forces</option><option>MSF</option>
@@ -758,7 +763,7 @@
           </select>
         </div>
         <div class="filter-group" style="flex:1;">
-          <span class="filter-label">Member</span>
+          <label class="filter-label" for="cert-search">Member</label>
           <input class="filter-select" id="cert-search" type="text" placeholder="Filter by name…" oninput="renderOrg()">
         </div>
         <button class="filter-reset" onclick="document.getElementById('off-cert-track').value='';document.getElementById('cert-search').value='';renderOrg();">Reset</button>
@@ -780,10 +785,10 @@
 
 <!-- ADD / EDIT MODAL -->
 <div class="modal-bg" id="addModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-add">
     <div class="modal-header">
-      <span class="modal-title" id="modalTitle">Add Item</span>
-      <button class="close-btn" onclick="closeModal('addModal')">×</button>
+      <span class="modal-title" id="modal-title-add">Add Item</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('addModal')">×</button>
     </div>
     <div class="form-group">
       <label class="form-label">Category</label>
@@ -950,10 +955,10 @@
 
 <!-- MEMBER PROFILE MODAL -->
 <div class="modal-bg" id="memberModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-member">
     <div class="modal-header">
-      <span class="modal-title" id="member-modal-name"></span>
-      <button class="close-btn" onclick="closeModal('memberModal')">×</button>
+      <span class="modal-title" id="modal-title-member"></span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('memberModal')">×</button>
     </div>
     <div id="member-modal-body"></div>
   </div>
@@ -961,10 +966,10 @@
 
 <!-- QUEST TURN-IN MODAL -->
 <div class="modal-bg" id="turnInModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-turnin">
     <div class="modal-header">
-      <span class="modal-title" id="ti-quest-title"></span>
-      <button class="close-btn" onclick="closeModal('turnInModal')">×</button>
+      <span class="modal-title" id="modal-title-turnin"></span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('turnInModal')">×</button>
     </div>
     <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;" id="ti-quest-desc"></div>
     <!-- anonymous: ask for username -->
@@ -992,10 +997,10 @@
 
 <!-- POST QUEST MODAL (officers / admins) -->
 <div class="modal-bg" id="postQuestModal">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:480px;" role="dialog" aria-modal="true" aria-labelledby="modal-title-quest">
     <div class="modal-header">
-      <span class="modal-title">Post Quest</span>
-      <button class="close-btn" onclick="closeModal('postQuestModal')">×</button>
+      <span class="modal-title" id="modal-title-quest">Post Quest</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('postQuestModal')">×</button>
     </div>
     <div class="form-group">
       <label class="form-label">Quest Type</label>
@@ -1146,10 +1151,10 @@
 
 <!-- COURSE EDIT / ADD MODAL -->
 <div class="modal-bg" id="courseModal">
-  <div class="modal" style="max-width:520px;">
+  <div class="modal" style="max-width:520px;" role="dialog" aria-modal="true" aria-labelledby="modal-title-course">
     <div class="modal-header">
-      <span class="modal-title" id="cm-title">Edit Course</span>
-      <button class="close-btn" onclick="closeModal('courseModal')">×</button>
+      <span class="modal-title" id="modal-title-course">Edit Course</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('courseModal')">×</button>
     </div>
 
     <div class="form-row">
@@ -1199,10 +1204,10 @@
 
 <!-- TRACK ADD / EDIT MODAL -->
 <div class="modal-bg" id="trackModal">
-  <div class="modal" style="max-width:380px;">
+  <div class="modal" style="max-width:380px;" role="dialog" aria-modal="true" aria-labelledby="modal-title-track">
     <div class="modal-header">
-      <span class="modal-title" id="tm-title">Add Track</span>
-      <button class="close-btn" onclick="closeModal('trackModal')">×</button>
+      <span class="modal-title" id="modal-title-track">Add Track</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('trackModal')">×</button>
     </div>
 
     <div class="form-group">
@@ -1231,10 +1236,10 @@
 
 <!-- RSI LINK MODAL -->
 <div class="modal-bg" id="rsiLinkModal">
-  <div class="modal" style="max-width:30rem;">
+  <div class="modal" style="max-width:30rem;" role="dialog" aria-modal="true" aria-labelledby="modal-title-rsi">
     <div class="modal-header">
-      <span class="modal-title">🌌 Link RSI Account</span>
-      <button class="close-btn" onclick="closeModal('rsiLinkModal')">×</button>
+      <span class="modal-title" id="modal-title-rsi">🌌 Link RSI Account</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('rsiLinkModal')">×</button>
     </div>
 
     <!-- Step 1: enter handle -->
@@ -1274,10 +1279,10 @@
 
 <!-- ADMIN PASSWORD MODAL -->
 <div class="modal-bg" id="adminModal">
-  <div class="modal" style="max-width:380px;">
+  <div class="modal" style="max-width:380px;" role="dialog" aria-modal="true" aria-labelledby="modal-title-admin">
     <div class="modal-header">
-      <span class="modal-title">Admin Access</span>
-      <button class="close-btn" onclick="closeModal('adminModal')">×</button>
+      <span class="modal-title" id="modal-title-admin">Admin Access</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('adminModal')">×</button>
     </div>
     <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;line-height:1.6;">
       Enter the org admin password to unlock officer controls in this browser session.
@@ -1297,7 +1302,7 @@
   <div class="modal" style="max-width:380px;">
     <div class="modal-header">
       <span class="modal-title">Confirm Purchase</span>
-      <button class="close-btn" onclick="closeModal('buyModal')">×</button>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('buyModal')">×</button>
     </div>
     <div style="font-size:13px;margin-bottom:0.5rem;" id="buy-item-name"></div>
     <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;" id="buy-item-desc"></div>
@@ -1316,7 +1321,7 @@
   <div class="modal" style="max-width:380px;">
     <div class="modal-header">
       <span class="modal-title">Place Bid</span>
-      <button class="close-btn" onclick="closeModal('bidModal')">×</button>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('bidModal')">×</button>
     </div>
     <div style="font-size:13px;font-weight:500;margin-bottom:4px;" id="bid-item-name"></div>
     <div style="font-size:12px;color:#9e9b96;margin-bottom:1.25rem;" id="bid-current"></div>
@@ -1333,10 +1338,10 @@
 
 <!-- DETAIL MODAL -->
 <div class="modal-bg" id="detailModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-detail">
     <div class="modal-header">
-      <span class="modal-title" id="d-title"></span>
-      <button class="close-btn" onclick="closeModal('detailModal')">×</button>
+      <span class="modal-title" id="modal-title-detail"></span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('detailModal')">×</button>
     </div>
     <div id="d-badge"></div>
     <div class="info-grid" id="d-grid"></div>
@@ -1491,7 +1496,7 @@ function updateAuthUI() {
     const name      = authMember?.display_name || authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'Member';
     const avatarUrl = authMember?.discord_avatar || authUser.user_metadata?.avatar_url || '';
     const avatarEl  = avatarUrl
-      ? `<img class="user-avatar" src="${esc(avatarUrl)}" alt="">`
+      ? `<img class="user-avatar" src="${esc(avatarUrl)}" alt="${esc(name)}">`
       : `<div class="user-avatar" style="display:flex;align-items:center;justify-content:center;font-size:12px;">👤</div>`;
     const badgeEl = isAdmin
       ? `<span class="user-badge badge-admin">Admin</span>`
@@ -1502,7 +1507,7 @@ function updateAuthUI() {
     const isDiscordAuth = authUser?.app_metadata?.provider === 'discord';
     const rsiLinked     = authMember?.rsi_verified && authMember?.rsi_handle;
     const rsiBtn = isDiscordAuth && !rsiLinked
-      ? `<button class="rsi-link-btn" onclick="openRsiLinkModal()" title="Link your RSI account">🌌 Link RSI</button>`
+      ? `<button class="rsi-link-btn" onclick="openRsiLinkModal()" title="Link your RSI account" aria-label="Link RSI account">🌌 Link RSI</button>`
       : rsiLinked
         ? `<a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(authMember.rsi_handle)}" target="_blank" rel="noopener" title="RSI: ${esc(authMember.rsi_handle)}">🌌</a>`
         : '';
@@ -1512,7 +1517,7 @@ function updateAuthUI() {
         <span class="user-name">${esc(name)}</span>
         ${badgeEl}
         ${rsiBtn}
-        <button class="logout-btn" onclick="doLogout()" title="Sign out">✕</button>
+        <button class="logout-btn" onclick="doLogout()" title="Sign out" aria-label="Sign out">✕</button>
       </div>`;
   } else {
     const adminBadge = isAdmin
@@ -1925,7 +1930,7 @@ function renderRecipeList(){
     `<div class="recipe-row">
       <input value="${r.name}" onchange="recipeNameChange(${i},this.value)" placeholder="Recipe name">
       <input value="${r.items.join(', ')}" onchange="recipeItemsChange(${i},this.value)" placeholder="Items, comma-separated" style="flex:2;">
-      <button class="recipe-del" onclick="recipeDelete(${i})">×</button>
+      <button class="recipe-del" aria-label="Delete recipe" onclick="recipeDelete(${i})">×</button>
     </div>`
   ).join('');
 }
@@ -2117,7 +2122,7 @@ function onListingTypeChange() {
 
 function openAddModal(){
   if (!isOfficer && !isAdmin) { showError('Only officers can add items to the inventory.'); return; }
-  editId=null;document.getElementById('modalTitle').textContent='Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
+  editId=null;document.getElementById('modal-title-add').textContent='Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
   ['f-name','f-owner','f-notes','f-mat-owner','f-bp-output','f-bp-holder','f-wk-holder'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-qty').value=1;document.getElementById('f-mat-qty').value=1;
   document.getElementById('f-mat-quality').value='';document.getElementById('f-mat-type').value='';
@@ -2166,7 +2171,7 @@ async function submitItem(){
 }
 function openDetail(id){
   const it=items.find(i=>i.id===id);if(!it)return;
-  document.getElementById('d-title').textContent=it.name;
+  document.getElementById('modal-title-detail').textContent=it.name;
   let badge='';
   if(it.cat==='component'){if(it.compClass)badge+=`<span class="class-badge class-${it.compClass}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">${it.compClass}</span>`;if(it.grade)badge+=`<span class="grade-badge grade-${it.grade}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">Grade ${it.grade}</span>`;if(it.size)badge+=`<span class="size-badge" style="display:inline-block;margin-bottom:10px;">${it.size}</span>`;}
   else if(it.cat==='blueprint'){badge=`<span class="bp-status ${BP_CLASS[it.bpStatus]}" style="display:inline-block;margin-bottom:10px;">${BP_STATUS[it.bpStatus]}</span>`;}
@@ -2188,7 +2193,7 @@ function openDetail(id){
 }
 function editItem(id){
   const it=items.find(i=>i.id===id);if(!it)return;
-  editId=id;document.getElementById('modalTitle').textContent='Edit Item';document.getElementById('submitBtn').textContent='Save Changes';
+  editId=id;document.getElementById('modal-title-add').textContent='Edit Item';document.getElementById('submitBtn').textContent='Save Changes';
   document.getElementById('f-cat').value=it.cat;document.getElementById('f-name').value=it.name;document.getElementById('f-notes').value=it.notes||'';
   onCatChange();
   if(it.cat==='component'){document.getElementById('f-function').value=it.function||'';document.getElementById('f-class').value=it.compClass||'';document.getElementById('f-grade').value=it.grade||'';document.getElementById('f-size').value=it.size||'';document.getElementById('f-qty').value=it.qty;document.getElementById('f-owner').value=it.owner||'';}
@@ -2802,9 +2807,9 @@ function renderEvents(grid) {
   grid.innerHTML = `
     <div class="cal-container">
       <div class="cal-header">
-        <button class="cal-nav-btn" onclick="calWeekOffset--;renderOrg()">‹</button>
+        <button class="cal-nav-btn" aria-label="Previous week" onclick="calWeekOffset--;renderOrg()">‹</button>
         <span class="cal-week-label">${weekLabel}</span>
-        <button class="cal-nav-btn" onclick="calWeekOffset++;renderOrg()">›</button>
+        <button class="cal-nav-btn" aria-label="Next week" onclick="calWeekOffset++;renderOrg()">›</button>
         <button class="cal-today-btn" onclick="calWeekOffset=0;renderOrg()">Today</button>
       </div>
       <div class="cal-tgrid-outer">
@@ -2921,7 +2926,7 @@ function renderCourseFlowchart(pane) {
       const prereqs  = (c.prereqs || []).slice(0, 4);  // truncate display
       const meta     = prereqs.length ? `Prereq: ${prereqs.join(', ')}` : 'No prereqs';
       const breadth  = c.breadth ? `<div class="flow-course-meta" style="color:#c47a2a;">+ ${Object.keys(c.breadth).length} breadth</div>` : '';
-      const retireBtn = canEdit ? `<button class="flow-course-action retire" title="Retire course" onclick="event.stopPropagation();retireCourse('${esc(c.code)}')">×</button>` : '';
+      const retireBtn = canEdit ? `<button class="flow-course-action retire" title="Retire course" aria-label="Retire ${esc(c.code)}" onclick="event.stopPropagation();retireCourse('${esc(c.code)}')">×</button>` : '';
       const editAttr  = canEdit ? ` onclick="openCourseModal('${esc(c.code)}')"` : '';
       const editCls   = canEdit ? ' editable' : '';
       return `<div class="flow-course-card${isRoot ? ' is-root' : ''}${editCls}" data-code="${esc(c.code)}"${editAttr}>
@@ -2945,7 +2950,7 @@ function renderCourseFlowchart(pane) {
       <div class="flow-retired-body" id="flow-retired-body">
         ${retired.map(c => {
           const unretireBtn = (isOfficer || isAdmin)
-            ? `<button class="flow-course-action unretire" title="Reactivate course" onclick="unretireCourse('${esc(c.code)}')">⟲</button>`
+            ? `<button class="flow-course-action unretire" title="Reactivate course" aria-label="Reactivate ${esc(c.code)}" onclick="unretireCourse('${esc(c.code)}')">⟲</button>`
             : '';
           return `<div class="flow-course-card is-retired" data-code="${esc(c.code)}" style="width:10.5rem;">
             ${unretireBtn}
@@ -3056,7 +3061,7 @@ function openCourseModal(code) {
   const course = isNew ? null : orgCourses.find(c => c.code === code);
   if (!isNew && !course) { showError('Course not found.'); return; }
 
-  document.getElementById('cm-title').textContent = isNew ? 'Add Course' : `Edit ${course.code}`;
+  document.getElementById('modal-title-course').textContent = isNew ? 'Add Course' : `Edit ${course.code}`;
   document.getElementById('cm-error').style.display = 'none';
 
   // Code (locked when editing)
@@ -3127,7 +3132,7 @@ function addBreadthRow(track = '', requiredCode = '') {
     <select class="breadth-track"><option value="">-- track --</option>${trackOpts}</select>
     <span class="breadth-arrow">↦</span>
     <select class="breadth-course"><option value="">-- course --</option>${courseOpts}</select>
-    <button type="button" class="breadth-del" onclick="this.parentElement.remove()">×</button>
+    <button type="button" class="breadth-del" aria-label="Remove breadth requirement" onclick="this.parentElement.remove()">×</button>
   `;
   container.appendChild(row);
 }
@@ -3566,7 +3571,7 @@ async function submitNewQuest() {
 let turnInQuestId = null;
 function openTurnIn(questId, title, desc) {
   turnInQuestId = questId;
-  document.getElementById('ti-quest-title').textContent = title;
+  document.getElementById('modal-title-turnin').textContent = title;
   document.getElementById('ti-quest-desc').textContent = desc || '';
   document.getElementById('ti-notes').value = '';
   document.getElementById('ti-submit-btn').disabled = false;
@@ -3808,7 +3813,7 @@ function openMemberModal(id) {
             ${canManage
               ? `<button onclick="revokeCert('${esc(id)}','${esc(code)}')"
                    style="background:none;border:none;color:#a05050;cursor:pointer;padding:0 1px;font-size:11px;line-height:1;"
-                   title="Revoke ${esc(code)}">×</button>`
+                   title="Revoke ${esc(code)}" aria-label="Revoke ${esc(code)}">×</button>`
               : ''}
           </span>`).join('')}
       </div>
@@ -3834,7 +3839,7 @@ function openMemberModal(id) {
       <div id="mm-cert-error" style="display:none;color:#c05050;font-size:12px;margin-top:0.5rem;"></div>
     </div>` : '';
 
-  document.getElementById('member-modal-name').textContent = m.display_name || m.username;
+  document.getElementById('modal-title-member').textContent = m.display_name || m.username;
   document.getElementById('member-modal-body').innerHTML = `
     <div class="info-grid" style="margin-bottom:1.25rem;">
       <div class="info-item"><div class="label">DKP Balance</div><div class="value" style="color:#a89cf7">${m.dkp_balance}</div></div>
