@@ -21,15 +21,15 @@ import { createClient } from '@supabase/supabase-js';
 // To find a YouTube channel ID: open the channel page, view source, search for
 // "channelId" or use https://commentpicker.com/youtube-channel-id.php
 const YOUTUBE_CHANNELS = [
-  { id: 'UCUjankXHQQAEaHhMROwvFkQ', label: 'Star Citizen' },
+  { id: 'UCTeLqJq1mXUX5WWoNXLmOIA', label: 'Roberts Space Industries' },
   // Add more CIG channels here if needed, e.g.:
-  // { id: 'CHANNEL_ID_2', label: 'RSI News' },
+  // { id: 'CHANNEL_ID_2', label: 'Star Citizen' },
 ];
 
-// Twitch login names (lowercase) for CIG's broadcast channels
+// Twitch login names (lowercase) — CIG doesn't actively stream to Twitch,
+// leave empty unless you want to track a specific community channel.
 const TWITCH_CHANNELS = [
-  'robertsspaceindustries',
-  // 'starcitizen',  // uncomment if they use this handle too
+  // 'robertsspaceindustries',
 ];
 
 // How far ahead/behind to import YouTube entries (days)
