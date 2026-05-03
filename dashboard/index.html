@@ -321,8 +321,8 @@
 
   /* Flowchart grid */
   .flow-canvas { position: relative; padding: 1.5rem; min-width: max-content; }
-  .flow-tracks { display: flex; gap: 1.75rem; align-items: flex-start; position: relative; z-index: 2; }
-  .flow-track-col { width: 12rem; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.75rem; background: rgba(255,255,255,0.018); border-radius: 8px; padding: 0 0.5rem 0.75rem; }
+  .flow-tracks { display: grid; gap: 1rem 1.5rem; align-items: start; position: relative; z-index: 2; }
+  .flow-track-hdr { grid-row: 1; }
   .flow-track-hdr { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #7eb8f7; padding: 0.5rem 0.625rem; background: rgba(74,138,181,0.12); border-radius: var(--border-radius-md); border: 1px solid rgba(74,138,181,0.25); text-align: center; margin-bottom: 0.25rem; }
   .flow-course-card { background: var(--color-background-primary); border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 0.625rem 0.75rem; min-width: 10rem; cursor: default; transition: border-color 0.12s, transform 0.12s; position: relative; }
   .flow-course-card:hover { border-color: #7eb8f7; transform: translateY(-1px); }
@@ -2973,6 +2973,23 @@ function selectCertMember(id) {
   });
 }
 
+// ── Topological depth levels for prereq-based row placement ──
+function computeCourseLevels(courses) {
+  const codeSet = new Set(courses.map(c => c.code));
+  const levels  = Object.fromEntries(courses.map(c => [c.code, 0]));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const c of courses) {
+      for (const p of (c.prereqs || []).filter(p => codeSet.has(p))) {
+        const desired = levels[p] + 1;
+        if (levels[c.code] < desired) { levels[c.code] = desired; changed = true; }
+      }
+    }
+  }
+  return levels;
+}
+
 // ── Course flowchart (left pane) ──
 function renderCourseFlowchart(pane) {
   if (!orgCourses.length) {
@@ -2980,43 +2997,50 @@ function renderCourseFlowchart(pane) {
     return;
   }
 
-  // Group active courses by track
   const active  = orgCourses.filter(c => !c.retired_at);
   const retired = orgCourses.filter(c =>  c.retired_at);
-  const byTrack = {};
-  for (const tr of orgTracks) byTrack[tr.name] = [];
-  for (const c of active) {
-    if (!byTrack[c.track]) byTrack[c.track] = [];
-    byTrack[c.track].push(c);
-  }
+  const canEdit = isOfficer || isAdmin;
 
-  // Render track columns
+  // Track order drives grid columns
   const trackOrder = orgTracks.filter(t => !t.retired_at).map(t => t.name);
-  const tracksHTML = trackOrder.map(track => {
-    const courses = (byTrack[track] || []).sort((a,b) => (a.display_order||0) - (b.display_order||0));
-    const emoji   = ORG_TRACK_EMOJI[track] || '';
-    const canEdit = isOfficer || isAdmin;
-    const cards   = courses.map(c => {
-      const isRoot   = !(c.prereqs?.length);
-      const prereqs  = (c.prereqs || []).slice(0, 4);  // truncate display
-      const meta     = prereqs.length ? `Prereq: ${prereqs.join(', ')}` : 'No prereqs';
-      const breadth  = c.breadth ? `<div class="flow-course-meta" style="color:#c47a2a;">+ ${Object.keys(c.breadth).length} breadth</div>` : '';
-      const retireBtn = canEdit ? `<button class="flow-course-action retire" title="Retire course" aria-label="Retire ${esc(c.code)}" onclick="event.stopPropagation();retireCourse('${esc(c.code)}')">×</button>` : '';
-      const editAttr  = canEdit ? ` onclick="openCourseModal('${esc(c.code)}')"` : '';
-      const editCls   = canEdit ? ' editable' : '';
-      return `<div class="flow-course-card${isRoot ? ' is-root' : ''}${editCls}" data-code="${esc(c.code)}"${editAttr}>
-        ${retireBtn}
-        <div class="flow-course-code">${esc(c.code)}</div>
-        <div class="flow-course-title">${esc(c.title)}</div>
-        <div class="flow-course-meta">${esc(meta)}</div>
-        ${breadth}
-      </div>`;
-    }).join('');
-    return `<div class="flow-track-col" data-track="${esc(track)}">
-      <div class="flow-track-hdr">${emoji} ${esc(track)}</div>
-      ${cards || '<div class="empty" style="font-size:0.625rem;padding:1rem 0;">—</div>'}
+  const numCols    = trackOrder.length || 1;
+
+  // Compute prereq-depth level for each active course
+  const levels   = computeCourseLevels(active);
+  const maxLevel = active.length ? Math.max(...active.map(c => levels[c.code] ?? 0)) : 0;
+
+  // Row 1 = track headers; rows 2..maxLevel+2 = course levels 0..maxLevel
+  const headersHTML = trackOrder.map((track, ci) => {
+    const emoji = ORG_TRACK_EMOJI[track] || '';
+    return `<div class="flow-track-hdr" data-track="${esc(track)}" style="grid-column:${ci+1};grid-row:1;">${emoji} ${esc(track)}</div>`;
+  }).join('');
+
+  const cardsHTML = active.map(c => {
+    const colIdx = trackOrder.indexOf(c.track);
+    if (colIdx === -1) return ''; // unknown track — skip
+    const rowIdx = (levels[c.code] ?? 0) + 2; // +2: row 1 is headers
+    const isRoot   = (levels[c.code] ?? 0) === 0;
+    const prereqs  = (c.prereqs || []).slice(0, 4);
+    const meta     = prereqs.length ? `Prereq: ${prereqs.join(', ')}` : 'No prereqs';
+    const breadth  = c.breadth ? `<div class="flow-course-meta" style="color:#c47a2a;">+ ${Object.keys(c.breadth).length} breadth</div>` : '';
+    const retireBtn = canEdit ? `<button class="flow-course-action retire" title="Retire course" aria-label="Retire ${esc(c.code)}" onclick="event.stopPropagation();retireCourse('${esc(c.code)}')">×</button>` : '';
+    const editAttr  = canEdit ? ` onclick="openCourseModal('${esc(c.code)}')"` : '';
+    const editCls   = canEdit ? ' editable' : '';
+    return `<div class="flow-course-card${isRoot?' is-root':''}${editCls}"
+        data-code="${esc(c.code)}"${editAttr}
+        style="grid-column:${colIdx+1};grid-row:${rowIdx};align-self:start;">
+      ${retireBtn}
+      <div class="flow-course-code">${esc(c.code)}</div>
+      <div class="flow-course-title">${esc(c.title)}</div>
+      <div class="flow-course-meta">${esc(meta)}</div>
+      ${breadth}
     </div>`;
   }).join('');
+
+  const tracksHTML = `<div class="flow-tracks" style="grid-template-columns:repeat(${numCols},12rem);">
+    ${headersHTML}
+    ${cardsHTML}
+  </div>`;
 
   // Retired pop-up
   const retiredHTML = retired.length ? `
@@ -3050,7 +3074,7 @@ function renderCourseFlowchart(pane) {
     ${toolbarHTML}
     <div class="flow-canvas">
       <svg class="flow-svg" id="flow-svg"></svg>
-      <div class="flow-tracks">${tracksHTML}</div>
+      ${tracksHTML}
       ${retiredHTML}
     </div>
   `;
