@@ -2104,7 +2104,7 @@ function updateStats(){
   setStat('stat-component', comps || '');
   setStat('stat-material', matsSCU ? matsSCU + ' SCU' : '');
   setStat('stat-blueprint', bps || '');
-  setStat('stat-wikelo', totDkp || '');
+  setStat('stat-wikelo', totDkp ? totDkp + ' DKP' : '');
 }
 
 function onCatChange(){
@@ -2547,7 +2547,7 @@ function updateOrgStats() {
   const openEvents = orgEvents.filter(e=>e.status==='open').length;
   const setOrgStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   setOrgStat('stat-members',        orgMembers.length || '');
-  setOrgStat('stat-leaderboard',    totalDkp          || '');
+  setOrgStat('stat-leaderboard',    totalDkp ? totalDkp + ' DKP' : '');
   setOrgStat('stat-events',         openEvents        || '');
   setOrgStat('stat-certifications', orgCerts.length   || '');
 }
