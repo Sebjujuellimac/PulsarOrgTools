@@ -3397,19 +3397,15 @@ function drawFlowArrows(pane) {
   const canvas = pane.querySelector('.flow-canvas');
   if (!svg || !canvas) return;
 
-  // Size SVG to canvas
-  const cw = canvas.scrollWidth;
-  const ch = canvas.scrollHeight;
-  svg.setAttribute('width',  cw);
+  const cw = canvas.scrollWidth, ch = canvas.scrollHeight;
+  svg.setAttribute('width', cw);
   svg.setAttribute('height', ch);
   svg.setAttribute('viewBox', `0 0 ${cw} ${ch}`);
 
-
-  // Map code → card rect (relative to canvas)
-  const cards = canvas.querySelectorAll('.flow-course-card[data-code]');
+  // Map code → card rect relative to canvas origin
   const canvasRect = canvas.getBoundingClientRect();
   const rectByCode = {};
-  cards.forEach(card => {
+  canvas.querySelectorAll('.flow-course-card[data-code]').forEach(card => {
     if (card.classList.contains('is-retired')) return;
     const r = card.getBoundingClientRect();
     rectByCode[card.dataset.code] = {
@@ -3419,56 +3415,78 @@ function drawFlowArrows(pane) {
     };
   });
 
-  // Build arrows: prereq → course
-  const paths = [];
+  // Collect all arrows as data objects first so we can detect overlaps
+  const arrows = [];
   for (const c of orgCourses) {
     if (c.retired_at) continue;
     const dst = rectByCode[c.code];
     if (!dst) continue;
     for (const pr of (c.prereqs || [])) {
       const src = rectByCode[pr];
-      if (!src) continue;
-      paths.push(arrowPath(src, dst, false));
+      if (src) arrows.push({ src, dst, srcCode: pr, dstCode: c.code, isBreadth: false });
     }
-    if (c.breadth) {
-      for (const required of Object.values(c.breadth)) {
-        const src = rectByCode[required];
-        if (!src) continue;
-        paths.push(arrowPath(src, dst, true));
-      }
+    for (const req of Object.values(c.breadth || {})) {
+      const src = rectByCode[req];
+      if (src) arrows.push({ src, dst, srcCode: req, dstCode: c.code, isBreadth: true });
     }
   }
 
-  svg.innerHTML = paths.join('');
+  // Pre-compute nominal centres
+  const SPREAD = 6; // px between parallel paths
+  arrows.forEach(a => {
+    a.sx = a.src.x + a.src.w / 2;
+    a.sy = a.src.y + a.src.h;
+    a.dx = a.dst.x + a.dst.w / 2;
+    a.dy = a.dst.y;
+    a.elbowShift = 0;  // vertical offset applied to midY
+    a.dxShift    = 0;  // horizontal offset applied at destination
+  });
+
+  // Arrows leaving the same source → spread their elbow heights
+  const bySrc = {};
+  arrows.forEach(a => { (bySrc[a.srcCode] ??= []).push(a); });
+  Object.values(bySrc).forEach(grp => {
+    if (grp.length < 2) return;
+    grp.sort((a, b) => a.dx - b.dx);
+    const half = (grp.length - 1) / 2;
+    grp.forEach((a, i) => { a.elbowShift += (i - half) * SPREAD; });
+  });
+
+  // Arrows arriving at the same destination → spread their arrival x
+  const byDst = {};
+  arrows.forEach(a => { (byDst[a.dstCode] ??= []).push(a); });
+  Object.values(byDst).forEach(grp => {
+    if (grp.length < 2) return;
+    grp.sort((a, b) => a.sx - b.sx);
+    const half = (grp.length - 1) / 2;
+    grp.forEach((a, i) => { a.dxShift += (i - half) * SPREAD; });
+  });
+
+  svg.innerHTML = arrows.map(a => arrowPath(a)).join('');
 }
 
-function arrowPath(src, dst, isBreadth) {
-  // Source bottom-center → destination top-center, orthogonal elbow with rounded corners
-  const sx  = src.x + src.w / 2;
-  const sy  = src.y + src.h;
-  const dx  = dst.x + dst.w / 2;
-  const dy  = dst.y;
-  const cls = isBreadth ? 'flow-arrow-breadth' : 'flow-arrow';
+function arrowPath({ sx, sy, dx, dy, isBreadth, elbowShift = 0, dxShift = 0 }) {
+  const adx = dx + dxShift;       // actual arrival x (slightly spread at destination)
+  const cls  = isBreadth ? 'flow-arrow-breadth' : 'flow-arrow';
   const head = isBreadth
     ? ''
-    : `<polygon class="flow-arrow-head" points="${dx-4},${dy-6} ${dx+4},${dy-6} ${dx},${dy-1}"/>`;
+    : `<polygon class="flow-arrow-head" points="${adx-4},${dy-6} ${adx+4},${dy-6} ${adx},${dy-1}"/>`;
 
-  if (Math.abs(dx - sx) < 2) {
-    // Same column: pure vertical, no corners needed
-    return `<path class="${cls}" d="M ${sx} ${sy} L ${dx} ${dy-6}"/>${head}`;
+  if (Math.abs(adx - sx) < 2) {
+    // Pure vertical — same column, no elbow needed
+    return `<path class="${cls}" d="M ${sx} ${sy} L ${adx} ${dy-6}"/>${head}`;
   }
 
-  const r    = 8;                          // corner radius (px)
-  const dir  = Math.sign(dx - sx);        // +1 right, -1 left
-  const midY = sy + (dy - sy) / 2;        // elbow sits halfway between cards
+  const r    = 7;
+  const dir  = Math.sign(adx - sx) || 1;
+  const midY = sy + (dy - sy) / 2 + elbowShift;
 
-  // Down → horizontal → down, with a quadratic-bezier rounded corner at each turn
   const d = `M ${sx} ${sy} `
     + `L ${sx} ${midY - r} `
     + `Q ${sx} ${midY} ${sx + dir * r} ${midY} `
-    + `L ${dx - dir * r} ${midY} `
-    + `Q ${dx} ${midY} ${dx} ${midY + r} `
-    + `L ${dx} ${dy - 6}`;
+    + `L ${adx - dir * r} ${midY} `
+    + `Q ${adx} ${midY} ${adx} ${midY + r} `
+    + `L ${adx} ${dy - 6}`;
 
   return `<path class="${cls}" d="${d}"/>${head}`;
 }
