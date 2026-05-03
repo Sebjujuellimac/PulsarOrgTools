@@ -306,11 +306,12 @@
   #cert-members-strip::-webkit-scrollbar { height: 4px; }
   #cert-members-strip::-webkit-scrollbar-track { background: transparent; }
   #cert-members-strip::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 2px; }
-  .cert-member-pill { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.5rem 0.75rem; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; transition: border-color 0.12s, background 0.12s; min-width: 6rem; max-width: 8rem; text-align: center; }
+  .cert-member-pill { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0.375rem; padding: 0.625rem 0.75rem; background: var(--color-background-primary); border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; transition: border-color 0.12s, background 0.12s; min-width: 9rem; max-width: 12rem; color: var(--color-text-primary); }
   .cert-member-pill:hover { border-color: #7eb8f7; background: #141f2b; }
   .cert-member-pill.selected { border-color: #7eb8f7; background: #0f1c2b; box-shadow: 0 0 0 1px #7eb8f7; }
-  .cert-pill-name { font-size: 0.7rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-  .cert-pill-count { font-size: 0.6rem; color: var(--color-text-tertiary); }
+  .cert-pill-name { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; color: var(--color-text-primary); }
+  .cert-pill-count { font-size: 0.6rem; color: var(--color-text-tertiary); margin-bottom: 0.125rem; }
+  .cert-pill-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
   .pane-hdr { font-size: 0.625rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.625rem 0.875rem 0.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); position: sticky; top: 0; background: var(--color-background-secondary); z-index: 5; }
   /* Cert highlight state */
   .flow-course-card.cert-held { border-color: #7eb8f7 !important; box-shadow: 0 0 0 1px #7eb8f7, 0 0 10px rgba(126,184,247,0.25); background: #0d1d2e !important; }
@@ -2914,15 +2915,20 @@ function renderCertMemberList() {
   }
 
   strip.innerHTML = list.map(m=>{
-    const certs = certsByMember[m.id]||[];
-    const name  = esc(m.display_name||m.username);
-    const isSel = selectedCertMember === m.id;
+    const certs  = certsByMember[m.id]||[];
+    const name   = esc(m.display_name||m.username);
+    const isSel  = selectedCertMember === m.id;
+    const shown  = certs.slice(0, 4);
+    const extra  = certs.length - shown.length;
+    const tags   = shown.map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')
+                 + (extra > 0 ? `<span class="cert-tag" style="color:#7eb8f7;">+${extra}</span>` : '');
     return `<button class="cert-member-pill${isSel?' selected':''}"
         data-member-id="${esc(m.id)}"
         onclick="selectCertMember('${esc(m.id)}')"
         title="${name} · ${certs.length} cert${certs.length!==1?'s':''} · Click to highlight courses">
       <span class="cert-pill-name">${name}</span>
       <span class="cert-pill-count">${certs.length} cert${certs.length!==1?'s':''}</span>
+      <div class="cert-pill-tags">${tags}</div>
     </button>`;
   }).join('');
 }
@@ -3326,15 +3332,6 @@ function drawFlowArrows(pane) {
   svg.setAttribute('height', ch);
   svg.setAttribute('viewBox', `0 0 ${cw} ${ch}`);
 
-  // Inject arrowhead marker definitions
-  const defs = `<defs>
-    <marker id="arrowhead-solid" markerWidth="8" markerHeight="8" refX="4" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L8,3 z" fill="#4a8ab5" opacity="0.85"/>
-    </marker>
-    <marker id="arrowhead-breadth" markerWidth="8" markerHeight="8" refX="4" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L8,3 z" fill="#c47a2a" opacity="0.75"/>
-    </marker>
-  </defs>`;
 
   // Map code → card rect (relative to canvas)
   const cards = canvas.querySelectorAll('.flow-course-card[data-code]');
@@ -3370,7 +3367,7 @@ function drawFlowArrows(pane) {
     }
   }
 
-  svg.innerHTML = defs + paths.join('');
+  svg.innerHTML = paths.join('');
 }
 
 function arrowPath(src, dst, isBreadth) {
@@ -3385,8 +3382,10 @@ function arrowPath(src, dst, isBreadth) {
   const c1y = sy + dyDelta;
   const c2y = dy - dyDelta;
   const cls = isBreadth ? 'flow-arrow-breadth' : 'flow-arrow';
-  const marker = isBreadth ? 'url(#arrowhead-breadth)' : 'url(#arrowhead-solid)';
-  return `<path class="${cls}" d="M ${sx} ${sy} C ${sx} ${c1y} ${dx} ${c2y} ${dx} ${dy}" marker-end="${marker}"/>`;
+  // Arrowhead: small upward-pointing triangle at destination top-center
+  const hx = dx, hy = dy;
+  const head = `<polygon class="flow-arrow-head" points="${hx-4},${hy-6} ${hx+4},${hy-6} ${hx},${hy-1}"/>`;
+  return `<path class="${cls}" d="M ${sx} ${sy} C ${sx} ${c1y} ${dx} ${c2y} ${dx} ${hy-6}"/>${isBreadth ? '' : head}`;
 }
 
 // ── Quests & Submissions ──
