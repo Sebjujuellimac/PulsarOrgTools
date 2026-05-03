@@ -2973,6 +2973,46 @@ function selectCertMember(id) {
   });
 }
 
+// ── Reorder tracks to minimise total horizontal arrow distance ──
+// Greedy pairwise-swap on the set of cross-track prereq edges.
+// Cost = Σ |col(prereq_track) − col(course_track)| over all cross-track edges.
+function optimizeTrackOrder(trackOrder, courses) {
+  const codeToTrack = Object.fromEntries(courses.map(c => [c.code, c.track]));
+  const trackSet    = new Set(trackOrder);
+
+  // Collect cross-track edges only
+  const edges = [];
+  for (const c of courses) {
+    for (const p of (c.prereqs || [])) {
+      const src = codeToTrack[p];
+      const dst = c.track;
+      if (src && dst && src !== dst && trackSet.has(src) && trackSet.has(dst))
+        edges.push([src, dst]);
+    }
+  }
+  if (!edges.length) return trackOrder;
+
+  const cost = order => {
+    const pos = Object.fromEntries(order.map((t, i) => [t, i]));
+    return edges.reduce((s, [a, b]) => s + Math.abs(pos[a] - pos[b]), 0);
+  };
+
+  // Pairwise-swap hill-climb (converges fast for ≤ ~12 tracks)
+  let order = [...trackOrder];
+  let improved = true;
+  while (improved) {
+    improved = false;
+    for (let i = 0; i < order.length - 1; i++) {
+      for (let j = i + 1; j < order.length; j++) {
+        const next = [...order];
+        [next[i], next[j]] = [next[j], next[i]];
+        if (cost(next) < cost(order)) { order = next; improved = true; }
+      }
+    }
+  }
+  return order;
+}
+
 // ── Topological depth levels for prereq-based row placement ──
 function computeCourseLevels(courses) {
   const codeSet = new Set(courses.map(c => c.code));
@@ -3001,9 +3041,12 @@ function renderCourseFlowchart(pane) {
   const retired = orgCourses.filter(c =>  c.retired_at);
   const canEdit = isOfficer || isAdmin;
 
-  // Track order drives grid columns
-  const trackOrder = orgTracks.filter(t => !t.retired_at).map(t => t.name);
-  const numCols    = trackOrder.length || 1;
+  // Track order drives grid columns — optimised to minimise cross-track arrow spans
+  const trackOrder = optimizeTrackOrder(
+    orgTracks.filter(t => !t.retired_at).map(t => t.name),
+    active
+  );
+  const numCols = trackOrder.length || 1;
 
   // Compute prereq-depth level for each active course
   const levels   = computeCourseLevels(active);
