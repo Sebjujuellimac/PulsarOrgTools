@@ -42,7 +42,7 @@
   .app { display: flex; min-height: 100vh; max-width: none; margin: 0; padding: 0; }
 
   /* ── Sidebar ── */
-  .sidebar { width: clamp(13rem, 18vw, 22rem); min-width: 10rem; max-width: 32rem; flex-shrink: 0; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; overflow-x: hidden; }
+  .sidebar { width: clamp(15rem, 20vw, 26rem); min-width: 12rem; max-width: 34rem; flex-shrink: 0; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; overflow-x: hidden; }
   .sidebar-resize-handle { position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: col-resize; z-index: 10; transition: background 0.15s; }
   .sidebar-resize-handle:hover, .sidebar-resize-handle.dragging { background: rgba(126,184,247,0.18); }
   .sidebar-logo { padding: 2rem 1.75rem 1.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
@@ -50,7 +50,9 @@
   .sidebar-logo-text { font-size: 1.125rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.3; }
   .sidebar-nav { padding: 0.75rem 0; flex: 1; }
   .sidebar-section-label { font-size: 0.69rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 1rem 1.75rem 0.4rem; }
-  .sidebar-item { padding: 0.7rem 1.75rem; font-size: 0.94rem; font-family: var(--font-mono); cursor: pointer; color: var(--color-text-secondary); transition: all 0.12s; border-left: 2px solid transparent; user-select: none; }
+  .sidebar-item { padding: 0.7rem 1.75rem; font-size: 0.94rem; font-family: var(--font-mono); cursor: pointer; color: var(--color-text-secondary); transition: all 0.12s; border-left: 2px solid transparent; user-select: none; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+  .nav-stat { font-size: 0.68rem; font-family: var(--font-mono); color: var(--color-text-tertiary); background: rgba(255,255,255,0.07); border-radius: 4px; padding: 0.1rem 0.45rem; min-width: 1.6rem; text-align: center; flex-shrink: 0; transition: color 0.12s; }
+  .sidebar-item.active .nav-stat { background: rgba(126,184,247,0.15); color: #7eb8f7; }
   .sidebar-item.active { color: var(--color-text-info); background: var(--color-background-info); border-left-color: var(--color-text-info); }
   .sidebar-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: var(--color-text-primary); }
   .sidebar-auth { padding: 1.25rem 1.75rem; border-top: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; gap: 0.56rem; }
@@ -61,11 +63,6 @@
   /* ── Main content ── */
   .main-content { flex: 1; padding: 1.5rem; overflow-y: auto; min-width: 0; }
 
-  /* ── Stats ── */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.625rem; margin-bottom: 1.5rem; }
-  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem; }
-  .stat-label { font-size: 0.625rem; color: var(--color-text-secondary); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; }
-  .stat-value { font-size: 1.375rem; font-weight: 500; }
 
   /* ── Tabs ── */
   .tabs { display: flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; margin-bottom: 1rem; }
@@ -547,19 +544,19 @@
 
     <nav class="sidebar-nav" aria-label="Primary navigation">
       <div class="sidebar-section-label">Inventory</div>
-      <button class="sidebar-item active" id="nav-component" onclick="setTab('component')">Components</button>
-      <button class="sidebar-item" id="nav-material" onclick="setTab('material')">Materials</button>
-      <button class="sidebar-item" id="nav-blueprint" onclick="setTab('blueprint')">Blueprints</button>
-      <button class="sidebar-item" id="nav-wikelo" onclick="setTab('wikelo')">Loot</button>
+      <button class="sidebar-item active" id="nav-component" onclick="setTab('component')">Components<span class="nav-stat" id="stat-component"></span></button>
+      <button class="sidebar-item" id="nav-material" onclick="setTab('material')">Materials<span class="nav-stat" id="stat-material"></span></button>
+      <button class="sidebar-item" id="nav-blueprint" onclick="setTab('blueprint')">Blueprints<span class="nav-stat" id="stat-blueprint"></span></button>
+      <button class="sidebar-item" id="nav-wikelo" onclick="setTab('wikelo')">Loot<span class="nav-stat" id="stat-wikelo"></span></button>
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Social</div>
-      <button class="sidebar-item" id="nav-members" onclick="setOrgTab('members')">Members</button>
-      <button class="sidebar-item" id="nav-leaderboard" onclick="setOrgTab('leaderboard')">Leaderboard</button>
-      <button class="sidebar-item" id="nav-certifications" onclick="setOrgTab('certifications')">Certifications</button>
+      <button class="sidebar-item" id="nav-members" onclick="setOrgTab('members')">Members<span class="nav-stat" id="stat-members"></span></button>
+      <button class="sidebar-item" id="nav-leaderboard" onclick="setOrgTab('leaderboard')">Leaderboard<span class="nav-stat" id="stat-leaderboard"></span></button>
+      <button class="sidebar-item" id="nav-certifications" onclick="setOrgTab('certifications')">Certifications<span class="nav-stat" id="stat-certifications"></span></button>
       <button class="sidebar-item" id="nav-quests" onclick="setOrgTab('quests')">Quests</button>
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Calendar</div>
-      <button class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Events</button>
+      <button class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Events<span class="nav-stat" id="stat-events"></span></button>
     </nav>
 
     <div class="sidebar-auth" id="header-auth"></div>
@@ -577,7 +574,6 @@
   <!-- ═══════════════ INVENTORY SECTION ═══════════════ -->
   <div id="section-inventory">
 
-  <div class="stats" id="stats"></div>
 
 
   <!-- Component filters -->
@@ -728,7 +724,6 @@
   <!-- ═══════════════ ORG TOOLS SECTION ═══════════════ -->
   <div id="section-org" style="display:none;">
 
-    <div class="stats" id="org-stats"></div>
 
 
     <!-- Members filter -->
@@ -2105,11 +2100,11 @@ function updateStats(){
   const matsSCU=+(matsRaw/100).toFixed(2);
   const bps=items.filter(i=>i.cat==='blueprint').length;
   const totDkp=items.filter(i=>i.cat==='wikelo').reduce((a,i)=>a+(i.wkDkp||0)*(i.wkQty||0),0);
-  document.getElementById('stats').innerHTML=`
-    <div class="stat"><div class="stat-label">Components</div><div class="stat-value" style="color:#5a9e3f">${comps}</div></div>
-    <div class="stat"><div class="stat-label">Materials</div><div class="stat-value" style="color:#c47a2a">${matsSCU}<span style="font-size:13px;margin-left:3px;">SCU</span></div></div>
-    <div class="stat"><div class="stat-label">Blueprints</div><div class="stat-value" style="color:#8b72e8">${bps}</div></div>
-    <div class="stat"><div class="stat-label">Loot DKP</div><div class="stat-value" style="color:#a89cf7">${totDkp}</div></div>`;
+  const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setStat('stat-component', comps || '');
+  setStat('stat-material', matsSCU ? matsSCU + ' SCU' : '');
+  setStat('stat-blueprint', bps || '');
+  setStat('stat-wikelo', totDkp || '');
 }
 
 function onCatChange(){
@@ -2550,11 +2545,11 @@ function setSection(s) {
 function updateOrgStats() {
   const totalDkp = orgMembers.reduce((a,m)=>a+m.dkp_balance,0);
   const openEvents = orgEvents.filter(e=>e.status==='open').length;
-  document.getElementById('org-stats').innerHTML = `
-    <div class="stat"><div class="stat-label">Members</div><div class="stat-value" style="color:#7eb8f7">${orgMembers.length}</div></div>
-    <div class="stat"><div class="stat-label">Total DKP</div><div class="stat-value" style="color:#a89cf7">${totalDkp}</div></div>
-    <div class="stat"><div class="stat-label">Open Events</div><div class="stat-value" style="color:#5a9e3f">${openEvents}</div></div>
-    <div class="stat"><div class="stat-label">Certs Awarded</div><div class="stat-value" style="color:#7eb8f7">${orgCerts.length}</div></div>`;
+  const setOrgStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setOrgStat('stat-members',        orgMembers.length || '');
+  setOrgStat('stat-leaderboard',    totalDkp          || '');
+  setOrgStat('stat-events',         openEvents        || '');
+  setOrgStat('stat-certifications', orgCerts.length   || '');
 }
 
 // ── Quest pending panel ────────────────────────────────────────────────────────
