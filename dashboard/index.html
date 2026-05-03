@@ -2954,11 +2954,22 @@ function selectCertMember(id) {
       : []
   );
 
+  // Update flowchart header to show whose tree we're viewing
+  const hdr = document.getElementById('cert-flowchart-hdr');
+  if (hdr) {
+    if (selectedCertMember) {
+      const m = orgMembers.find(m => m.id === selectedCertMember);
+      const name = m ? esc(m.display_name || m.username) : '';
+      hdr.innerHTML = `Course Map <span style="color:#7eb8f7;font-weight:600;letter-spacing:0;">— ${name}</span>`;
+    } else {
+      hdr.textContent = 'Course Map';
+    }
+  }
+
   const canvas = document.querySelector('.flow-canvas');
   if (!canvas) return;
 
   if (!selectedCertMember) {
-    // Clear all highlights
     canvas.classList.remove('cert-highlighting');
     canvas.querySelectorAll('.flow-course-card').forEach(card => {
       card.classList.remove('cert-held');
@@ -2968,8 +2979,7 @@ function selectCertMember(id) {
 
   canvas.classList.add('cert-highlighting');
   canvas.querySelectorAll('.flow-course-card[data-code]').forEach(card => {
-    const code = card.getAttribute('data-code');
-    card.classList.toggle('cert-held', heldCodes.has(code));
+    card.classList.toggle('cert-held', heldCodes.has(card.getAttribute('data-code')));
   });
 }
 
@@ -3033,7 +3043,7 @@ function computeCourseLevels(courses) {
 // ── Course flowchart (left pane) ──
 function renderCourseFlowchart(pane) {
   if (!orgCourses.length) {
-    pane.innerHTML = `<div class="pane-hdr">Course Map</div><div class="empty" style="padding:1.5rem;">No courses defined yet. Run <code>schema_courses.sql</code> in Supabase to seed.</div>`;
+    pane.innerHTML = `<div class="pane-hdr" id="cert-flowchart-hdr">Course Map</div><div class="empty" style="padding:1.5rem;">No courses defined yet. Run <code>schema_courses.sql</code> in Supabase to seed.</div>`;
     return;
   }
 
@@ -3113,7 +3123,7 @@ function renderCourseFlowchart(pane) {
   ` : '';
 
   pane.innerHTML = `
-    <div class="pane-hdr">Course Map</div>
+    <div class="pane-hdr" id="cert-flowchart-hdr">Course Map</div>
     ${toolbarHTML}
     <div class="flow-canvas">
       <svg class="flow-svg" id="flow-svg"></svg>
