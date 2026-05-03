@@ -300,7 +300,7 @@
 
   /* ── Cert split layout (flowchart + member list) ── */
   #cert-stack { display: flex; flex-direction: column; gap: 0.75rem; }
-  #cert-flowchart-pane { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: auto; position: relative; max-height: 60vh; }
+  #cert-flowchart-pane { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: auto; position: relative; max-height: 68vh; scroll-behavior: smooth; scrollbar-gutter: stable; }
   #cert-members-strip-wrap { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
   #cert-members-strip { display: flex; flex-direction: row; gap: 0.5rem; overflow-x: auto; padding: 0.625rem 0.875rem 0.75rem; scrollbar-width: thin; }
   #cert-members-strip::-webkit-scrollbar { height: 4px; }
@@ -319,20 +319,20 @@
   .cert-highlighting .flow-course-card.cert-held:hover { transform: translateY(-1px); }
 
   /* Flowchart grid */
-  .flow-canvas { position: relative; padding: 1rem; min-width: max-content; }
-  .flow-tracks { display: flex; gap: 1rem; align-items: flex-start; position: relative; z-index: 2; }
-  .flow-track-col { width: 10.5rem; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.625rem; }
-  .flow-track-hdr { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-secondary); padding: 0.375rem 0.5rem; background: var(--color-background-primary); border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); text-align: center; }
-  .flow-course-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 0.5rem 0.625rem; cursor: default; transition: border-color 0.12s, transform 0.12s; position: relative; }
+  .flow-canvas { position: relative; padding: 1.5rem; min-width: max-content; }
+  .flow-tracks { display: flex; gap: 1.75rem; align-items: flex-start; position: relative; z-index: 2; }
+  .flow-track-col { width: 12rem; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.75rem; background: rgba(255,255,255,0.018); border-radius: 8px; padding: 0 0.5rem 0.75rem; }
+  .flow-track-hdr { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #7eb8f7; padding: 0.5rem 0.625rem; background: rgba(74,138,181,0.12); border-radius: var(--border-radius-md); border: 1px solid rgba(74,138,181,0.25); text-align: center; margin-bottom: 0.25rem; }
+  .flow-course-card { background: var(--color-background-primary); border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 0.625rem 0.75rem; min-width: 10rem; cursor: default; transition: border-color 0.12s, transform 0.12s; position: relative; }
   .flow-course-card:hover { border-color: #7eb8f7; transform: translateY(-1px); }
   .flow-course-action { position: absolute; top: 0.25rem; right: 0.25rem; opacity: 0; transition: opacity 0.12s; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: 4px; padding: 0.05rem 0.4rem; font-size: 0.625rem; line-height: 1; cursor: pointer; color: var(--color-text-secondary); font-family: var(--font-mono); }
   .flow-course-card:hover .flow-course-action { opacity: 1; }
   .flow-course-action.retire:hover   { background: #2e1010; color: #c44a4a; border-color: #7a2020; }
   .flow-course-action.unretire { opacity: 0.7; }
   .flow-course-action.unretire:hover { background: #102e22; color: #2dbd8f; border-color: #2dbd8f; opacity: 1; }
-  .flow-course-code { font-size: 0.75rem; font-weight: 700; color: #7eb8f7; letter-spacing: 0.04em; }
-  .flow-course-title { font-size: 0.625rem; color: var(--color-text-secondary); margin-top: 0.15rem; line-height: 1.25; }
-  .flow-course-meta { font-size: 0.5rem; color: var(--color-text-tertiary); margin-top: 0.3rem; letter-spacing: 0.04em; }
+  .flow-course-code { font-size: 0.8125rem; font-weight: 700; color: #7eb8f7; letter-spacing: 0.06em; line-height: 1; }
+  .flow-course-title { font-size: 0.6875rem; color: var(--color-text-secondary); margin-top: 0.25rem; line-height: 1.3; }
+  .flow-course-meta { font-size: 0.5625rem; color: var(--color-text-tertiary); margin-top: 0.375rem; letter-spacing: 0.03em; line-height: 1.4; }
   .flow-course-card.is-root { border-left: 2px solid #5a9e3f; }
   .flow-course-card.is-retired { opacity: 0.45; border-style: dashed; }
 
@@ -376,9 +376,9 @@
 
   /* SVG arrow overlay */
   .flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-  .flow-arrow { fill: none; stroke: #4a5560; stroke-width: 1.25; opacity: 0.55; }
-  .flow-arrow-breadth { fill: none; stroke: #c47a2a; stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.5; }
-  .flow-arrow-head { fill: #4a5560; opacity: 0.55; }
+  .flow-arrow { fill: none; stroke: #4a8ab5; stroke-width: 2; opacity: 0.75; }
+  .flow-arrow-breadth { fill: none; stroke: #c47a2a; stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.65; }
+  .flow-arrow-head { fill: #4a8ab5; opacity: 0.75; }
 
   /* ── Loot listing ── */
   .listing-strip { margin-top: 0.625rem; padding-top: 0.625rem; border-top: 0.5px solid var(--color-border-tertiary); }
@@ -3326,6 +3326,16 @@ function drawFlowArrows(pane) {
   svg.setAttribute('height', ch);
   svg.setAttribute('viewBox', `0 0 ${cw} ${ch}`);
 
+  // Inject arrowhead marker definitions
+  const defs = `<defs>
+    <marker id="arrowhead-solid" markerWidth="8" markerHeight="8" refX="4" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L8,3 z" fill="#4a8ab5" opacity="0.85"/>
+    </marker>
+    <marker id="arrowhead-breadth" markerWidth="8" markerHeight="8" refX="4" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L8,3 z" fill="#c47a2a" opacity="0.75"/>
+    </marker>
+  </defs>`;
+
   // Map code → card rect (relative to canvas)
   const cards = canvas.querySelectorAll('.flow-course-card[data-code]');
   const canvasRect = canvas.getBoundingClientRect();
@@ -3360,7 +3370,7 @@ function drawFlowArrows(pane) {
     }
   }
 
-  svg.innerHTML = paths.join('');
+  svg.innerHTML = defs + paths.join('');
 }
 
 function arrowPath(src, dst, isBreadth) {
@@ -3369,14 +3379,14 @@ function arrowPath(src, dst, isBreadth) {
   const sy = src.y + src.h;
   const dx = dst.x + dst.w / 2;
   const dy = dst.y;
-  const dyDelta = Math.max(20, Math.abs(dy - sy) * 0.5);
+  // Increase curvature: use 65% of vertical distance (min 40px) so cross-track
+  // paths arc well clear of intermediate cards and don't stack on each other.
+  const dyDelta = Math.max(40, Math.abs(dy - sy) * 0.65);
   const c1y = sy + dyDelta;
   const c2y = dy - dyDelta;
   const cls = isBreadth ? 'flow-arrow-breadth' : 'flow-arrow';
-  // Arrow head: small triangle at destination
-  const hx = dx, hy = dy;
-  const head = `<polygon class="flow-arrow-head" points="${hx-3},${hy-5} ${hx+3},${hy-5} ${hx},${hy-1}"/>`;
-  return `<path class="${cls}" d="M ${sx} ${sy} C ${sx} ${c1y} ${dx} ${c2y} ${dx} ${dy-2}"/>${isBreadth ? '' : head}`;
+  const marker = isBreadth ? 'url(#arrowhead-breadth)' : 'url(#arrowhead-solid)';
+  return `<path class="${cls}" d="M ${sx} ${sy} C ${sx} ${c1y} ${dx} ${c2y} ${dx} ${dy}" marker-end="${marker}"/>`;
 }
 
 // ── Quests & Submissions ──
