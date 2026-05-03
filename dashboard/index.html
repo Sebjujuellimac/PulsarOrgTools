@@ -3448,21 +3448,34 @@ function drawFlowArrows(pane) {
 }
 
 function arrowPath(src, dst, isBreadth) {
-  // Source bottom-center → destination top-center, cubic bezier
-  const sx = src.x + src.w / 2;
-  const sy = src.y + src.h;
-  const dx = dst.x + dst.w / 2;
-  const dy = dst.y;
-  // Increase curvature: use 65% of vertical distance (min 40px) so cross-track
-  // paths arc well clear of intermediate cards and don't stack on each other.
-  const dyDelta = Math.max(40, Math.abs(dy - sy) * 0.65);
-  const c1y = sy + dyDelta;
-  const c2y = dy - dyDelta;
+  // Source bottom-center → destination top-center, orthogonal elbow with rounded corners
+  const sx  = src.x + src.w / 2;
+  const sy  = src.y + src.h;
+  const dx  = dst.x + dst.w / 2;
+  const dy  = dst.y;
   const cls = isBreadth ? 'flow-arrow-breadth' : 'flow-arrow';
-  // Arrowhead: small upward-pointing triangle at destination top-center
-  const hx = dx, hy = dy;
-  const head = `<polygon class="flow-arrow-head" points="${hx-4},${hy-6} ${hx+4},${hy-6} ${hx},${hy-1}"/>`;
-  return `<path class="${cls}" d="M ${sx} ${sy} C ${sx} ${c1y} ${dx} ${c2y} ${dx} ${hy-6}"/>${isBreadth ? '' : head}`;
+  const head = isBreadth
+    ? ''
+    : `<polygon class="flow-arrow-head" points="${dx-4},${dy-6} ${dx+4},${dy-6} ${dx},${dy-1}"/>`;
+
+  if (Math.abs(dx - sx) < 2) {
+    // Same column: pure vertical, no corners needed
+    return `<path class="${cls}" d="M ${sx} ${sy} L ${dx} ${dy-6}"/>${head}`;
+  }
+
+  const r    = 8;                          // corner radius (px)
+  const dir  = Math.sign(dx - sx);        // +1 right, -1 left
+  const midY = sy + (dy - sy) / 2;        // elbow sits halfway between cards
+
+  // Down → horizontal → down, with a quadratic-bezier rounded corner at each turn
+  const d = `M ${sx} ${sy} `
+    + `L ${sx} ${midY - r} `
+    + `Q ${sx} ${midY} ${sx + dir * r} ${midY} `
+    + `L ${dx - dir * r} ${midY} `
+    + `Q ${dx} ${midY} ${dx} ${midY + r} `
+    + `L ${dx} ${dy - 6}`;
+
+  return `<path class="${cls}" d="${d}"/>${head}`;
 }
 
 // ── Quests & Submissions ──
