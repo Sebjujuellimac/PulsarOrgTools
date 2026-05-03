@@ -3402,7 +3402,6 @@ function drawFlowArrows(pane) {
   svg.setAttribute('height', ch);
   svg.setAttribute('viewBox', `0 0 ${cw} ${ch}`);
 
-  // Map code → card rect relative to canvas origin
   const canvasRect = canvas.getBoundingClientRect();
   const rectByCode = {};
   canvas.querySelectorAll('.flow-course-card[data-code]').forEach(card => {
@@ -3415,7 +3414,7 @@ function drawFlowArrows(pane) {
     };
   });
 
-  // Collect all arrows as data objects first so we can detect overlaps
+  // Collect all arrows
   const arrows = [];
   for (const c of orgCourses) {
     if (c.retired_at) continue;
@@ -3431,62 +3430,89 @@ function drawFlowArrows(pane) {
     }
   }
 
-  // Pre-compute nominal centres
-  const SPREAD = 6; // px between parallel paths
+  const SPREAD = 6; // px between parallel arrival points
+  const STEP   = 5; // px between candidate elbow-Y tracks
+  const PAD    = 4; // overlap-detection padding on each side of a segment
+
+  // Base coords
   arrows.forEach(a => {
-    a.sx = a.src.x + a.src.w / 2;
-    a.sy = a.src.y + a.src.h;
-    a.dx = a.dst.x + a.dst.w / 2;
-    a.dy = a.dst.y;
-    a.elbowShift = 0;  // vertical offset applied to midY
-    a.dxShift    = 0;  // horizontal offset applied at destination
+    a.sx     = a.src.x + a.src.w / 2;
+    a.sy     = a.src.y + a.src.h;
+    a.dx     = a.dst.x + a.dst.w / 2;
+    a.dy     = a.dst.y;
+    a.dxShift = 0;
   });
 
-  // Arrows leaving the same source → spread their elbow heights
-  const bySrc = {};
-  arrows.forEach(a => { (bySrc[a.srcCode] ??= []).push(a); });
-  Object.values(bySrc).forEach(grp => {
-    if (grp.length < 2) return;
-    grp.sort((a, b) => a.dx - b.dx);
-    const half = (grp.length - 1) / 2;
-    grp.forEach((a, i) => { a.elbowShift += (i - half) * SPREAD; });
-  });
-
-  // Arrows arriving at the same destination → spread their arrival x
+  // Pass 1 — spread arrival x for arrows converging on the same destination
   const byDst = {};
   arrows.forEach(a => { (byDst[a.dstCode] ??= []).push(a); });
   Object.values(byDst).forEach(grp => {
     if (grp.length < 2) return;
     grp.sort((a, b) => a.sx - b.sx);
     const half = (grp.length - 1) / 2;
-    grp.forEach((a, i) => { a.dxShift += (i - half) * SPREAD; });
+    grp.forEach((a, i) => { a.dxShift = (i - half) * SPREAD; });
   });
+  arrows.forEach(a => { a.adx = a.dx + a.dxShift; });
+
+  // Pass 2 — greedy elbow-Y track assignment for cross-column arrows
+  // Occupied slots: { y, x1, x2 } — no two slots within STEP px vertically
+  // may have overlapping x extents.
+  const occupied = [];
+
+  function claimY(y, x1, x2) { occupied.push({ y, x1, x2 }); }
+  function isFree(y, x1, x2) {
+    return !occupied.some(s => Math.abs(s.y - y) < STEP * 0.9 && s.x1 < x2 && s.x2 > x1);
+  }
+
+  // Process in order of nominal midY so nearby arrows get preference for the centre slot
+  const cross = arrows.filter(a => Math.abs(a.adx - a.sx) >= 2);
+  cross.sort((a, b) => (a.sy + a.dy) / 2 - (b.sy + b.dy) / 2);
+
+  for (const a of cross) {
+    const nomY    = (a.sy + a.dy) / 2;
+    const minBound = a.sy + STEP * 2;
+    const maxBound = a.dy - STEP * 2;
+    const x1 = Math.min(a.sx, a.adx) - PAD;
+    const x2 = Math.max(a.sx, a.adx) + PAD;
+
+    if (minBound > maxBound) { a.elbowY = nomY; continue; }
+
+    let assigned = false;
+    for (let d = 0; d * STEP <= (maxBound - minBound) + 60; d++) {
+      for (const sign of (d === 0 ? [0] : [1, -1])) {
+        const y = nomY + sign * d * STEP;
+        if (y < minBound || y > maxBound) continue;
+        if (isFree(y, x1, x2)) { claimY(y, x1, x2); a.elbowY = y; assigned = true; break; }
+      }
+      if (assigned) break;
+    }
+    if (!assigned) { a.elbowY = nomY; claimY(nomY, x1, x2); }
+  }
 
   svg.innerHTML = arrows.map(a => arrowPath(a)).join('');
 }
 
-function arrowPath({ sx, sy, dx, dy, isBreadth, elbowShift = 0, dxShift = 0 }) {
-  const adx = dx + dxShift;       // actual arrival x (slightly spread at destination)
+function arrowPath({ sx, sy, adx, dx, dy, elbowY, isBreadth, dxShift = 0 }) {
+  const finalDx = adx ?? (dx + dxShift);
   const cls  = isBreadth ? 'flow-arrow-breadth' : 'flow-arrow';
   const head = isBreadth
     ? ''
-    : `<polygon class="flow-arrow-head" points="${adx-4},${dy-6} ${adx+4},${dy-6} ${adx},${dy-1}"/>`;
+    : `<polygon class="flow-arrow-head" points="${finalDx-4},${dy-6} ${finalDx+4},${dy-6} ${finalDx},${dy-1}"/>`;
 
-  if (Math.abs(adx - sx) < 2) {
-    // Pure vertical — same column, no elbow needed
-    return `<path class="${cls}" d="M ${sx} ${sy} L ${adx} ${dy-6}"/>${head}`;
+  if (Math.abs(finalDx - sx) < 2) {
+    return `<path class="${cls}" d="M ${sx} ${sy} L ${finalDx} ${dy-6}"/>${head}`;
   }
 
   const r    = 7;
-  const dir  = Math.sign(adx - sx) || 1;
-  const midY = sy + (dy - sy) / 2 + elbowShift;
+  const midY = elbowY ?? (sy + (dy - sy) / 2);
+  const dir  = Math.sign(finalDx - sx) || 1;
 
   const d = `M ${sx} ${sy} `
     + `L ${sx} ${midY - r} `
     + `Q ${sx} ${midY} ${sx + dir * r} ${midY} `
-    + `L ${adx - dir * r} ${midY} `
-    + `Q ${adx} ${midY} ${adx} ${midY + r} `
-    + `L ${adx} ${dy - 6}`;
+    + `L ${finalDx - dir * r} ${midY} `
+    + `Q ${finalDx} ${midY} ${finalDx} ${midY + r} `
+    + `L ${finalDx} ${dy - 6}`;
 
   return `<path class="${cls}" d="${d}"/>${head}`;
 }
