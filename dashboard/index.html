@@ -299,10 +299,24 @@
   .rsi-badge:hover { background: #0d2236; border-color: #1a6496; }
 
   /* ── Cert split layout (flowchart + member list) ── */
-  #cert-split { display: flex; gap: 1rem; align-items: flex-start; }
-  #cert-flowchart-pane { flex: 1.4; min-width: 0; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: auto; position: relative; max-height: calc(100vh - 18rem); }
-  #cert-members-pane { flex: 1; min-width: 0; max-height: calc(100vh - 18rem); overflow-y: auto; display: flex; flex-direction: column; gap: 0.625rem; }
-  .pane-hdr { font-size: 0.625rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.75rem 0.875rem 0.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); position: sticky; top: 0; background: var(--color-background-secondary); z-index: 5; }
+  #cert-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+  #cert-flowchart-pane { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: auto; position: relative; max-height: 60vh; }
+  #cert-members-strip-wrap { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  #cert-members-strip { display: flex; flex-direction: row; gap: 0.5rem; overflow-x: auto; padding: 0.625rem 0.875rem 0.75rem; scrollbar-width: thin; }
+  #cert-members-strip::-webkit-scrollbar { height: 4px; }
+  #cert-members-strip::-webkit-scrollbar-track { background: transparent; }
+  #cert-members-strip::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 2px; }
+  .cert-member-pill { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.5rem 0.75rem; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; transition: border-color 0.12s, background 0.12s; min-width: 6rem; max-width: 8rem; text-align: center; }
+  .cert-member-pill:hover { border-color: #7eb8f7; background: #141f2b; }
+  .cert-member-pill.selected { border-color: #7eb8f7; background: #0f1c2b; box-shadow: 0 0 0 1px #7eb8f7; }
+  .cert-pill-name { font-size: 0.7rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+  .cert-pill-count { font-size: 0.6rem; color: var(--color-text-tertiary); }
+  .pane-hdr { font-size: 0.625rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.625rem 0.875rem 0.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); position: sticky; top: 0; background: var(--color-background-secondary); z-index: 5; }
+  /* Cert highlight state */
+  .flow-course-card.cert-held { border-color: #7eb8f7 !important; box-shadow: 0 0 0 1px #7eb8f7, 0 0 10px rgba(126,184,247,0.25); background: #0d1d2e !important; }
+  .flow-course-card.cert-held .flow-course-code { color: #7eb8f7; }
+  .cert-highlighting .flow-course-card:not(.cert-held) { opacity: 0.35; }
+  .cert-highlighting .flow-course-card.cert-held:hover { transform: translateY(-1px); }
 
   /* Flowchart grid */
   .flow-canvas { position: relative; padding: 1rem; min-width: max-content; }
@@ -2499,6 +2513,7 @@ let calWeekOffset = 0;  // 0 = current week, ±n = weeks from today
 // Course catalog — loaded from DB in loadOrg(). Empty until then.
 let orgCourses = [];   // [{ code, title, track, prereqs, breadth, display_order, retired_at, ... }]
 let orgTracks  = [];   // [{ name, emoji, display_order, retired_at, ... }]
+let selectedCertMember = null; // id of member whose certs are highlighted in the flowchart
 const ORG_COURSES      = {};   // legacy lookup: code → track (rebuilt after load)
 const ORG_TRACK_EMOJI  = {};   // rebuilt after load
 let   ORG_TRACK_ORDER  = [];   // rebuilt after load
@@ -2853,19 +2868,27 @@ function renderLeaderboard(grid) {
 
 // ── Certifications ──
 function renderCertifications(grid) {
+  selectedCertMember = null;   // clear any stale highlight state
   grid.className = '';
   grid.innerHTML = `
-    <div id="cert-split">
+    <div id="cert-stack">
       <div id="cert-flowchart-pane"></div>
-      <div id="cert-members-pane"></div>
+      <div id="cert-members-strip-wrap">
+        <div id="cert-members-strip-hdr" class="pane-hdr">Certified Members</div>
+        <div id="cert-members-strip"></div>
+      </div>
     </div>
   `;
   renderCourseFlowchart(document.getElementById('cert-flowchart-pane'));
-  renderCertMemberList(document.getElementById('cert-members-pane'));
+  renderCertMemberList();
 }
 
-// ── Member cert list (right pane) ──
-function renderCertMemberList(pane) {
+// ── Member cert strip (horizontal pills below flowchart) ──
+function renderCertMemberList() {
+  const strip = document.getElementById('cert-members-strip');
+  const hdrEl = document.getElementById('cert-members-strip-hdr');
+  if (!strip) return;
+
   const trackFilter = document.getElementById('off-cert-track')?.value||'';
   const q = (document.getElementById('cert-search')?.value||'').toLowerCase();
   const certsByMember = {};
@@ -2880,22 +2903,68 @@ function renderCertMemberList(pane) {
     const matchQ = !q||(m.display_name||m.username).toLowerCase().includes(q);
     return hasCerts&&matchQ;
   });
-  document.getElementById('org-result-count').textContent = list.length ? `${list.length} certified member${list.length!==1?'s':''}` : '';
 
-  const hdr = `<div class="pane-hdr">Certified Members ${list.length ? `<span style="color:#7eb8f7;font-weight:600;">${list.length}</span>` : ''}</div>`;
-  if (!list.length) { pane.innerHTML = hdr + '<div class="empty">No certifications match.</div>'; return; }
+  const count = list.length;
+  document.getElementById('org-result-count').textContent = count ? `${count} certified member${count!==1?'s':''}` : '';
+  if (hdrEl) hdrEl.innerHTML = `Certified Members${count ? ` <span style="color:#7eb8f7;font-weight:600;">${count}</span>` : ''}`;
 
-  pane.innerHTML = hdr + list.map(m=>{
-    const certs   = certsByMember[m.id]||[];
-    const rsiBadge = m.rsi_verified && m.rsi_handle
-      ? `<a class="rsi-badge" href="https://robertsspaceindustries.com/citizens/${encodeURIComponent(m.rsi_handle)}" target="_blank" rel="noopener" title="RSI: ${esc(m.rsi_handle)}">🌌</a>`
-      : '';
-    const clickable = (isOfficer||isAdmin) ? `onclick="openMemberModal('${esc(m.id)}')" style="cursor:pointer;" title="Manage certs"` : '';
-    return `<div class="cert-row" ${clickable} style="margin: 0 0.5rem;${(isOfficer||isAdmin)?'cursor:pointer;':''}">
-      <div class="cert-member">${esc(m.display_name||m.username)}${rsiBadge ? '<br>'+rsiBadge : ''}</div>
-      <div class="cert-tags">${certs.map(code=>`<span class="cert-tag">${esc(code)}</span>`).join('')}</div>
-    </div>`;
+  if (!list.length) {
+    strip.innerHTML = '<div class="empty" style="padding:1rem 0.875rem;">No certifications match.</div>';
+    return;
+  }
+
+  strip.innerHTML = list.map(m=>{
+    const certs = certsByMember[m.id]||[];
+    const name  = esc(m.display_name||m.username);
+    const isSel = selectedCertMember === m.id;
+    return `<button class="cert-member-pill${isSel?' selected':''}"
+        data-member-id="${esc(m.id)}"
+        onclick="selectCertMember('${esc(m.id)}')"
+        title="${name} · ${certs.length} cert${certs.length!==1?'s':''} · Click to highlight courses">
+      <span class="cert-pill-name">${name}</span>
+      <span class="cert-pill-count">${certs.length} cert${certs.length!==1?'s':''}</span>
+    </button>`;
   }).join('');
+}
+
+// ── Highlight a member's certs in the flowchart ──
+function selectCertMember(id) {
+  // Toggle off if same member clicked again
+  if (selectedCertMember === id) {
+    selectedCertMember = null;
+  } else {
+    selectedCertMember = id;
+  }
+
+  // Update pill selection state
+  document.querySelectorAll('.cert-member-pill').forEach(pill => {
+    pill.classList.toggle('selected', pill.dataset.memberId === selectedCertMember);
+  });
+
+  // Gather this member's cert codes
+  const heldCodes = new Set(
+    selectedCertMember
+      ? orgCerts.filter(c => c.member_id === selectedCertMember).map(c => c.course_code)
+      : []
+  );
+
+  const canvas = document.querySelector('.flow-canvas');
+  if (!canvas) return;
+
+  if (!selectedCertMember) {
+    // Clear all highlights
+    canvas.classList.remove('cert-highlighting');
+    canvas.querySelectorAll('.flow-course-card').forEach(card => {
+      card.classList.remove('cert-held');
+    });
+    return;
+  }
+
+  canvas.classList.add('cert-highlighting');
+  canvas.querySelectorAll('.flow-course-card[data-code]').forEach(card => {
+    const code = card.getAttribute('data-code');
+    card.classList.toggle('cert-held', heldCodes.has(code));
+  });
 }
 
 // ── Course flowchart (left pane) ──
@@ -4007,9 +4076,7 @@ async function awardCert(memberId) {
   if (mi !== -1) orgMembers[mi].cert_count = (orgMembers[mi].cert_count || 0) + 1;
 
   openMemberModal(memberId);
-  if (document.getElementById('cert-members-pane')) {
-    renderCertMemberList(document.getElementById('cert-members-pane'));
-  }
+  renderCertMemberList();
 }
 
 async function revokeCert(memberId, code) {
@@ -4027,9 +4094,7 @@ async function revokeCert(memberId, code) {
   if (mi !== -1) orgMembers[mi].cert_count = Math.max(0, (orgMembers[mi].cert_count || 0) - 1);
 
   openMemberModal(memberId);
-  if (document.getElementById('cert-members-pane')) {
-    renderCertMemberList(document.getElementById('cert-members-pane'));
-  }
+  renderCertMemberList();
 }
 </script>
 </body>
