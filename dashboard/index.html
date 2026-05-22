@@ -527,6 +527,101 @@
   .skip-link:focus { left: 50%; transform: translateX(-50%); }
   :focus-visible { outline: 2px solid #7eb8f7; outline-offset: 2px; border-radius: 2px; }
   button.sidebar-item { background: none; border: none; width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+
+  /* ── Operations tab ── */
+  .op-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.75rem; }
+  .op-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.125rem; cursor: pointer; transition: border-color 0.12s; display: flex; flex-direction: column; gap: 0.5rem; }
+  .op-card:hover { border-color: #7eb8f7; }
+  .op-card-head { display: flex; align-items: center; gap: 0.5rem; }
+  .op-card-name { font-size: 0.9rem; font-weight: 500; flex: 1; }
+  .op-status { font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 3px; }
+  .op-status-active   { background: #0f2a1a; color: #5a9e3f; }
+  .op-status-settled  { background: #1a1a2e; color: #a89cf7; }
+  .op-status-archived { background: #1a1a1a; color: #666; }
+  .op-card-meta { font-size: 0.69rem; color: var(--color-text-tertiary); display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .op-card-net  { font-size: 0.81rem; font-weight: 500; color: #5a9e3f; }
+
+  .op-detail { display: flex; flex-direction: column; gap: 1rem; }
+  .op-detail-hdr { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .op-detail-title { font-size: 1.1rem; font-weight: 500; flex: 1; }
+  .op-back { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); font-size: 0.69rem; padding: 0.3rem 0.75rem; cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
+  .op-back:hover { color: var(--color-text-primary); background: var(--color-background-secondary); }
+
+  .op-section { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .op-section-hdr { font-size: 0.625rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.625rem 1rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; gap: 0.75rem; }
+  .op-section-body { padding: 0.875rem 1rem; display: flex; flex-direction: column; gap: 0.625rem; }
+
+  .op-crew-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); flex-wrap: wrap; }
+  .op-crew-row:last-child { border-bottom: none; }
+  .op-crew-name { font-size: 0.81rem; font-weight: 500; flex: 1; min-width: 6rem; }
+  .op-crew-type { font-size: 0.56rem; padding: 0.15rem 0.5rem; border-radius: 3px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .op-crew-share  { background: #0d2236; color: #7eb8f7; }
+  .op-crew-hourly { background: #1a2e14; color: #5a9e3f; }
+  .op-crew-owner  { background: #2e1e0a; color: #c47a2a; }
+  .op-timer { font-size: 0.81rem; font-variant-numeric: tabular-nums; color: #5a9e3f; min-width: 3.5rem; }
+
+  .op-job-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; }
+  .op-job-hdr { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .op-job-num { font-size: 0.69rem; font-weight: 700; color: #a89cf7; font-family: var(--font-mono); min-width: 1.5rem; }
+  .op-job-loc { font-size: 0.75rem; flex: 1; }
+  .op-job-body { padding: 0.625rem 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .op-item-row { display: grid; grid-template-columns: 1fr 5rem 4rem 6.5rem 1.5rem; gap: 0.375rem; align-items: center; font-size: 0.75rem; padding: 0.3rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .op-item-row:last-child { border-bottom: none; }
+  .op-item-hdr { font-size: 0.56rem; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; }
+  .op-item-status { font-size: 0.56rem; padding: 0.15rem 0.44rem; border-radius: 3px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+  .op-item-pending  { background: #1a1a2a; color: #888; }
+  .op-item-refining { background: #1e1630; color: #a89cf7; }
+  .op-item-sold     { background: #0f2a1a; color: #5a9e3f; }
+  .op-item-price    { font-size: 0.75rem; color: #5a9e3f; font-weight: 500; }
+
+  .op-ref-timer { font-size: 1.125rem; font-weight: 600; font-variant-numeric: tabular-nums; color: #7eb8f7; }
+  .op-ref-timer.done { color: #5a9e3f; }
+  .op-ref-timer.warn { color: #c47a2a; }
+  .op-prog-wrap { height: 4px; background: var(--color-border-tertiary); border-radius: 2px; overflow: hidden; }
+  .op-prog-fill { height: 100%; background: #a89cf7; border-radius: 2px; transition: width 1s linear; }
+  .op-prog-fill.done { background: #5a9e3f; }
+
+  .op-settle-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); flex-wrap: wrap; }
+  .op-settle-row:last-child { border-bottom: none; }
+  .op-settle-name { font-size: 0.81rem; font-weight: 500; flex: 1; min-width: 6rem; }
+  .op-settle-amt  { font-size: 0.94rem; font-weight: 600; color: #5a9e3f; white-space: nowrap; }
+  .op-settle-fee  { font-size: 0.69rem; color: var(--color-text-tertiary); white-space: nowrap; }
+  .op-guild-banner { background: #1a1030; border: 0.5px solid #6d28d9; border-radius: var(--border-radius-md); padding: 0.625rem 0.875rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .op-guild-label  { font-size: 0.625rem; letter-spacing: 0.12em; text-transform: uppercase; color: #a89cf7; }
+  .op-guild-amount { font-size: 1.125rem; font-weight: 600; color: #c4a0f7; }
+  .op-paid-btn { font-size: 0.625rem; padding: 0.2rem 0.625rem; border-radius: 3px; border: 0.5px solid var(--color-border-secondary); background: none; color: var(--color-text-tertiary); cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .op-paid-btn.paid { border-color: #5a9e3f; color: #5a9e3f; background: #0f2a1a; }
+
+  .op-totals-line { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--color-text-secondary); padding: 0.25rem 0; }
+  .op-totals-line.final { border-top: 0.5px solid var(--color-border-secondary); margin-top: 0.25rem; padding-top: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--color-text-primary); }
+  .op-guild-balance-pill { font-size: 0.69rem; background: #1a1030; border: 0.5px solid #6d28d9; border-radius: 99px; padding: 0.2rem 0.625rem; color: #a89cf7; white-space: nowrap; }
+  .op-field-row { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
+  .op-field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .op-field label { font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-tertiary); }
+  .op-field input, .op-field select { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-primary); font-size: 0.81rem; padding: 0.375rem 0.625rem; font-family: var(--font-mono); }
+  .op-field input:focus, .op-field select:focus { outline: none; border-color: #7eb8f7; }
+  .op-ac-wrap { position: relative; }
+  .op-ac-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); z-index: 50; max-height: 12rem; overflow-y: auto; margin-top: 2px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+  .op-ac-item { padding: 0.5rem 0.75rem; font-size: 0.75rem; cursor: pointer; color: var(--color-text-secondary); }
+  .op-ac-item:hover, .op-ac-item.sel { background: var(--color-background-primary); color: var(--color-text-primary); }
+  .op-delete-btn { background: none; border: none; color: #c44a4a; cursor: pointer; font-size: 0.875rem; padding: 0.2rem 0.375rem; border-radius: 3px; opacity: 0.6; }
+  .op-delete-btn:hover { opacity: 1; background: #2e1010; }
+  .op-small-btn { font-size: 0.625rem; padding: 0.25rem 0.625rem; border-radius: 3px; border: 0.5px solid var(--color-border-secondary); background: none; color: var(--color-text-secondary); cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .op-small-btn:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
+  .op-small-btn.primary { border-color: #1a6496; color: #7eb8f7; background: #0d1e2e; }
+  .op-small-btn.primary:hover { background: #0d2236; }
+  .op-small-btn.danger { border-color: #7a2020; color: #c44a4a; }
+  .op-small-btn.danger:hover { background: #2e1010; }
+  .op-sell-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .op-sell-modal-inner { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: 100%; max-width: 28rem; max-height: 90vh; overflow-y: auto; }
+  .op-price-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.625rem; border-radius: var(--border-radius-md); cursor: pointer; font-size: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .op-price-row:last-child { border-bottom: none; }
+  .op-price-row:hover { background: var(--color-background-primary); }
+  .op-new-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .op-new-modal-inner { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: 100%; max-width: 26rem; display: flex; flex-direction: column; gap: 1rem; }
+  .op-modal-title { font-size: 0.875rem; font-weight: 600; letter-spacing: 0.04em; }
+  .op-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -554,6 +649,9 @@
       <button class="sidebar-item" id="nav-leaderboard" onclick="setOrgTab('leaderboard')">Leaderboard<span class="nav-stat" id="stat-leaderboard"></span></button>
       <button class="sidebar-item" id="nav-certifications" onclick="setOrgTab('certifications')">Certifications<span class="nav-stat" id="stat-certifications"></span></button>
       <button class="sidebar-item" id="nav-quests" onclick="setOrgTab('quests')">Quests</button>
+
+      <div class="sidebar-section-label" style="margin-top:0.5rem;">Economy</div>
+      <button class="sidebar-item" id="nav-operations" onclick="setOrgTab('operations')">Operations<span class="nav-stat" id="stat-operations"></span></button>
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Calendar</div>
       <button class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Events<span class="nav-stat" id="stat-events"></span></button>
@@ -777,6 +875,18 @@
           <input class="filter-select" id="cert-search" type="text" placeholder="Filter by name…" oninput="renderOrg()">
         </div>
         <button class="filter-reset" onclick="document.getElementById('off-cert-track').value='';document.getElementById('cert-search').value='';renderOrg();">Reset</button>
+      </div>
+    </div>
+
+    <!-- Operations filter -->
+    <div class="filter-panel" id="ofp-operations">
+      <div class="filter-row" style="align-items:center;">
+        <span class="tick-label">Status</span>
+        <div class="tick-row">
+          <label class="tick-option tick-green"><input type="checkbox" id="op-f-active" checked onchange="renderOrg()"><span>Active</span></label>
+          <label class="tick-option tick-purple"><input type="checkbox" id="op-f-settled" checked onchange="renderOrg()"><span>Settled</span></label>
+          <label class="tick-option tick-gray"><input type="checkbox" id="op-f-archived" onchange="renderOrg()"><span>Archived</span></label>
+        </div>
       </div>
     </div>
 
@@ -1921,7 +2031,7 @@ function setTab(t){
   activeTab=t;
   setSection('inventory');
   const invCats=['component','material','blueprint','wikelo'];
-  const orgTabs=['members','events','leaderboard','certifications','quests'];
+  const orgTabs=['members','events','leaderboard','certifications','quests','operations'];
   invCats.forEach(cat=>{
     document.getElementById('nav-'+cat)?.classList.toggle('active',cat===t);
     document.getElementById('fp-'+cat)?.classList.toggle('visible',cat===t);
@@ -2503,6 +2613,8 @@ async function denyLootPending(pendingId) {
 // ORG TOOLS
 // ============================================================
 let orgMembers=[], orgEvents=[], orgCerts=[];
+let orgOperations=[], orgOpCrew=[], orgOpJobs=[], orgOpItems=[], guildBankBalance=0;
+let activeOpId=null;
 let activeOrgTab='members', activeSection='inventory', orgLoaded=false;
 let calWeekOffset = 0;  // 0 = current week, ±n = weeks from today
 
@@ -2546,10 +2658,12 @@ function updateOrgStats() {
   const totalDkp = orgMembers.reduce((a,m)=>a+m.dkp_balance,0);
   const openEvents = orgEvents.filter(e=>e.status==='open').length;
   const setOrgStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const activeOps = orgOperations.filter(o=>o.status==='active').length;
   setOrgStat('stat-members',        orgMembers.length || '');
   setOrgStat('stat-leaderboard',    totalDkp ? totalDkp + ' DKP' : '');
   setOrgStat('stat-events',         openEvents        || '');
   setOrgStat('stat-certifications', orgCerts.length   || '');
+  setOrgStat('stat-operations',     activeOps         || '');
 }
 
 // ── Quest pending panel ────────────────────────────────────────────────────────
@@ -2626,7 +2740,7 @@ function setOrgTab(t) {
   activeOrgTab = t;
   setSection('org');
   const invCats=['component','material','blueprint','wikelo'];
-  const orgTabs=['members','events','leaderboard','certifications','quests'];
+  const orgTabs=['members','events','leaderboard','certifications','quests','operations'];
   orgTabs.forEach(tab=>{
     document.getElementById('nav-'+tab)?.classList.toggle('active',tab===t);
     const fp=document.getElementById('ofp-'+tab);
@@ -2644,6 +2758,7 @@ function renderOrg() {
   else if (activeOrgTab==='leaderboard')  renderLeaderboard(grid);
   else if (activeOrgTab==='certifications') renderCertifications(grid);
   else if (activeOrgTab==='quests')       renderQuests(grid);
+  else if (activeOrgTab==='operations')  renderOperations(grid);
 
   // Quest pending panel — officers only, quests tab only
   const questRow = document.getElementById('quest-body-row');
@@ -3526,7 +3641,7 @@ async function loadOrg() {
   document.getElementById('loadingBar').style.display = 'block';
   document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
   try {
-    const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes] = await Promise.all([
+    const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes,opRes,opCrewRes,opJobsRes,opItemsRes,gbRes] = await Promise.all([
       sb.from('members').select('id,username,display_name,dkp_balance,joined_at,rsi_handle,rsi_verified,rsi_citizen_number,rsi_avatar_url').eq('is_system',false).order('dkp_balance',{ascending:false}),
       sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
@@ -3535,6 +3650,11 @@ async function loadOrg() {
       sb.from('quest_submissions').select('id,quest_id,member_id,notes,submitted_at,members(display_name,username),quests(title,dkp_reward)').order('submitted_at',{ascending:true}),
       sb.from('courses').select('*').order('display_order',{ascending:true}),
       sb.from('tracks').select('*').order('display_order',{ascending:true}),
+      sb.from('operations').select('*').order('created_at',{ascending:false}),
+      sb.from('operation_crew').select('*').order('display_order',{ascending:true}),
+      sb.from('operation_jobs').select('*').order('display_order',{ascending:true}),
+      sb.from('operation_items').select('*').order('display_order',{ascending:true}),
+      sb.from('guild_bank_balance').select('balance').single(),
     ]);
     if (mRes.error) throw mRes.error;
     orgCourses = coursesRes.data || [];
@@ -3551,6 +3671,11 @@ async function loadOrg() {
     orgEvents = eRes.data || [];
     orgQuests = qRes.data || [];
     orgSubmissions = sRes.data || [];  // ignore sRes.error — table may not exist in dev
+    orgOperations = opRes.data || [];
+    orgOpCrew     = opCrewRes.data || [];
+    orgOpJobs     = opJobsRes.data || [];
+    orgOpItems    = opItemsRes.data || [];
+    guildBankBalance = Number(gbRes.data?.balance || 0);
     orgLoaded = true;
   } catch(err) {
     showError('Could not load org data: '+(err.message||String(err)));
@@ -4234,6 +4359,709 @@ async function revokeCert(memberId, code) {
   openMemberModal(memberId);
   renderCertMemberList();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OPERATIONS TAB
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _opTimerInterval = null;
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function fmtUEC(n) {
+  n = Number(n||0);
+  if (n >= 1_000_000) return (n/1_000_000).toFixed(2) + 'M aUEC';
+  if (n >= 1_000)     return Math.round(n/100)/10 + 'k aUEC';
+  return Math.round(n) + ' aUEC';
+}
+function fmtElapsed(ms) {
+  const h = Math.floor(ms/3600000);
+  const m = Math.floor((ms%3600000)/60000);
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+function fmtCountdown(ms) {
+  if (ms <= 0) return 'Done';
+  const h = Math.floor(ms/3600000);
+  const m = Math.floor((ms%3600000)/60000);
+  const s = Math.floor((ms%60000)/1000);
+  return h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+}
+
+// ── Top-level render dispatcher ──────────────────────────────────────────────
+function renderOperations(grid) {
+  if (activeOpId) renderOpDetail(grid);
+  else            renderOpList(grid);
+}
+
+// ── List view ────────────────────────────────────────────────────────────────
+function renderOpList(grid) {
+  grid.className = '';
+  document.getElementById('org-result-count').textContent = '';
+
+  const showActive   = document.getElementById('op-f-active')?.checked !== false;
+  const showSettled  = document.getElementById('op-f-settled')?.checked !== false;
+  const showArchived = document.getElementById('op-f-archived')?.checked;
+  const list = orgOperations.filter(o =>
+    (o.status==='active'   && showActive)   ||
+    (o.status==='settled'  && showSettled)  ||
+    (o.status==='archived' && showArchived)
+  );
+
+  const canCreate = isOfficer || isAdmin;
+  const bankPill  = `<div class="op-guild-balance-pill">Guild Bank: <strong>${fmtUEC(guildBankBalance)}</strong></div>`;
+  const createBtn = canCreate ? `<button class="op-small-btn op-small-btn-primary" onclick="openNewOpModal()">+ New Operation</button>` : '';
+
+  const topBar = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">${bankPill}${createBtn}</div>`;
+
+  if (!list.length) {
+    grid.innerHTML = topBar + '<div class="empty">No operations found.</div>';
+    return;
+  }
+
+  const cards = list.map(op => {
+    const crew  = orgOpCrew.filter(c=>c.operation_id===op.id);
+    const jobs  = orgOpJobs.filter(j=>j.operation_id===op.id);
+    const items = orgOpItems.filter(i=>jobs.some(j=>j.id===i.job_id));
+    const gross = items.filter(i=>i.status==='sold').reduce((s,i)=>s+Number(i.sell_price||0), 0);
+    const icon  = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
+    return `<div class="op-card" onclick="openOpDetail('${esc(op.id)}')">
+      <div class="op-card-head">
+        <span>${icon}</span>
+        <span class="op-card-name">${esc(op.name)}</span>
+        <span class="op-status op-status-${esc(op.status)}">${esc(op.status)}</span>
+      </div>
+      <div class="op-card-meta">
+        <span>${crew.length} crew</span>
+        <span>${jobs.length} job${jobs.length!==1?'s':''}</span>
+        <span>${new Date(op.created_at).toLocaleDateString()}</span>
+      </div>
+      ${gross>0 ? `<div class="op-card-net">${fmtUEC(gross)} gross sold</div>` : ''}
+    </div>`;
+  }).join('');
+
+  grid.innerHTML = topBar + `<div class="op-list-grid">${cards}</div>`;
+}
+
+function openOpDetail(id) {
+  activeOpId = id;
+  renderOrg();
+}
+
+function closeOpDetail() {
+  activeOpId = null;
+  if (_opTimerInterval) { clearInterval(_opTimerInterval); _opTimerInterval = null; }
+  renderOrg();
+}
+
+// ── Detail view ──────────────────────────────────────────────────────────────
+function renderOpDetail(grid) {
+  const op = orgOperations.find(o=>o.id===activeOpId);
+  if (!op) { closeOpDetail(); return; }
+
+  const crew     = orgOpCrew.filter(c=>c.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
+  const jobs     = orgOpJobs.filter(j=>j.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
+  const allItems = orgOpItems.filter(i=>jobs.some(j=>j.id===i.job_id));
+  const canEdit  = (isOfficer || isAdmin) && op.status==='active';
+
+  const settle = calcSettlement(op, crew, jobs, allItems);
+  const icon   = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
+
+  grid.className = '';
+  grid.innerHTML = `<div class="op-detail">
+
+    <div class="op-detail-hdr">
+      <button class="op-back" onclick="closeOpDetail()">← Back</button>
+      <span>${icon}</span>
+      <span style="font-size:1.05rem;font-weight:600;flex:1;">${esc(op.name)}</span>
+      <span class="op-status op-status-${esc(op.status)}">${esc(op.status)}</span>
+      ${canEdit ? `<button class="op-small-btn op-small-btn-danger" onclick="archiveOp('${esc(op.id)}')">Archive</button>` : ''}
+    </div>
+
+    ${op.notes ? `<div style="font-size:0.78rem;color:var(--color-text-secondary);padding:0 0.25rem;">${esc(op.notes)}</div>` : ''}
+
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;font-size:0.75rem;color:var(--color-text-secondary);">
+      <span>Wallet fee: <strong style="color:var(--color-text-primary);">${op.wallet_fee}%</strong></span>
+      <span>Guild cut: <strong style="color:#c47a2a;">${op.guild_bank_pct}%</strong></span>
+      <span>Started: <strong style="color:var(--color-text-primary);">${new Date(op.created_at).toLocaleDateString()}</strong></span>
+      ${op.settled_at ? `<span>Settled: <strong style="color:#a89cf7;">${new Date(op.settled_at).toLocaleDateString()}</strong></span>` : ''}
+    </div>
+
+    <div class="op-section">
+      <div class="op-section-hdr">
+        <span>Crew</span>
+        ${canEdit ? `<button class="op-small-btn" onclick="openAddCrewModal('${esc(op.id)}')">+ Add</button>` : ''}
+      </div>
+      <div class="op-section-body">
+        ${crew.length ? crew.map(cm => {
+          const pay = settle.crewPayouts.find(p=>p.id===cm.id);
+          return `<div class="op-crew-row">
+            <span class="op-crew-name">${esc(cm.display_name)}${cm.is_owner?` <span style="color:#c47a2a;font-size:0.65rem;margin-left:0.25rem;">OWNER</span>`:''}
+            </span>
+            <span class="op-crew-type op-crew-${esc(cm.crew_type)}">${cm.crew_type==='hourly'?`${fmtUEC(cm.hourly_rate)}/hr`:'share'}</span>
+            ${cm.crew_type==='hourly' ? `<span class="op-timer">${fmtElapsed(cm.elapsed_ms||0)}</span>` : ''}
+            ${pay ? `<span style="font-size:0.78rem;color:#5a9e3f;margin-left:auto;">${fmtUEC(pay.net)}</span>` : ''}
+            ${canEdit ? `<button class="op-delete-btn" onclick="removeCrew('${esc(cm.id)}')">×</button>` : ''}
+          </div>`;
+        }).join('') : '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No crew added yet.</div>'}
+      </div>
+    </div>
+
+    <div class="op-section">
+      <div class="op-section-hdr">
+        <span>Refinery Jobs</span>
+        ${canEdit ? `<button class="op-small-btn" onclick="addJob('${esc(op.id)}')">+ Add Job</button>` : ''}
+      </div>
+      <div class="op-section-body">
+        ${jobs.length ? jobs.map(job => renderJobCard(job, allItems, canEdit)).join('') :
+          '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No jobs added yet.</div>'}
+      </div>
+    </div>
+
+    <div class="op-section">
+      <div class="op-section-hdr"><span>Settlement</span></div>
+      <div class="op-section-body">
+        ${renderSettlementPanel(op, settle, canEdit)}
+      </div>
+    </div>
+
+  </div>`;
+
+  // Start countdown ticks if any timer is active
+  if (_opTimerInterval) { clearInterval(_opTimerInterval); _opTimerInterval = null; }
+  if (jobs.some(j=>!j.timer_done && j.timer_end && new Date(j.timer_end)>new Date())) {
+    _opTimerInterval = setInterval(()=>updateTimerDisplays(jobs), 1000);
+  }
+}
+
+// ── Job card ─────────────────────────────────────────────────────────────────
+function renderJobCard(job, allItems, canEdit) {
+  const items = allItems.filter(i=>i.job_id===job.id).sort((a,b)=>a.display_order-b.display_order);
+  const timerHTML = job.timer_total_ms > 0 ? renderRefineryTimer(job) : '';
+  return `<div class="op-job-card" id="job-card-${esc(job.id)}">
+    <div class="op-job-hdr">
+      <span style="font-weight:500;">${esc(job.location||'Unnamed Job')}</span>
+      ${job.refinery_cost>0 ? `<span style="font-size:0.72rem;color:#c47a2a;">Refinery: ${fmtUEC(job.refinery_cost)}${job.payer_name?` (${esc(job.payer_name)})`:''}</span>` : ''}
+      <span style="flex:1;"></span>
+      ${canEdit ? `
+        <button class="op-small-btn" onclick="addItem('${esc(job.id)}')">+ Item</button>
+        <button class="op-small-btn" onclick="openRefineryModal('${esc(job.id)}')">⏱</button>
+        <button class="op-delete-btn" onclick="removeJob('${esc(job.id)}')">×</button>` : ''}
+    </div>
+    ${timerHTML}
+    <div>
+      ${items.map(item => renderItemRow(item, canEdit)).join('')}
+      ${!items.length ? '<div style="font-size:0.72rem;color:var(--color-text-tertiary);padding:0.3rem 0;">No items yet.</div>' : ''}
+    </div>
+  </div>`;
+}
+
+function renderItemRow(item, canEdit) {
+  const scoreStr = item.value_score != null ? ` · ${item.value_score}/999` : '';
+  const qtyStr   = item.qty_cscu > 0 ? ` · ${(item.qty_cscu/100).toFixed(2)} SCU` : '';
+  return `<div class="op-item-row">
+    <span class="op-item-status op-item-${esc(item.status)}">${esc(item.status)}</span>
+    <span style="flex:1;font-size:0.8rem;">${esc(item.name)}${qtyStr}${scoreStr}</span>
+    ${item.sell_price>0 ? `<span style="font-size:0.78rem;color:#5a9e3f;">${fmtUEC(item.sell_price)}</span>` : ''}
+    ${canEdit ? `${item.status!=='sold' ? `<button class="op-small-btn" onclick="openSellModal('${esc(item.id)}')">Sell</button>` : ''}
+      <button class="op-delete-btn" onclick="removeItem('${esc(item.id)}')">×</button>` : ''}
+  </div>`;
+}
+
+// ── Refinery timer ────────────────────────────────────────────────────────────
+function renderRefineryTimer(job) {
+  const now = Date.now();
+  const end = job.timer_end ? new Date(job.timer_end).getTime() : 0;
+  if (job.timer_done || end <= now) {
+    return `<div class="op-ref-timer" style="color:#5a9e3f;">✓ Refinery complete</div>`;
+  }
+  const remaining = end - now;
+  const pct = Math.min(100, Math.max(0, 100 - (remaining / (job.timer_total_ms||1)) * 100));
+  return `<div class="op-ref-timer" id="timer-${esc(job.id)}">
+    <span style="font-size:0.72rem;color:var(--color-text-secondary);">Refining: <span id="timer-txt-${esc(job.id)}">${fmtCountdown(remaining)}</span></span>
+    <div class="op-prog-wrap"><div class="op-prog-fill" id="timer-fill-${esc(job.id)}" style="width:${pct.toFixed(1)}%;"></div></div>
+  </div>`;
+}
+
+function updateTimerDisplays(jobs) {
+  let anyActive = false;
+  for (const job of jobs) {
+    if (job.timer_done || !job.timer_end) continue;
+    const end = new Date(job.timer_end).getTime();
+    const remaining = end - Date.now();
+    const timerEl = document.getElementById(`timer-${job.id}`);
+    if (!timerEl) continue;
+    if (remaining <= 0) {
+      timerEl.innerHTML = '<span style="color:#5a9e3f;">✓ Refinery complete</span>';
+      timerEl.id = '';
+      job.timer_done = true;
+    } else {
+      const txtEl  = document.getElementById(`timer-txt-${job.id}`);
+      const fillEl = document.getElementById(`timer-fill-${job.id}`);
+      if (txtEl)  txtEl.textContent = fmtCountdown(remaining);
+      if (fillEl) fillEl.style.width = Math.min(100, 100-(remaining/(job.timer_total_ms||1))*100).toFixed(1)+'%';
+      anyActive = true;
+    }
+  }
+  if (!anyActive && _opTimerInterval) { clearInterval(_opTimerInterval); _opTimerInterval = null; }
+}
+
+// ── Settlement panel ──────────────────────────────────────────────────────────
+function renderSettlementPanel(op, s, canEdit) {
+  const { gross, refinery, net, guildTake, distributable, hourlyTotal, shares, perShare, crewPayouts } = s;
+  if (gross === 0) {
+    return '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No sold items yet — mark items as sold to see the settlement breakdown.</div>';
+  }
+  const settled = op.status==='settled';
+  const rows = [
+    `<div class="op-settle-row"><span>Gross receipts</span><span class="op-settle-amt">${fmtUEC(gross)}</span></div>`,
+    refinery>0 ? `<div class="op-settle-row"><span>Refinery costs</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(refinery)}</span></div>` : '',
+    `<div class="op-settle-row" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.4rem;margin-top:0.25rem;"><span>Net</span><span class="op-settle-amt">${fmtUEC(net)}</span></div>`,
+    guildTake>0 ? `<div class="op-settle-row"><span>Guild bank (${op.guild_bank_pct}%)</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(guildTake)}</span></div>` : '',
+    hourlyTotal>0 ? `<div class="op-settle-row"><span>Hourly crew</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(hourlyTotal)}</span></div>` : '',
+    `<div class="op-settle-row" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.4rem;margin-top:0.25rem;font-weight:600;">
+      <span>Distributable${shares>0?` · ${shares} share${shares!==1?'s':''}`:''}</span>
+      <span class="op-settle-amt" style="color:#7eb8f7;">${fmtUEC(distributable)}</span>
+    </div>`,
+    (perShare>0&&shares>0) ? `<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-bottom:0.35rem;">${fmtUEC(perShare)} per share before ${op.wallet_fee}% wallet fee</div>` : '',
+  ].filter(Boolean).join('');
+
+  const payoutRows = crewPayouts.map(p=>`
+    <div class="op-settle-row" style="padding-left:0.75rem;">
+      <span style="font-size:0.8rem;">${esc(p.name)}</span>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        ${op.wallet_fee>0 ? `<span style="font-size:0.68rem;color:var(--color-text-tertiary);">−${op.wallet_fee}% fee</span>` : ''}
+        <span class="op-settle-amt" style="color:#5a9e3f;">${fmtUEC(p.net)}</span>
+        ${canEdit&&!settled ? `<button class="op-paid-btn" onclick="markPaid(this)">Paid</button>` : ''}
+      </div>
+    </div>`).join('');
+
+  const guildBanner = guildTake>0 ? `
+    <div class="op-guild-banner" style="margin-top:0.5rem;">
+      <span class="op-guild-label">Guild Bank</span>
+      <span class="op-guild-amount">${fmtUEC(guildTake)}</span>
+    </div>` : '';
+
+  const settleBtn = !settled && canEdit && gross>0 ? `
+    <div style="margin-top:0.75rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+      <button class="op-small-btn op-small-btn-primary" onclick="settleAndClose('${esc(op.id)}')">Settle & Close</button>
+      <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Locks the operation, records guild bank contribution, and marks it settled.</span>
+    </div>` : '';
+
+  const settledNote = settled ? `<div style="font-size:0.72rem;color:#a89cf7;margin-top:0.5rem;">✓ Settled on ${op.settled_at ? new Date(op.settled_at).toLocaleDateString() : '—'}</div>` : '';
+
+  return rows + payoutRows + guildBanner + settleBtn + settledNote;
+}
+
+// ── Settlement math ───────────────────────────────────────────────────────────
+function calcSettlement(op, crew, jobs, items) {
+  const soldItems  = items.filter(i=>i.status==='sold');
+  const gross      = soldItems.reduce((s,i)=>s+Number(i.sell_price||0), 0);
+  const refinery   = jobs.reduce((s,j)=>s+Number(j.refinery_cost||0), 0);
+  const net        = gross - refinery;
+  const guildTake  = Math.floor(net * (Number(op.guild_bank_pct||0)/100));
+  const afterGuild = net - guildTake;
+
+  const hourlyTotal = crew
+    .filter(c=>c.crew_type==='hourly')
+    .reduce((s,c)=>s + (Number(c.hourly_rate||0)*(Number(c.elapsed_ms||0)/3600000)), 0);
+
+  const distributable = afterGuild;   // shown to player
+  const remaining     = Math.max(0, afterGuild - hourlyTotal);
+  const shareCrew     = crew.filter(c=>c.crew_type==='share');
+  const shares        = shareCrew.length;
+  const perShare      = shares > 0 ? remaining / shares : 0;
+  const walletMult    = 1 - (Number(op.wallet_fee||0)/100);
+
+  const crewPayouts = crew.map(c => {
+    const raw = c.crew_type==='hourly'
+      ? Number(c.hourly_rate||0)*(Number(c.elapsed_ms||0)/3600000)
+      : perShare;
+    return { id: c.id, name: c.display_name, gross: raw, net: raw*walletMult };
+  }).filter(p=>p.gross>0);
+
+  return { gross, refinery, net, guildTake, distributable, hourlyTotal, remaining, shares, perShare, crewPayouts };
+}
+
+// ── CRUD — Jobs ──────────────────────────────────────────────────────────────
+async function addJob(opId) {
+  if (!sb) return;
+  const loc = prompt('Location / refinery (e.g. "Lyria — Shubin"):', '');
+  if (loc === null) return;
+  const costStr = prompt('Refinery cost in aUEC (0 if none):', '0');
+  if (costStr === null) return;
+  const cost  = Number(costStr)||0;
+  const payer = cost > 0 ? (prompt('Who paid the refinery fee?', '')||null) : null;
+  const { data, error } = await sb.from('operation_jobs').insert({
+    operation_id: opId, location: loc||null, refinery_cost: cost, payer_name: payer,
+    display_order: orgOpJobs.filter(j=>j.operation_id===opId).length,
+  }).select().single();
+  if (error) { showError(error.message); return; }
+  orgOpJobs.push(data);
+  renderOrg();
+}
+
+async function removeJob(jobId) {
+  if (!confirm('Remove this job and all its items?')) return;
+  const { error } = await sb.from('operation_jobs').delete().eq('id', jobId);
+  if (error) { showError(error.message); return; }
+  orgOpJobs  = orgOpJobs.filter(j=>j.id!==jobId);
+  orgOpItems = orgOpItems.filter(i=>i.job_id!==jobId);
+  renderOrg();
+}
+
+// ── CRUD — Items ─────────────────────────────────────────────────────────────
+async function addItem(jobId) {
+  if (!sb) return;
+  const name = prompt('Item / ore name:', '');
+  if (!name?.trim()) return;
+  const qtyStr   = prompt('Quantity in SCU (e.g. 2.5, or 0):', '0');
+  const qty      = Math.round((Number(qtyStr)||0)*100);  // cSCU
+  const scoreStr = prompt('Purity score /999 (blank = unknown):', '');
+  const score    = scoreStr?.trim() ? (Number(scoreStr)||null) : null;
+  const { data, error } = await sb.from('operation_items').insert({
+    job_id: jobId, name: name.trim(), qty_cscu: qty, value_score: score,
+    status: 'pending', display_order: orgOpItems.filter(i=>i.job_id===jobId).length,
+  }).select().single();
+  if (error) { showError(error.message); return; }
+  orgOpItems.push(data);
+  renderOrg();
+}
+
+async function removeItem(itemId) {
+  if (!confirm('Remove this item?')) return;
+  const { error } = await sb.from('operation_items').delete().eq('id', itemId);
+  if (error) { showError(error.message); return; }
+  orgOpItems = orgOpItems.filter(i=>i.id!==itemId);
+  renderOrg();
+}
+
+// ── Sell modal ────────────────────────────────────────────────────────────────
+let _sellItemId = null;
+
+function openSellModal(itemId) {
+  _sellItemId = itemId;
+  const item = orgOpItems.find(i=>i.id===itemId);
+  if (!item) return;
+  document.getElementById('op-sell-item-name').textContent = item.name;
+  document.getElementById('op-sell-price').value           = item.sell_price > 0 ? item.sell_price : '';
+  document.getElementById('op-sell-status').value          = 'sold';
+  document.getElementById('op-sell-error').textContent     = '';
+  document.getElementById('op-sell-modal').style.display   = 'flex';
+  setTimeout(()=>document.getElementById('op-sell-price').focus(), 50);
+}
+
+function closeSellModal() {
+  _sellItemId = null;
+  document.getElementById('op-sell-modal').style.display = 'none';
+}
+
+async function confirmSell() {
+  if (!_sellItemId || !sb) return;
+  const price  = Number(document.getElementById('op-sell-price').value);
+  const status = document.getElementById('op-sell-status').value;
+  if (isNaN(price)||price<0) { document.getElementById('op-sell-error').textContent='Enter a valid price.'; return; }
+  const { error } = await sb.from('operation_items').update({ sell_price: price, status }).eq('id', _sellItemId);
+  if (error) { document.getElementById('op-sell-error').textContent=error.message; return; }
+  const idx = orgOpItems.findIndex(i=>i.id===_sellItemId);
+  if (idx!==-1) { orgOpItems[idx].sell_price=price; orgOpItems[idx].status=status; }
+  closeSellModal();
+  renderOrg();
+}
+
+// ── Refinery timer modal ──────────────────────────────────────────────────────
+let _timerJobId = null;
+
+function openRefineryModal(jobId) {
+  _timerJobId = jobId;
+  const job = orgOpJobs.find(j=>j.id===jobId);
+  document.getElementById('op-ref-error').textContent = '';
+  if (job?.timer_end && !job.timer_done) {
+    const rem = new Date(job.timer_end)-Date.now();
+    document.getElementById('op-ref-hours').value   = rem>0 ? Math.floor(rem/3600000) : '';
+    document.getElementById('op-ref-minutes').value = rem>0 ? Math.floor((rem%3600000)/60000) : '';
+  } else {
+    document.getElementById('op-ref-hours').value   = '';
+    document.getElementById('op-ref-minutes').value = '';
+  }
+  document.getElementById('op-ref-modal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('op-ref-hours').focus(), 50);
+}
+
+function closeRefModal() {
+  _timerJobId = null;
+  document.getElementById('op-ref-modal').style.display = 'none';
+}
+
+async function confirmRefineryTimer() {
+  if (!_timerJobId||!sb) return;
+  const h = Number(document.getElementById('op-ref-hours').value)||0;
+  const m = Number(document.getElementById('op-ref-minutes').value)||0;
+  const totalMs = (h*3600+m*60)*1000;
+  if (totalMs<=0) { document.getElementById('op-ref-error').textContent='Enter a duration greater than 0.'; return; }
+  const timerEnd = new Date(Date.now()+totalMs).toISOString();
+  const { error } = await sb.from('operation_jobs')
+    .update({ timer_end: timerEnd, timer_total_ms: totalMs, timer_done: false }).eq('id', _timerJobId);
+  if (error) { document.getElementById('op-ref-error').textContent=error.message; return; }
+  const idx = orgOpJobs.findIndex(j=>j.id===_timerJobId);
+  if (idx!==-1) Object.assign(orgOpJobs[idx], { timer_end: timerEnd, timer_total_ms: totalMs, timer_done: false });
+  closeRefModal();
+  renderOrg();
+}
+
+// ── Add crew modal ────────────────────────────────────────────────────────────
+let _addCrewOpId = null;
+
+function openAddCrewModal(opId) {
+  _addCrewOpId = opId;
+  document.getElementById('op-crew-name').value            = '';
+  document.getElementById('op-crew-type').value            = 'share';
+  document.getElementById('op-crew-rate').value            = '';
+  document.getElementById('op-crew-error').textContent     = '';
+  const dl = document.getElementById('op-crew-members-list');
+  if (dl) dl.innerHTML = orgMembers.map(m=>`<option value="${esc(m.display_name||m.username)}">`).join('');
+  toggleCrewTypeFields();
+  document.getElementById('op-crew-modal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('op-crew-name').focus(), 50);
+}
+
+function closeCrewModal() {
+  _addCrewOpId = null;
+  document.getElementById('op-crew-modal').style.display = 'none';
+}
+
+function toggleCrewTypeFields() {
+  const isHourly = document.getElementById('op-crew-type')?.value==='hourly';
+  const row = document.getElementById('op-crew-rate-row');
+  if (row) row.style.display = isHourly ? '' : 'none';
+}
+
+async function confirmAddCrew() {
+  if (!_addCrewOpId||!sb) return;
+  const name = document.getElementById('op-crew-name').value.trim();
+  const type = document.getElementById('op-crew-type').value;
+  const rate = Number(document.getElementById('op-crew-rate').value)||0;
+  if (!name) { document.getElementById('op-crew-error').textContent='Enter a name.'; return; }
+  const member = orgMembers.find(m=>(m.display_name||m.username)===name);
+  const { data, error } = await sb.from('operation_crew').insert({
+    operation_id: _addCrewOpId, member_id: member?.id||null, display_name: name,
+    crew_type: type, hourly_rate: rate, elapsed_ms: 0, is_owner: false,
+    display_order: orgOpCrew.filter(c=>c.operation_id===_addCrewOpId).length,
+  }).select().single();
+  if (error) { document.getElementById('op-crew-error').textContent=error.message; return; }
+  orgOpCrew.push(data);
+  closeCrewModal();
+  renderOrg();
+}
+
+async function removeCrew(crewId) {
+  if (!confirm('Remove this crew member?')) return;
+  const { error } = await sb.from('operation_crew').delete().eq('id', crewId);
+  if (error) { showError(error.message); return; }
+  orgOpCrew = orgOpCrew.filter(c=>c.id!==crewId);
+  renderOrg();
+}
+
+// ── New operation modal ───────────────────────────────────────────────────────
+function openNewOpModal() {
+  document.getElementById('op-new-name').value   = '';
+  document.getElementById('op-new-type').value   = 'mining';
+  document.getElementById('op-new-fee').value    = '5';
+  document.getElementById('op-new-guild').value  = '0';
+  document.getElementById('op-new-notes').value  = '';
+  document.getElementById('op-new-error').textContent = '';
+  document.getElementById('op-new-modal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('op-new-name').focus(), 50);
+}
+
+function closeNewOpModal() {
+  document.getElementById('op-new-modal').style.display = 'none';
+}
+
+async function confirmNewOp() {
+  if (!sb) return;
+  const name  = document.getElementById('op-new-name').value.trim();
+  const type  = document.getElementById('op-new-type').value;
+  const fee   = Number(document.getElementById('op-new-fee').value)||0;
+  const guild = Number(document.getElementById('op-new-guild').value)||0;
+  const notes = document.getElementById('op-new-notes').value.trim()||null;
+  if (!name)                          { document.getElementById('op-new-error').textContent='Operation name is required.'; return; }
+  if (fee<0||fee>100||guild<0||guild>100) { document.getElementById('op-new-error').textContent='Percentages must be 0–100.'; return; }
+  const { data, error } = await sb.from('operations').insert({
+    name, type, wallet_fee: fee, guild_bank_pct: guild, notes,
+    owner_id: authMember?.id||null, status: 'active',
+  }).select().single();
+  if (error) { document.getElementById('op-new-error').textContent=error.message; return; }
+  orgOperations.unshift(data);
+  closeNewOpModal();
+  activeOpId = data.id;
+  updateOrgStats();
+  renderOrg();
+}
+
+// ── Archive / Settle ──────────────────────────────────────────────────────────
+async function archiveOp(opId) {
+  if (!confirm('Archive this operation? It will be hidden from the default view.')) return;
+  const { error } = await sb.from('operations').update({ status: 'archived' }).eq('id', opId);
+  if (error) { showError(error.message); return; }
+  const idx = orgOperations.findIndex(o=>o.id===opId);
+  if (idx!==-1) orgOperations[idx].status='archived';
+  closeOpDetail();
+}
+
+async function settleAndClose(opId) {
+  const op = orgOperations.find(o=>o.id===opId);
+  if (!op) return;
+  const crew  = orgOpCrew.filter(c=>c.operation_id===opId);
+  const jobs  = orgOpJobs.filter(j=>j.operation_id===opId);
+  const items = orgOpItems.filter(i=>jobs.some(j=>j.id===i.job_id));
+  const { guildTake } = calcSettlement(op, crew, jobs, items);
+
+  const msg = guildTake>0
+    ? `Settle "${op.name}"?\n\nThis will record ${fmtUEC(guildTake)} to the guild bank and lock the operation.`
+    : `Settle "${op.name}"?\n\nNo guild bank contribution (${op.guild_bank_pct}% of ${fmtUEC(0)} = ${fmtUEC(0)}). Operation will be locked.`;
+  if (!confirm(msg)) return;
+
+  const now = new Date().toISOString();
+  const ops = [sb.from('operations').update({ status:'settled', settled_at: now }).eq('id', opId)];
+  if (guildTake>0) {
+    ops.push(sb.from('guild_bank_ledger').insert({
+      operation_id: opId, amount: guildTake, pct_used: op.guild_bank_pct,
+      recorded_by: authMember?.id||null, notes: `Settled: ${op.name}`,
+    }));
+  }
+  const results = await Promise.all(ops);
+  const err = results.find(r=>r.error)?.error;
+  if (err) { showError(err.message); return; }
+
+  const idx = orgOperations.findIndex(o=>o.id===opId);
+  if (idx!==-1) Object.assign(orgOperations[idx], { status:'settled', settled_at: now });
+  guildBankBalance += guildTake;
+  updateOrgStats();
+  renderOrg();
+}
+
+function markPaid(btn) {
+  btn.textContent = '✓ Paid';
+  btn.style.cssText += ';background:#0f2a1a;color:#5a9e3f;cursor:default;';
+  btn.disabled = true;
+}
 </script>
+
+<!-- ── Operations modals ── -->
+
+<!-- Sell item -->
+<div id="op-sell-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeSellModal()">
+  <div class="op-sell-modal-inner">
+    <div class="op-modal-title">Record Sale — <span id="op-sell-item-name" style="color:#7eb8f7;"></span></div>
+    <div class="op-field-row">
+      <div class="op-field" style="flex:1;">
+        <label>Sell price (aUEC)</label>
+        <input id="op-sell-price" type="number" min="0" step="1" placeholder="0" onkeydown="if(event.key==='Enter')confirmSell()">
+      </div>
+      <div class="op-field" style="min-width:9rem;">
+        <label>Status</label>
+        <select id="op-sell-status">
+          <option value="sold">sold</option>
+          <option value="refining">refining</option>
+          <option value="pending">pending</option>
+        </select>
+      </div>
+    </div>
+    <div id="op-sell-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
+    <div class="op-modal-actions">
+      <button class="op-small-btn" onclick="closeSellModal()">Cancel</button>
+      <button class="op-small-btn op-small-btn-primary" onclick="confirmSell()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Refinery timer -->
+<div id="op-ref-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeRefModal()">
+  <div class="op-sell-modal-inner">
+    <div class="op-modal-title">Set Refinery Timer</div>
+    <div class="op-field-row">
+      <div class="op-field">
+        <label>Hours</label>
+        <input id="op-ref-hours" type="number" min="0" max="72" step="1" placeholder="0">
+      </div>
+      <div class="op-field">
+        <label>Minutes</label>
+        <input id="op-ref-minutes" type="number" min="0" max="59" step="1" placeholder="0">
+      </div>
+    </div>
+    <div id="op-ref-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
+    <div class="op-modal-actions">
+      <button class="op-small-btn" onclick="closeRefModal()">Cancel</button>
+      <button class="op-small-btn op-small-btn-primary" onclick="confirmRefineryTimer()">Start Timer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add crew -->
+<div id="op-crew-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeCrewModal()">
+  <div class="op-sell-modal-inner">
+    <div class="op-modal-title">Add Crew Member</div>
+    <div class="op-field">
+      <label>Display name</label>
+      <input id="op-crew-name" type="text" list="op-crew-members-list" placeholder="Member name or guest" autocomplete="off">
+      <datalist id="op-crew-members-list"></datalist>
+    </div>
+    <div class="op-field">
+      <label>Crew type</label>
+      <select id="op-crew-type" onchange="toggleCrewTypeFields()">
+        <option value="share">Share — equal split of remaining pool</option>
+        <option value="hourly">Hourly — fixed aUEC/hr rate</option>
+      </select>
+    </div>
+    <div class="op-field" id="op-crew-rate-row" style="display:none;">
+      <label>Rate (aUEC / hour)</label>
+      <input id="op-crew-rate" type="number" min="0" step="100" placeholder="e.g. 50000">
+    </div>
+    <div id="op-crew-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
+    <div class="op-modal-actions">
+      <button class="op-small-btn" onclick="closeCrewModal()">Cancel</button>
+      <button class="op-small-btn op-small-btn-primary" onclick="confirmAddCrew()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- New operation -->
+<div id="op-new-modal" class="op-new-modal" style="display:none;" onclick="if(event.target===this)closeNewOpModal()">
+  <div class="op-new-modal-inner">
+    <div class="op-modal-title">New Operation</div>
+    <div class="op-field">
+      <label>Operation name</label>
+      <input id="op-new-name" type="text" placeholder="e.g. Lyria Mining Run #12" onkeydown="if(event.key==='Enter')document.getElementById('op-new-type').focus()">
+    </div>
+    <div class="op-field-row">
+      <div class="op-field" style="flex:1;">
+        <label>Type</label>
+        <select id="op-new-type">
+          <option value="mining">⛏️ Mining</option>
+          <option value="salvage">🔧 Salvage</option>
+          <option value="cargo">📦 Cargo</option>
+          <option value="other">🎯 Other</option>
+        </select>
+      </div>
+      <div class="op-field" style="min-width:8rem;">
+        <label>Wallet fee %</label>
+        <input id="op-new-fee" type="number" min="0" max="100" step="0.5" value="5">
+      </div>
+      <div class="op-field" style="min-width:8rem;">
+        <label>Guild bank %</label>
+        <input id="op-new-guild" type="number" min="0" max="100" step="1" value="0">
+      </div>
+    </div>
+    <div class="op-field">
+      <label>Notes (optional)</label>
+      <input id="op-new-notes" type="text" placeholder="Any context for this run…">
+    </div>
+    <div id="op-new-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
+    <div class="op-modal-actions">
+      <button class="op-small-btn" onclick="closeNewOpModal()">Cancel</button>
+      <button class="op-small-btn op-small-btn-primary" onclick="confirmNewOp()">Create</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
