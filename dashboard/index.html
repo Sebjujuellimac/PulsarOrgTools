@@ -556,146 +556,119 @@
   :focus-visible { outline: 2px solid #7eb8f7; outline-offset: 2px; border-radius: 2px; }
   button.sidebar-item { background: none; border: none; width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 
-  /* ── Operations tab ── */
-  .op-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.75rem; }
-  .op-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.125rem; cursor: pointer; transition: border-color 0.12s; display: flex; flex-direction: column; gap: 0.5rem; }
-  .op-card:hover { border-color: #7eb8f7; }
-  .op-card-head { display: flex; align-items: center; gap: 0.5rem; }
-  .op-card-name { font-size: 0.9rem; font-weight: 500; flex: 1; }
-  .op-status { font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 3px; }
-  .op-status-active   { background: #0f2a1a; color: #5a9e3f; }
-  .op-status-settled  { background: #1a1a2e; color: #a89cf7; }
-  .op-status-archived { background: #1a1a1a; color: #666; }
-  .op-card-meta { font-size: 0.69rem; color: var(--color-text-tertiary); display: flex; gap: 0.75rem; flex-wrap: wrap; }
-  .op-card-net  { font-size: 0.81rem; font-weight: 500; color: #5a9e3f; }
+  /* ── Operations tab (SC Tracker) ── */
+  .op-tab-bar { display:flex; gap:0.25rem; margin-bottom:0.875rem; }
+  .op-tab { font-size:0.75rem; padding:0.3rem 0.875rem; border-radius:var(--border-radius-md); border:0.5px solid transparent; cursor:pointer; color:var(--color-text-tertiary); background:transparent; font-weight:500; transition:all 0.12s; }
+  .op-tab.active { border-color:var(--color-border-secondary); background:var(--color-background-secondary); color:var(--color-text-primary); }
+  .op-tab:hover:not(.active) { color:var(--color-text-secondary); }
 
-  .op-detail { display: flex; flex-direction: column; gap: 1rem; }
-  .op-detail-hdr { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-  .op-detail-title { font-size: 1.1rem; font-weight: 500; flex: 1; }
-  .op-back { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); font-size: 0.69rem; padding: 0.3rem 0.75rem; cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
-  .op-back:hover { color: var(--color-text-primary); background: var(--color-background-secondary); }
+  .op-session-card { background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1rem 1.125rem; margin-bottom:0.625rem; }
+  .op-session-card:last-child { margin-bottom:0; }
+  .op-session-name { font-size:0.94rem; font-weight:600; }
 
-  .op-section { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
-  .op-section-hdr { font-size: 0.625rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0.625rem 1rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; gap: 0.75rem; }
-  .op-section-body { padding: 0.875rem 1rem; display: flex; flex-direction: column; gap: 0.625rem; }
+  .op-metrics-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0.625rem; margin:0.625rem 0; }
+  .op-metrics-grid-3 { grid-template-columns:repeat(3,1fr); }
+  .op-metric { background:var(--color-background-primary); border-radius:var(--border-radius-md); padding:0.625rem 0.875rem; }
+  .op-metric-label { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-text-tertiary); margin-bottom:0.2rem; font-weight:500; }
+  .op-metric-value { font-size:1.05rem; font-weight:600; color:var(--color-text-primary); }
+  .op-metric-value.green { color:#5a9e3f; }
+  .op-metric-value.amber { color:#c47a2a; }
 
-  .op-crew-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); flex-wrap: wrap; }
-  .op-crew-row:last-child { border-bottom: none; }
-  .op-crew-name { font-size: 0.81rem; font-weight: 500; flex: 1; min-width: 6rem; }
-  .op-crew-type { font-size: 0.56rem; padding: 0.15rem 0.5rem; border-radius: 3px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
-  .op-crew-share  { background: #0d2236; color: #7eb8f7; }
-  .op-crew-hourly { background: #1a2e14; color: #5a9e3f; }
-  .op-crew-owner  { background: #2e1e0a; color: #c47a2a; }
-  .op-timer { font-size: 0.81rem; font-variant-numeric: tabular-nums; color: #5a9e3f; min-width: 3.5rem; }
+  .op-form-section { background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1.125rem; margin-bottom:0.875rem; }
+  .op-section-title { font-size:0.6rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--color-text-tertiary); margin-bottom:0.625rem; }
+  .op-subbox { background:var(--color-background-primary); border-radius:var(--border-radius-md); padding:0.875rem; margin-top:0.625rem; }
 
-  .op-job-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; }
-  .op-job-hdr { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); }
-  .op-job-num { font-size: 0.69rem; font-weight: 700; color: #a89cf7; font-family: var(--font-mono); min-width: 1.5rem; }
-  .op-job-loc { font-size: 0.75rem; flex: 1; }
-  .op-job-body { padding: 0.625rem 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .op-crew-av { width:1.75rem; height:1.75rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; flex-shrink:0; }
+  .op-av-share  { background:#0d2236; color:#7eb8f7; }
+  .op-av-hourly { background:#1a2e14; color:#5a9e3f; }
+  .op-av-owner  { background:#2e1e0a; color:#c47a2a; }
+  .op-av-payer  { background:#1a1030; color:#a89cf7; }
 
-  .op-item-row { display: grid; grid-template-columns: 1fr 5rem 4rem 6.5rem 1.5rem; gap: 0.375rem; align-items: center; font-size: 0.75rem; padding: 0.3rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
-  .op-item-row:last-child { border-bottom: none; }
-  .op-item-hdr { font-size: 0.56rem; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.1em; }
-  .op-item-status { font-size: 0.56rem; padding: 0.15rem 0.44rem; border-radius: 3px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
-  .op-item-pending  { background: #1a1a2a; color: #888; }
-  .op-item-refining { background: #1e1630; color: #a89cf7; }
-  .op-item-sold     { background: #0f2a1a; color: #5a9e3f; }
-  .op-item-price    { font-size: 0.75rem; color: #5a9e3f; font-weight: 500; }
+  .op-crew-badge { font-size:0.56rem; padding:0.15rem 0.44rem; border-radius:3px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap; }
+  .op-badge-share  { background:#0d2236; color:#7eb8f7; }
+  .op-badge-hourly { background:#1a2e14; color:#5a9e3f; }
+  .op-badge-owner  { background:#2e1e0a; color:#c47a2a; }
+  .op-badge-payer  { background:#1a1030; color:#a89cf7; }
 
-  .op-ref-timer { font-size: 1.125rem; font-weight: 600; font-variant-numeric: tabular-nums; color: #7eb8f7; }
-  .op-ref-timer.done { color: #5a9e3f; }
-  .op-ref-timer.warn { color: #c47a2a; }
-  .op-prog-wrap { height: 4px; background: var(--color-border-tertiary); border-radius: 2px; overflow: hidden; }
-  .op-prog-fill { height: 100%; background: #a89cf7; border-radius: 2px; transition: width 1s linear; }
-  .op-prog-fill.done { background: #5a9e3f; }
+  .op-crew-card { background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); padding:0.625rem 0.75rem; margin-bottom:0.375rem; }
+  .op-crew-card:last-child { margin-bottom:0; }
+  .op-crew-elapsed { font-size:1rem; font-weight:600; font-variant-numeric:tabular-nums; min-width:4.5rem; color:var(--color-text-secondary); }
+  .op-crew-elapsed.running { color:#5a9e3f; }
 
-  .op-settle-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); flex-wrap: wrap; }
-  .op-settle-row:last-child { border-bottom: none; }
-  .op-settle-name { font-size: 0.81rem; font-weight: 500; flex: 1; min-width: 6rem; }
-  .op-settle-amt  { font-size: 0.94rem; font-weight: 600; color: #5a9e3f; white-space: nowrap; }
-  .op-settle-fee  { font-size: 0.69rem; color: var(--color-text-tertiary); white-space: nowrap; }
-  .op-guild-banner { background: #1a1030; border: 0.5px solid #6d28d9; border-radius: var(--border-radius-md); padding: 0.625rem 0.875rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  .op-guild-label  { font-size: 0.625rem; letter-spacing: 0.12em; text-transform: uppercase; color: #a89cf7; }
-  .op-guild-amount { font-size: 1.125rem; font-weight: 600; color: #c4a0f7; }
-  .op-paid-btn { font-size: 0.625rem; padding: 0.2rem 0.625rem; border-radius: 3px; border: 0.5px solid var(--color-border-secondary); background: none; color: var(--color-text-tertiary); cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
-  .op-paid-btn.paid { border-color: #5a9e3f; color: #5a9e3f; background: #0f2a1a; }
+  .op-job-card { border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); margin-bottom:0.75rem; overflow:hidden; }
+  .op-job-card:last-child { margin-bottom:0; }
+  .op-job-hdr { display:flex; align-items:center; gap:0.625rem; padding:0.5rem 0.75rem; background:var(--color-background-primary); border-bottom:0.5px solid var(--color-border-tertiary); }
+  .op-job-num { width:1.5rem; height:1.5rem; border-radius:50%; background:#1a1030; color:#a89cf7; display:flex; align-items:center; justify-content:center; font-size:0.69rem; font-weight:700; flex-shrink:0; }
+  .op-job-body { padding:0.75rem; display:flex; flex-direction:column; gap:0.625rem; }
 
-  .op-totals-line { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--color-text-secondary); padding: 0.25rem 0; }
-  .op-totals-line.final { border-top: 0.5px solid var(--color-border-secondary); margin-top: 0.25rem; padding-top: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--color-text-primary); }
-  .op-guild-balance-pill { font-size: 0.69rem; background: #1a1030; border: 0.5px solid #6d28d9; border-radius: 99px; padding: 0.2rem 0.625rem; color: #a89cf7; white-space: nowrap; }
-  .op-field-row { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
-  .op-field { display: flex; flex-direction: column; gap: 0.25rem; }
-  .op-field label { font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-tertiary); }
-  .op-field input, .op-field select { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-primary); font-size: 0.81rem; padding: 0.375rem 0.625rem; font-family: var(--font-mono); }
-  .op-field input:focus, .op-field select:focus { outline: none; border-color: #7eb8f7; }
-  .op-ac-wrap { position: relative; }
-  .op-ac-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); z-index: 50; max-height: 12rem; overflow-y: auto; margin-top: 2px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
-  .op-ac-item { padding: 0.5rem 0.75rem; font-size: 0.75rem; cursor: pointer; color: var(--color-text-secondary); }
-  .op-ac-item:hover, .op-ac-item.sel { background: var(--color-background-primary); color: var(--color-text-primary); }
-  .op-delete-btn { background: none; border: none; color: #c44a4a; cursor: pointer; font-size: 0.875rem; padding: 0.2rem 0.375rem; border-radius: 3px; opacity: 0.6; }
-  .op-delete-btn:hover { opacity: 1; background: #2e1010; }
-  .op-small-btn { font-size: 0.625rem; padding: 0.25rem 0.625rem; border-radius: 3px; border: 0.5px solid var(--color-border-secondary); background: none; color: var(--color-text-secondary); cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
-  .op-small-btn:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
-  .op-small-btn.primary { border-color: #1a6496; color: #7eb8f7; background: #0d1e2e; }
-  .op-small-btn.primary:hover { background: #0d2236; }
-  .op-small-btn.danger { border-color: #7a2020; color: #c44a4a; }
-  .op-small-btn.danger:hover { background: #2e1010; }
-  .op-sell-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-  .op-sell-modal-inner { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: 100%; max-width: 28rem; max-height: 90vh; overflow-y: auto; }
-  .op-price-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.625rem; border-radius: var(--border-radius-md); cursor: pointer; font-size: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
-  .op-price-row:last-child { border-bottom: none; }
-  .op-price-row:hover { background: var(--color-background-primary); }
-  .op-new-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-  .op-new-modal-inner { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: 100%; max-width: 26rem; display: flex; flex-direction: column; gap: 1rem; }
-  .op-modal-title { font-size: 0.875rem; font-weight: 600; letter-spacing: 0.04em; }
-  .op-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .op-crew-chips { display:flex; flex-wrap:wrap; gap:0.375rem; margin-top:0.375rem; }
+  .op-crew-chip { display:flex; align-items:center; gap:0.3rem; padding:0.25rem 0.625rem 0.25rem 0.375rem; border:0.5px solid var(--color-border-secondary); border-radius:99px; cursor:pointer; font-size:0.69rem; background:var(--color-background-primary); color:var(--color-text-secondary); user-select:none; transition:all 0.1s; }
+  .op-crew-chip.selected { border-color:#7eb8f7; background:#0d1e2e; color:#7eb8f7; }
+  .op-crew-chip:hover:not(.selected) { background:var(--color-background-secondary); color:var(--color-text-primary); }
 
-  /* ── Searchable member dropdown ── */
-  .op-member-search { position: relative; }
-  .op-member-dropdown {
-    position: absolute; top: 100%; left: 0; right: 0; z-index: 300;
-    background: var(--color-background-secondary);
-    border: 0.5px solid var(--color-border-secondary);
-    border-top: none;
-    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
-    max-height: 11rem; overflow-y: auto; display: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.45);
-  }
-  .op-member-dropdown.open { display: block; }
-  .op-member-option {
-    padding: 0.45rem 0.625rem; font-size: 0.81rem; cursor: pointer;
-    color: var(--color-text-primary);
-    border-bottom: 0.5px solid var(--color-border-tertiary); transition: background 0.08s;
-  }
-  .op-member-option:last-child { border-bottom: none; }
-  .op-member-option:hover, .op-member-option.focused { background: var(--color-background-info); color: #7eb8f7; }
-  .op-member-opt-sub { font-size: 0.625rem; color: var(--color-text-tertiary); margin-top: 0.1rem; }
+  .op-item-row { display:grid; grid-template-columns:1fr 3.25rem 3.25rem 3rem 6rem 6.5rem 1.5rem; gap:0.375rem; align-items:center; font-size:0.75rem; padding:0.3rem 0; border-bottom:0.5px solid var(--color-border-tertiary); }
+  .op-item-row:last-child { border-bottom:none; }
+  .op-item-hdr  { font-size:0.56rem; color:var(--color-text-tertiary); text-transform:uppercase; letter-spacing:0.1em; }
+  .op-item-status { font-size:0.56rem; padding:0.15rem 0.44rem; border-radius:3px; font-weight:600; cursor:pointer; text-transform:uppercase; letter-spacing:0.08em; white-space:nowrap; }
+  .op-item-pending  { background:#1a1a2a; color:#888; }
+  .op-item-refining { background:#1e1630; color:#a89cf7; }
+  .op-item-sold     { background:#0f2a1a; color:#5a9e3f; }
 
-  /* ── Even / Custom split toggle ── */
-  .op-split-toggle { display: flex; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); overflow: hidden; }
-  .op-split-btn { padding: 0.2rem 0.75rem; font-size: 0.625rem; letter-spacing: 0.08em; text-transform: uppercase; background: none; border: none; border-right: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); cursor: pointer; font-family: var(--font-mono); transition: all 0.12s; }
-  .op-split-btn:last-child { border-right: none; }
-  .op-split-btn.active { background: var(--color-background-info); color: #7eb8f7; font-weight: 500; }
-  .op-split-btn:hover:not(.active) { background: var(--color-background-primary); color: var(--color-text-primary); }
+  .op-ref-timer { font-size:1.25rem; font-weight:600; font-variant-numeric:tabular-nums; color:#7eb8f7; }
+  .op-ref-timer.done { color:#5a9e3f; }
+  .op-ref-timer.warn { color:#c47a2a; }
+  .op-prog-wrap { height:4px; background:var(--color-border-tertiary); border-radius:2px; overflow:hidden; margin:0.375rem 0; }
+  .op-prog-fill { height:100%; background:#a89cf7; border-radius:2px; transition:width 1s linear; }
+  .op-prog-fill.done { background:#5a9e3f; }
 
-  /* ── Creator include-me checkbox ── */
-  .op-include-me { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none; }
-  .op-include-me input[type=checkbox] { accent-color: #7eb8f7; width: 0.875rem; height: 0.875rem; cursor: pointer; flex-shrink: 0; }
-  .op-include-me span { font-size: 0.72rem; color: var(--color-text-secondary); }
+  .op-settle-card { border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); padding:0.75rem; margin-bottom:0.375rem; }
+  .op-settle-card:last-child { margin-bottom:0; }
+  .op-settle-card.payer { border-color:#4a2e7a; background:#100c1e; }
+  .op-totals-line { display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--color-text-secondary); padding:0.2rem 0; }
+  .op-totals-line.final { border-top:0.5px solid var(--color-border-secondary); margin-top:0.2rem; padding-top:0.4rem; font-size:0.81rem; font-weight:600; color:var(--color-text-primary); }
 
-  /* ── Custom split percentage inputs ── */
-  .op-pct-input { width: 4.25rem !important; text-align: right; padding: 0.2rem 0.375rem !important; font-size: 0.78rem !important; }
-  .op-pct-remainder { font-size: 0.81rem; min-width: 3.5rem; text-align: right; }
-  .op-pct-total { font-size: 0.69rem; padding: 0.3rem 0; text-align: right; }
-  .op-pct-total.valid   { color: #5a9e3f; }
-  .op-pct-total.invalid { color: #e05a5a; }
+  .op-paid-btn { font-size:0.625rem; padding:0.2rem 0.625rem; border-radius:3px; border:0.5px solid var(--color-border-secondary); background:none; color:var(--color-text-tertiary); cursor:pointer; font-family:var(--font-mono); letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap; }
+  .op-paid-btn.paid { border-color:#5a9e3f; color:#5a9e3f; background:#0f2a1a; }
 
-  /* ── Incurred costs ── */
-  .op-cost-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.45rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
-  .op-cost-row:last-child { border-bottom: none; }
-  .op-cost-desc { font-size: 0.81rem; flex: 1; }
-  .op-cost-amt  { font-size: 0.81rem; color: #e05a5a; font-weight: 500; white-space: nowrap; }
+  .op-summary-crew { display:flex; align-items:center; gap:0.625rem; padding:0.5rem 0; border-bottom:0.5px solid var(--color-border-tertiary); }
+  .op-summary-crew:last-child { border-bottom:none; }
+
+  .op-field-row { display:flex; gap:0.5rem; align-items:flex-end; flex-wrap:wrap; }
+  .op-field { display:flex; flex-direction:column; gap:0.25rem; }
+  .op-field label { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-text-tertiary); }
+  .op-field input, .op-field select { background:var(--color-background-primary); border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); color:var(--color-text-primary); font-size:0.81rem; padding:0.375rem 0.625rem; font-family:var(--font-mono); min-width:0; }
+  .op-field input:focus, .op-field select:focus { outline:none; border-color:#7eb8f7; }
+  .op-qty-wrap { display:flex; align-items:center; gap:0.25rem; }
+  .op-qty-unit { font-size:0.69rem; color:var(--color-text-tertiary); white-space:nowrap; }
+
+  .op-ac-wrap { position:relative; flex:2; min-width:7.5rem; }
+  .op-loc-ac-wrap { position:relative; width:100%; }
+  .op-ac-list { position:absolute; top:100%; left:0; right:0; background:var(--color-background-secondary); border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); z-index:50; max-height:12rem; overflow-y:auto; margin-top:2px; box-shadow:0 6px 20px rgba(0,0,0,0.45); }
+  .op-ac-item { padding:0.5rem 0.75rem; font-size:0.75rem; cursor:pointer; color:var(--color-text-secondary); }
+  .op-ac-item:hover, .op-ac-item.sel { background:var(--color-background-primary); color:var(--color-text-primary); }
+  .op-ac-sys { font-size:0.6rem; color:var(--color-text-tertiary); margin-left:0.375rem; }
+
+  .op-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+  .op-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; }
+
+  .op-small-btn { font-size:0.625rem; padding:0.3rem 0.75rem; border-radius:3px; border:0.5px solid var(--color-border-secondary); background:none; color:var(--color-text-secondary); cursor:pointer; font-family:var(--font-mono); letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap; }
+  .op-small-btn:hover { background:var(--color-background-primary); color:var(--color-text-primary); }
+  .op-small-btn.primary { border-color:#1a6496; color:#7eb8f7; background:#0d1e2e; }
+  .op-small-btn.primary:hover { background:#0d2236; }
+  .op-small-btn.success { border-color:#2a5e1a; color:#5a9e3f; background:#0f2a1a; }
+  .op-small-btn.success:hover { background:#152e10; }
+  .op-small-btn.danger { border-color:#7a2020; color:#c44a4a; }
+  .op-small-btn.danger:hover { background:#2e1010; }
+  .op-delete-btn { background:none; border:none; color:#c44a4a; cursor:pointer; font-size:0.875rem; padding:0.2rem 0.375rem; border-radius:3px; opacity:0.6; }
+  .op-delete-btn:hover { opacity:1; background:#2e1010; }
+
+  .op-sell-modal { position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:200; display:flex; align-items:center; justify-content:center; padding:1rem; }
+  .op-sell-modal-inner { background:var(--color-background-secondary); border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-lg); padding:1.5rem; width:100%; max-width:28rem; max-height:90vh; overflow-y:auto; }
+  .op-modal-title { font-size:0.875rem; font-weight:600; letter-spacing:0.04em; margin-bottom:0.875rem; }
+  .op-modal-actions { display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem; }
+  .op-price-row { display:flex; align-items:center; gap:0.625rem; padding:0.5rem 0.625rem; border-radius:var(--border-radius-md); cursor:pointer; font-size:0.75rem; border-bottom:0.5px solid var(--color-border-tertiary); }
+  .op-price-row:last-child { border-bottom:none; }
+  .op-price-row:hover { background:var(--color-background-primary); }
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -952,17 +925,8 @@
       </div>
     </div>
 
-    <!-- Operations filter -->
-    <div class="filter-panel" id="ofp-operations">
-      <div class="filter-row" style="align-items:center;">
-        <span class="tick-label">Status</span>
-        <div class="tick-row">
-          <label class="tick-option tick-green"><input type="checkbox" id="op-f-active" checked onchange="renderOrg()"><span>Active</span></label>
-          <label class="tick-option tick-purple"><input type="checkbox" id="op-f-settled" checked onchange="renderOrg()"><span>Settled</span></label>
-          <label class="tick-option tick-gray"><input type="checkbox" id="op-f-archived" onchange="renderOrg()"><span>Archived</span></label>
-        </div>
-      </div>
-    </div>
+    <!-- Operations filter (hidden — SC Tracker has its own internal tabs) -->
+    <div class="filter-panel" id="ofp-operations" style="display:none;"></div>
 
     <div id="quest-body-row">
       <div id="quest-main">
@@ -2737,7 +2701,7 @@ function updateOrgStats() {
   const totalDkp = orgMembers.reduce((a,m)=>a+m.dkp_balance,0);
   const openEvents = orgEvents.filter(e=>e.status==='open').length;
   const setOrgStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  const activeOps = orgOperations.filter(o=>o.status==='active').length;
+  const activeOps = op_sessions.length;
   setOrgStat('stat-members',        orgMembers.length || '');
   setOrgStat('stat-leaderboard',    totalDkp ? totalDkp + ' DKP' : '');
   setOrgStat('stat-events',         openEvents        || '');
@@ -2847,12 +2811,7 @@ function renderOrg() {
     if (showQuestPanel) renderQuestPending();
     else { const p = document.getElementById('quest-pending-panel'); if (p) p.innerHTML = ''; }
 
-    // Operations payout panel — officers only, operations tab only
-    const hasPendingPayouts = orgOpCrew.some(c => c.payout_amount > 0 && !c.payout_claimed);
-    const showOpPanel = activeOrgTab === 'operations' && (isOfficer || isAdmin) && hasPendingPayouts;
-    questRow.classList.toggle('has-op-panel', showOpPanel);
-    if (showOpPanel) renderOpPayoutPanel();
-    else { const p = document.getElementById('op-payout-panel'); if (p) p.innerHTML = ''; }
+    const p = document.getElementById('op-payout-panel'); if (p) p.innerHTML = '';
   }
 }
 
@@ -4552,812 +4511,768 @@ async function revokeCert(memberId, code) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// OPERATIONS TAB
+// OPERATIONS TAB  — SC Crew Profit Tracker (ported)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const WALLET_FEE_PCT = 5; // constant — not configurable per-op
+var op_gV = function(id){ return document.getElementById(id); };
+
+// ── State ──
+var op_sessions=[], op_editingSession=null;
+var op_sessionIdCtr=1, op_crewIdCtr=1, op_jobIdCtr=1, op_itemIdCtr=1;
+var op_sessionCrew=[], op_sessionJobs=[];
+var op_crewTimers={}, op_crewTickInt=null, op_jobTimerInts={};
+var op_commodities=[], op_commodityIdMap={}, op_uexLoaded=false;
+var op_acIdx=-1, op_locIdx=-1;
+var op_sellItemId=null, op_sellJobId=null;
+var op_paidStatus={};
+var op_activeTab='sessions';
+var op_walletFee=5; // fixed transfer fee %
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-function fmtUEC(n) {
-  n = Number(n||0);
-  if (n >= 1_000_000) return (n/1_000_000).toFixed(2) + 'M aUEC';
-  if (n >= 1_000)     return Math.round(n/100)/10 + 'k aUEC';
-  return Math.round(n) + ' aUEC';
+function op_fmt(n){ return Math.round(n).toLocaleString(); }
+function op_fa(n){ return op_fmt(n)+' aUEC'; }
+function op_ini(n){ return (n||'?').trim().split(/\s+/).map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)||'??'; }
+function op_pz(n){ return n<10?'0'+n:''+n; }
+function op_hms(ms){ if(ms<=0)return '0:00:00'; var s=Math.floor(ms/1000),h=Math.floor(s/3600); s-=h*3600; var m=Math.floor(s/60); s-=m*60; return h+':'+op_pz(m)+':'+op_pz(s); }
+function op_fq(c){ if(!c)return '0 SCU'; var scu=Math.floor(c/100),cscu=c%100; if(cscu===0)return scu+' SCU'; if(scu===0)return cscu+' cSCU'; return scu+' SCU '+cscu+' cSCU'; }
+function op_vc(v){ if(v===null||v===undefined||v==='')return '#666'; if(v>=700)return '#5a9e3f'; if(v>=400)return '#c47a2a'; return '#e05a5a'; }
+function op_getJob(jid){ for(var i=0;i<op_sessionJobs.length;i++) if(op_sessionJobs[i].id===jid) return op_sessionJobs[i]; return null; }
+
+// ── UEX price data ───────────────────────────────────────────────────────────
+var UEX_BASE='https://uexcorp.space/api/2.0';
+function op_uexFetch(endpoint,cb){
+  fetch(UEX_BASE+endpoint)
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(cb)
+    .catch(function(){
+      var proxy='https://api.allorigins.win/get?url='+encodeURIComponent(UEX_BASE+endpoint);
+      fetch(proxy).then(function(r){return r.json();}).then(function(d){cb(JSON.parse(d.contents));}).catch(function(){cb(null);});
+    });
+}
+function op_fetchCommodities(cb){
+  if(op_uexLoaded){cb();return;}
+  op_uexFetch('/commodities',function(d){
+    if(!d){op_commodities=OP_FB.slice().sort();op_uexLoaded=true;cb();return;}
+    var items=d.data||d;
+    if(Array.isArray(items)&&items.length){
+      op_commodities=items.map(function(c){return c.name;}).filter(Boolean).sort();
+      op_commodityIdMap={};
+      items.forEach(function(c){if(c.name&&c.id)op_commodityIdMap[c.name.toLowerCase()]=c.id;});
+      op_uexLoaded=true;
+    } else { op_commodities=OP_FB.slice().sort(); op_uexLoaded=true; }
+    cb();
+  });
+}
+function op_fetchPrices(name,cb){
+  var id=op_commodityIdMap[name.toLowerCase()];
+  if(!id){cb([]);return;}
+  op_uexFetch('/commodities_prices?id_commodity='+id,function(d){
+    if(!d){cb([]);return;}
+    var rows=d.data||d;
+    if(!Array.isArray(rows)){cb([]);return;}
+    cb(rows.filter(function(r){return r.price_sell&&r.price_sell>0;})
+      .map(function(r){return {terminal:r.terminal_name||'Unknown',price:r.price_sell,system:r.star_system_name||'',stock:r.scu_sell_stock||0};})
+      .sort(function(a,b){return b.price-a.price;}));
+  });
 }
 
-// ── Top-level render dispatcher ──────────────────────────────────────────────
-function renderOperations(grid) {
-  if (activeOpId) renderOpDetail(grid);
-  else            renderOpList(grid);
+// ── Static data ───────────────────────────────────────────────────────────────
+var OP_REFINERIES=[
+  {name:'ARC-L1 Pride of Bloom',sys:'ST'},{name:'ARC-L2 Loveridge Mineral Reserve',sys:'ST'},
+  {name:'ARC-L3 Overwatch Station',sys:'ST'},{name:'ARC-L4 Shallow Fields Station',sys:'ST'},
+  {name:'ARC-L5 Yellow Core Station',sys:'ST'},{name:'CRU-L1 Ambitious Dream Station',sys:'ST'},
+  {name:'HUR-L1 Green Glade Station',sys:'ST'},{name:'HUR-L2 Faithful Dream Station',sys:'ST'},
+  {name:'HUR-L3 Thundering Express Station',sys:'ST'},{name:'HUR-L4 Melodic Fields Station',sys:'ST'},
+  {name:'HUR-L5 High Course Station',sys:'ST'},{name:'MIC-L1 Shallow Frontier Station',sys:'ST'},
+  {name:'MIC-L2 Long Forest Station',sys:'ST'},{name:'MIC-L3 Endless Odyssey Station',sys:'ST'},
+  {name:'MIC-L4 Red Crossroads Station',sys:'ST'},{name:'MIC-L5 Modern Icarus Station',sys:'ST'},
+  {name:'Port Tressler',sys:'ST'},{name:'Lorville - Teasa Spaceport',sys:'ST'},
+  {name:'Area18 - Port Esperia',sys:'ST'},{name:'New Babbage - Commons',sys:'ST'},
+  {name:'Levski',sys:'NX'},{name:'Pyro Gateway (Nyx)',sys:'NX'},{name:'Stanton Gateway (Nyx)',sys:'NX'},
+  {name:'Checkmate Station',sys:'PY'},{name:'Ruin Station',sys:'PY'},
+  {name:'Orbituary',sys:'PY'},{name:'Nyx Gateway (Pyro)',sys:'PY'},{name:'Gaslight Station',sys:'PY'}
+];
+var OP_SYS={ST:'Stanton',NX:'Nyx',PY:'Pyro'};
+var OP_FB=['Agricium','Agricium (Raw)','Astatine','Bexalite','Bexalite (Raw)','Borase','Corundum','Corundum (Raw)','Diamond','Dolivine','Gold','Gold (Raw)','Hephaestanite','Hephaestanite (Raw)','Janalite','Laranite','Laranite (Raw)','Luminum','Maze','Ophite','Praseodymium','Praseodymium (Raw)','Quantanium','Quantanium (Raw)','Revenant Tree Pollen','Riccite','Riccite (Raw)','Roc-Salt','Silicon','Taranite','Taranite (Raw)','Titanium','Titanium (Raw)','Tungsten','Tungsten (Raw)','Vermiculite','Vytinium','Waste','WiDoW','Aphorite','Hadanite','Glaciomorphite','Lyalite','Ferite','Chlorine','Fluorine','Hydrogen','Hydrogen (Raw)','Nitrogen','Oxygen','RMC','Processed Food','Scrap','Agricultural Supplies','Altruciatoxin'];
+
+// ── Paid tracking ─────────────────────────────────────────────────────────────
+function op_togglePaid(jid,name){
+  var key=String(jid)+'_'+String(name);
+  op_paidStatus[key]=!op_paidStatus[key];
+  op_renderJobSettlement(jid);
 }
-
-// ── List view ────────────────────────────────────────────────────────────────
-function renderOpList(grid) {
-  grid.className = '';
-  document.getElementById('org-result-count').textContent = '';
-
-  const showActive   = document.getElementById('op-f-active')?.checked !== false;
-  const showSettled  = document.getElementById('op-f-settled')?.checked !== false;
-  const showArchived = document.getElementById('op-f-archived')?.checked;
-  const list = orgOperations.filter(o =>
-    (o.status==='active'   && showActive)   ||
-    (o.status==='settled'  && showSettled)  ||
-    (o.status==='archived' && showArchived)
-  );
-
-  const canCreate = isOfficer || isAdmin;
-  const bankPill  = `<div class="op-guild-balance-pill">Guild Bank: <strong>${fmtUEC(guildBankBalance)}</strong></div>`;
-  const createBtn = canCreate ? `<button class="op-small-btn op-small-btn-primary" onclick="openNewOpModal()">+ New Operation</button>` : '';
-
-  const topBar = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">${bankPill}${createBtn}</div>`;
-
-  if (!list.length) {
-    grid.innerHTML = topBar + '<div class="empty">No operations found.</div>';
-    return;
-  }
-
-  const cards = list.map(op => {
-    const crew    = orgOpCrew.filter(c=>c.operation_id===op.id);
-    const claimed = crew.filter(c=>c.payout_claimed).length;
-    const dist    = crew.filter(c=>c.payout_amount>0).length;
-    const icon    = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
-    const gross   = Number(op.gross_payout||0);
-    const payoutLine = dist > 0
-      ? `<div style="font-size:0.72rem;color:${claimed===dist?'#5a9e3f':'#c47a2a'};">
-           Payouts: ${claimed}/${dist} collected</div>`
-      : (gross > 0 ? `<div class="op-card-net">${fmtUEC(gross)} to split</div>` : '');
-    return `<div class="op-card" onclick="openOpDetail('${esc(op.id)}')">
-      <div class="op-card-head">
-        <span>${icon}</span>
-        <span class="op-card-name">${esc(op.name)}</span>
-        <span class="op-status op-status-${esc(op.status)}">${esc(op.status)}</span>
-      </div>
-      <div class="op-card-meta">
-        <span>${crew.length} crew</span>
-        <span>${new Date(op.created_at).toLocaleDateString()}</span>
-      </div>
-      ${payoutLine}
-    </div>`;
-  }).join('');
-
-  grid.innerHTML = topBar + `<div class="op-list-grid">${cards}</div>`;
-}
-
-function openOpDetail(id) {
-  activeOpId = id;
-  renderOrg();
-}
-
-function closeOpDetail() {
-  activeOpId = null;
-  try { renderOrg(); } catch(e) { console.error('closeOpDetail renderOrg error:', e); }
-}
-
-// ── Detail view ──────────────────────────────────────────────────────────────
-function renderOpDetail(grid) {
-  const op = orgOperations.find(o=>o.id===activeOpId);
-  if (!op) { closeOpDetail(); return; }
-
-  const crew    = orgOpCrew.filter(c=>c.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
-  const canEdit = (isOfficer || isAdmin) && op.status==='active';
-  const s       = calcSettlement(op, crew);
-  const icon    = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
-
-  const distributed  = crew.filter(c=>c.payout_amount>0);
-  const allClaimed   = distributed.length>0 && distributed.every(c=>c.payout_claimed);
-  const canArchive   = canEdit && (distributed.length===0 || allClaimed);
-
-  grid.className = '';
-  grid.innerHTML = `<div class="op-detail">
-
-    <div class="op-detail-hdr">
-      <button class="op-back" onclick="closeOpDetail()">← Back</button>
-      <span>${icon}</span>
-      <span style="font-size:1.05rem;font-weight:600;flex:1;">${esc(op.name)}</span>
-      <span class="op-status op-status-${esc(op.status)}">${esc(op.status)}</span>
-      ${canEdit ? `<button class="op-small-btn op-small-btn-danger" ${canArchive?'':'disabled title="All payouts must be collected first"'} onclick="archiveOp('${esc(op.id)}')">Archive</button>` : ''}
-    </div>
-
-    ${op.notes ? `<div style="font-size:0.78rem;color:var(--color-text-secondary);padding:0 0.25rem;">${esc(op.notes)}</div>` : ''}
-
-    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;font-size:0.75rem;color:var(--color-text-secondary);">
-      ${op.guild_bank_pct>0 ? `<span>Guild cut: <strong style="color:#c47a2a;">${op.guild_bank_pct}%</strong></span>` : ''}
-      <span>Started: <strong style="color:var(--color-text-primary);">${new Date(op.created_at).toLocaleDateString()}</strong></span>
-    </div>
-
-    <div class="op-section">
-      <div class="op-section-hdr">
-        <span>Crew</span>
-        ${canEdit && distributed.length===0 ? `<button class="op-small-btn" onclick="openAddCrewModal('${esc(op.id)}')">+ Add</button>` : ''}
-      </div>
-      <div class="op-section-body">
-        ${crew.length ? crew.map(cm => {
-          const claimedBadge = cm.payout_claimed
-            ? `<span style="font-size:0.65rem;color:#5a9e3f;">✓ collected</span>`
-            : cm.payout_amount>0 ? `<span style="font-size:0.65rem;color:#c47a2a;">awaiting</span>` : '';
-          return `<div class="op-crew-row">
-            <span class="op-crew-name">${esc(cm.display_name)}</span>
-            ${cm.payout_amount>0 ? `<span style="font-size:0.81rem;color:#5a9e3f;font-weight:500;">${fmtUEC(cm.payout_amount)}</span>` : ''}
-            ${claimedBadge}
-            <span style="flex:1;"></span>
-            ${canEdit && distributed.length===0 ? `<button class="op-delete-btn" onclick="removeCrew('${esc(cm.id)}')">×</button>` : ''}
-          </div>`;
-        }).join('') : '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No crew added yet.</div>'}
-      </div>
-    </div>
-
-    <div class="op-section">
-      <div class="op-section-hdr">
-        <span>Incurred Costs</span>
-        ${canEdit && distributed.length===0 ? `<button class="op-small-btn" onclick="openAddCostModal('${esc(op.id)}')">+ Add</button>` : ''}
-      </div>
-      <div class="op-section-body">
-        ${(()=>{
-          const costs = orgOpCosts.filter(c=>c.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
-          if (!costs.length) return '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No costs recorded.</div>';
-          const total = costs.reduce((s,c)=>s+Number(c.amount||0),0);
-          const rows = costs.map(c=>`<div class="op-cost-row">
-            <span class="op-cost-desc">${esc(c.description)}</span>
-            <span class="op-cost-amt">− ${fmtUEC(c.amount)}</span>
-            ${canEdit && distributed.length===0 ? `<button class="op-delete-btn" onclick="removeCost('${esc(c.id)}')">×</button>` : ''}
-          </div>`).join('');
-          const totalRow = costs.length>1
-            ? `<div style="display:flex;justify-content:flex-end;font-size:0.72rem;color:var(--color-text-tertiary);padding-top:0.25rem;border-top:0.5px solid var(--color-border-tertiary);margin-top:0.25rem;">Total costs: <strong style="color:#e05a5a;margin-left:0.375rem;">${fmtUEC(total)}</strong></div>` : '';
-          return rows + totalRow;
-        })()}
-      </div>
-    </div>
-
-    <div class="op-section">
-      <div class="op-section-hdr"><span>Payout</span></div>
-      <div class="op-section-body">
-        ${renderSettlementPanel(op, s, crew, canEdit)}
-      </div>
-    </div>
-
-  </div>`;
-}
+function op_isPaid(jid,name){return !!op_paidStatus[String(jid)+'_'+String(name)];}
 
 // ── Settlement math ───────────────────────────────────────────────────────────
-function calcSettlement(op, crew) {
-  const gross      = Number(op.gross_payout||0);
-  const guildTake  = Math.floor(gross * (Number(op.guild_bank_pct||0)/100));
-  const totalCosts = orgOpCosts
-    .filter(c => c.operation_id === op.id)
-    .reduce((sum,c) => sum + Number(c.amount||0), 0);
-  const distributable = gross - guildTake - totalCosts;
-  const splitType     = op.split_type || 'even';
-  const inclCreator   = op.include_creator !== false; // default true when column missing
-
-  if (splitType === 'even') {
-    const shares   = crew.length + (inclCreator ? 1 : 0);
-    const perShare = shares > 0 ? distributable / shares : 0;
-    const netPer   = perShare * (1 - WALLET_FEE_PCT/100);
-    return { gross, guildTake, totalCosts, distributable, shares, perShare, netPer, splitType, inclCreator };
-  } else {
-    // Custom — each crew member has split_pct; creator gets the remainder
-    const crewTotalPct = crew.reduce((sum,c) => sum + (Number(c.split_pct)||0), 0);
-    const creatorPct   = inclCreator ? Math.max(0, 100 - crewTotalPct) : 0;
-    const totalPct     = crewTotalPct + (inclCreator ? creatorPct : 0);
-    const shares       = crew.length + (inclCreator ? 1 : 0);
-    return { gross, guildTake, totalCosts, distributable, shares, perShare: 0, netPer: 0,
-             splitType, inclCreator, crewTotalPct, creatorPct, totalPct };
-  }
+function op_settleJob(jobCrew,gross,refCost,guildPct,fee,getHrsFn,payerName){
+  var guildTake=Math.floor(gross*(guildPct||0)/100);
+  var sc=jobCrew.filter(function(c){return c.pt==='share';});
+  var hc=jobCrew.filter(function(c){return c.pt==='hourly';});
+  var ts=sc.reduce(function(s,c){return s+c.share;},0);
+  var net=Math.max(0,gross-refCost-guildTake);
+  var sr=sc.map(function(c){var gc=ts>0?Math.round(net*(c.share/ts)):0;var ip=c.name===payerName;var fee2=ip?0:Math.round(gc*fee/100);return {name:c.name,pt:'share',ip:ip,gc:gc,fee:fee2,recv:gc-fee2};});
+  var hr=hc.map(function(c){var gc=Math.round(getHrsFn(c.id)*c.rate);var fee2=Math.round(gc*fee/100);return {name:c.name,pt:'hourly',ip:false,gc:gc,fee:fee2,recv:gc-fee2,detail:op_hms(Math.round(getHrsFn(c.id)*3600000))+' @ '+op_fmt(c.rate)+'/hr'};});
+  var sent=0,fees=0;
+  sr.forEach(function(r){if(!r.ip){sent+=r.gc;fees+=r.fee;}});
+  hr.forEach(function(r){sent+=r.gc;fees+=r.fee;});
+  var pk=sr.reduce(function(s,r){return r.ip?s+r.gc:s;},0);
+  return {sr:sr,hr:hr,gross:gross,guildTake:guildTake,refCost:refCost,net:net,sent:sent,fees:fees,pk:pk,payer:payerName};
 }
 
-// ── Settlement panel HTML ─────────────────────────────────────────────────────
-function renderSplitControls(op, alreadyDist, isEven, inclCreator) {
-  if (alreadyDist) return '';
-  const creatorName = authMember?.display_name || authMember?.username || 'You';
-  return `<div style="display:flex;align-items:center;gap:0.875rem;flex-wrap:wrap;margin-bottom:0.25rem;">
-    <div class="op-split-toggle">
-      <button class="op-split-btn${isEven?' active':''}" onclick="toggleSplitType('${esc(op.id)}','even')">Even</button>
-      <button class="op-split-btn${!isEven?' active':''}" onclick="toggleSplitType('${esc(op.id)}','custom')">Custom</button>
-    </div>
-    <label class="op-include-me">
-      <input type="checkbox" ${inclCreator?'checked':''} onchange="saveIncludeCreator('${esc(op.id)}', this.checked)">
-      <span>Include <strong>${esc(creatorName)}</strong> in split</span>
-    </label>
-  </div>`;
+// ── Tab switcher ──────────────────────────────────────────────────────────────
+function op_switchTab(t){
+  op_activeTab=t;
+  var tabs=['sessions','summary'];
+  tabs.forEach(function(id){
+    var el=op_gV('op-tab-'+id); if(el) el.style.display=id===t?'block':'none';
+    var btn=op_gV('op-tabBtn-'+id); if(btn) btn.classList.toggle('active',id===t);
+  });
+  if(t==='summary') op_renderSummary();
 }
 
-function renderSettlementPanel(op, s, crew, canEdit) {
-  const { gross, guildTake, totalCosts, distributable, shares, perShare, netPer,
-          splitType, inclCreator, crewTotalPct, creatorPct, totalPct } = s;
-  const distributed = crew.filter(c=>c.payout_amount>0);
-  const alreadyDist = distributed.length > 0;
-  const isEven      = splitType === 'even';
-  const creatorName = authMember?.display_name || authMember?.username || 'You';
+// ── Top-level render (called by renderOrg on tab switch) ─────────────────────
+function renderOperations(grid) {
+  grid.className='';
+  document.getElementById('org-result-count').textContent='';
+  grid.innerHTML=
+    '<div class="op-tab-bar">'
+    +'<button class="op-tab'+(op_activeTab==='sessions'?' active':'')+'" id="op-tabBtn-sessions" onclick="op_switchTab(\'sessions\')">Sessions</button>'
+    +'<button class="op-tab'+(op_activeTab==='summary'?' active':'')+'" id="op-tabBtn-summary" onclick="op_switchTab(\'summary\')">Summary</button>'
+    +'</div>'
+    +'<div id="op-tab-sessions" style="display:'+(op_activeTab==='sessions'?'block':'none')+';">'
+    +'<div style="margin-bottom:0.75rem;"><button class="op-small-btn primary" onclick="op_openNewSession()">+ New session</button></div>'
+    +'<div id="op-sessionList"></div>'
+    +'<div id="op-sessionForm" style="display:none;"></div>'
+    +'</div>'
+    +'<div id="op-tab-summary" style="display:'+(op_activeTab==='summary'?'block':'none')+';">'
+    +'<div id="op-summaryContent"></div>'
+    +'</div>';
 
-  // ── Gross input ──────────────────────────────────────────────────────────
-  const grossInput = canEdit && !alreadyDist ? `
-    <div class="op-field" style="max-width:22rem;">
-      <label>Total gross payout (aUEC)</label>
-      <input id="op-gross-input" type="number" min="0" step="1"
-             value="${op.gross_payout > 0 ? op.gross_payout : ''}"
-             placeholder="Enter total aUEC earned this run"
-             onchange="saveGrossPayout('${esc(op.id)}', this.value)">
-    </div>` : (gross > 0 ? `<div style="font-size:0.78rem;color:var(--color-text-secondary);">Gross: <strong style="color:var(--color-text-primary);">${fmtUEC(gross)}</strong></div>` : '');
-
-  // ── Split controls (toggle + creator checkbox) ───────────────────────────
-  const splitControls = canEdit ? renderSplitControls(op, alreadyDist, isEven, inclCreator) : '';
-
-  if (gross === 0 && !alreadyDist) {
-    return grossInput + splitControls +
-      `<div style="font-size:0.78rem;color:var(--color-text-tertiary);margin-top:0.5rem;">Enter the total aUEC earned above — the split will appear here.</div>`;
+  // Ensure the sell modal exists in DOM
+  if(!op_gV('op-sellModal')){
+    var m=document.createElement('div');
+    m.id='op-sellModal';
+    m.className='op-sell-modal';
+    m.style.display='none';
+    m.innerHTML='<div class="op-sell-modal-inner">'
+      +'<div class="op-modal-title" id="op-sellModalTitle">Sell item</div>'
+      +'<div id="op-sellModalBody"></div>'
+      +'<div class="op-modal-actions">'
+      +'<button class="op-small-btn" onclick="op_closeSellModal()">Cancel</button>'
+      +'<button class="op-small-btn primary" onclick="op_confirmSell()">Confirm sale</button>'
+      +'</div></div>';
+    document.body.appendChild(m);
   }
 
-  // ── Breakdown header (gross → costs → guild take → distributable) ─────────
-  const breakdownHdr = [
-    `<div class="op-settle-row"><span>Gross payout</span><span class="op-settle-amt">${fmtUEC(gross)}</span></div>`,
-    guildTake>0 ? `<div class="op-settle-row"><span>Guild bank (${op.guild_bank_pct}%)</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(guildTake)}</span></div>` : '',
-    totalCosts>0 ? `<div class="op-settle-row"><span>Incurred costs</span><span class="op-settle-amt" style="color:#e05a5a;">− ${fmtUEC(totalCosts)}</span></div>` : '',
-    `<div class="op-settle-row" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.4rem;margin-top:0.25rem;font-weight:600;">
-       <span>Distributable · ${shares} member${shares!==1?'s':''}</span>
-       <span class="op-settle-amt" style="color:#7eb8f7;">${fmtUEC(distributable)}</span>
-     </div>`,
-  ].filter(Boolean).join('');
+  op_renderSessionList();
+  if(op_activeTab==='summary') op_renderSummary();
+}
 
-  // ── Per-member details ───────────────────────────────────────────────────
-  let splitDetails = '';
-  let distributeBtn = '';
-
-  if (alreadyDist) {
-    splitDetails = `<div style="font-size:0.72rem;color:#a89cf7;margin-top:0.25rem;">✓ Distributed — payouts visible in the panel on the right.</div>`;
-  } else if (isEven) {
-    // Even split
-    if (shares > 0) {
-      splitDetails = `<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin:0.2rem 0 0.25rem;">
-        ${fmtUEC(perShare)} per member · ${WALLET_FEE_PCT}% wallet fee → <strong style="color:#5a9e3f;">${fmtUEC(netPer)} each</strong>
-      </div>`;
-      if (inclCreator) {
-        splitDetails += `<div style="font-size:0.72rem;color:var(--color-text-tertiary);">Includes <strong style="color:var(--color-text-secondary);">${esc(creatorName)}</strong> (you)</div>`;
+// ── Sell modal ────────────────────────────────────────────────────────────────
+function op_openSellModal(jid,iid){
+  var job=op_getJob(jid); if(!job)return;
+  var item=null; for(var i=0;i<job.items.length;i++){if(job.items[i].id===iid){item=job.items[i];break;}} if(!item)return;
+  op_sellItemId=iid; op_sellJobId=jid;
+  var t=op_gV('op-sellModalTitle'); if(t) t.textContent='Sell: '+item.name+' ('+op_fq(item.qty)+')';
+  var body=op_gV('op-sellModalBody');
+  if(body) body.innerHTML='<div style="font-size:0.75rem;color:var(--color-text-tertiary);margin-bottom:0.5rem;">Looking up UEX sell prices…</div>'
+    +'<div class="op-field"><label>Actual sell price (aUEC total)</label>'
+    +'<input type="number" id="op-sellPx" style="width:100%;" min="0" value="'+(item.price||'')+'"></div>';
+  var m=op_gV('op-sellModal'); if(m) m.style.display='flex';
+  op_fetchCommodities(function(){
+    op_fetchPrices(item.name,function(prices){
+      var ph='';
+      if(prices.length){
+        ph='<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-bottom:0.375rem;">UEX sell prices (per SCU) — click to pre-fill:</div>';
+        ph+=prices.slice(0,8).map(function(p,i){
+          var est=Math.round(p.price*(item.qty/100));
+          return '<div class="op-price-row" onclick="op_usePx('+est+')">'
+            +'<div style="flex:1;">'+(i===0?'<span class="op-crew-badge op-badge-hourly" style="margin-right:0.3rem;">Best</span>':'')+esc(p.terminal)
+            +'<span class="op-ac-sys">'+esc(p.system)+'</span></div>'
+            +'<div style="font-size:0.75rem;'+(i===0?'font-weight:600;color:#5a9e3f;':'color:var(--color-text-secondary);')+'">'+op_fmt(p.price)+'/SCU</div>'
+            +'<div style="font-size:0.72rem;color:#5a9e3f;min-width:5.5rem;text-align:right;">~'+op_fa(est)+'</div>'
+            +'</div>';
+        }).join('');
+      } else {
+        ph='<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-bottom:0.5rem;">No UEX price data found — enter manually.</div>';
       }
-    }
-    if (canEdit && crew.length > 0 && gross > 0) {
-      distributeBtn = `<div style="margin-top:0.75rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-        <button class="op-small-btn op-small-btn-primary" onclick="confirmDistribute('${esc(op.id)}')">Confirm & Distribute</button>
-        <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Stamps each crew member's payout and records the guild bank contribution.</span>
-      </div>`;
-    }
+      if(body) body.innerHTML=ph
+        +'<div style="margin-top:0.625rem;" class="op-field"><label>Actual sell price (aUEC total)</label>'
+        +'<input type="number" id="op-sellPx" style="width:100%;" min="0" value="'+(item.price||'')+'"></div>';
+    });
+  });
+}
+function op_usePx(v){var i=op_gV('op-sellPx');if(i)i.value=v;}
+function op_closeSellModal(){var m=op_gV('op-sellModal');if(m)m.style.display='none';op_sellItemId=null;op_sellJobId=null;}
+function op_confirmSell(){
+  var p=parseFloat((op_gV('op-sellPx')||{}).value)||0;
+  var jid=op_sellJobId; var job=op_getJob(jid); if(!job){op_closeSellModal();return;}
+  for(var i=0;i<job.items.length;i++){if(job.items[i].id===op_sellItemId){job.items[i].status='sold';job.items[i].price=p;break;}}
+  op_closeSellModal(); op_renderJob(jid); op_renderSessionSummary();
+}
+
+// ── Hourly crew timers ────────────────────────────────────────────────────────
+function op_getMs(id){var t=op_crewTimers[id];if(!t)return 0;return t.acc+(t.on?Date.now()-t.st:0);}
+function op_getHrs(id){return op_getMs(id)/3600000;}
+function op_startCT(id){var t=op_crewTimers[id];if(!t||t.on)return;t.on=true;t.st=Date.now();op_renderCrew();op_renderSessionSummary();}
+function op_stopCT(id){var t=op_crewTimers[id];if(!t||!t.on)return;t.acc+=Date.now()-t.st;t.on=false;op_renderCrew();op_renderSessionSummary();}
+function op_resetCT(id){var t=op_crewTimers[id];if(!t)return;t.on=false;t.acc=0;t.st=0;op_renderCrew();op_renderSessionSummary();}
+function op_startTick(){if(op_crewTickInt)return;op_crewTickInt=setInterval(function(){var any=false;op_sessionCrew.forEach(function(c){if(op_crewTimers[c.id]&&op_crewTimers[c.id].on)any=true;});if(any){op_tickCrewDisplays();op_renderSessionSummary();}},1000);}
+function op_stopTick(){if(op_crewTickInt){clearInterval(op_crewTickInt);op_crewTickInt=null;}}
+function op_tickCrewDisplays(){op_sessionCrew.forEach(function(c){var e=op_gV('op-ce-'+c.id);if(!e)return;var t=op_crewTimers[c.id];e.textContent=op_hms(op_getMs(c.id));e.className='op-crew-elapsed'+(t&&t.on?' running':'');if(c.pt==='hourly'){var p=op_gV('op-cp-'+c.id);if(p)p.textContent=op_fa(Math.round(op_getHrs(c.id)*c.rate))+' earned';}});}
+
+// ── Crew management ───────────────────────────────────────────────────────────
+function op_onOwnerInput(){
+  var name=((op_gV('op-sOwner')||{}).value||'').trim();
+  var owner=null;for(var i=0;i<op_sessionCrew.length;i++){if(op_sessionCrew[i].isOwner){owner=op_sessionCrew[i];break;}}
+  if(name){if(owner){owner.name=name;}else{var id=op_crewIdCtr++;op_sessionCrew.unshift({id:id,name:name,share:100,pt:'share',rate:0,isOwner:true});op_crewTimers[id]={on:false,st:0,acc:0};}}
+  else{if(owner)op_sessionCrew=op_sessionCrew.filter(function(c){return !c.isOwner;});}
+  op_startTick();op_renderCrew();op_refreshAllJobUi();
+}
+function op_onCrewTypeChange(){var rw=op_gV('op-rateWrap');if(rw)rw.style.display=(op_gV('op-newCrewType')||{}).value==='hourly'?'flex':'none';}
+function op_addCrewInline(){
+  var input=op_gV('op-newCrewInput'),name=(input.value||'').trim();if(!name)return;
+  for(var i=0;i<op_sessionCrew.length;i++){if(op_sessionCrew[i].name.toLowerCase()===name.toLowerCase()){input.select();return;}}
+  var pt=(op_gV('op-newCrewType')||{}).value||'share',rate=pt==='hourly'?(parseInt((op_gV('op-newCrewRate')||{}).value)||0):0,id=op_crewIdCtr++;
+  op_sessionCrew.push({id:id,name:name,share:100,pt:pt,rate:rate,isOwner:false});
+  op_crewTimers[id]={on:false,st:0,acc:0};
+  input.value='';var nr=op_gV('op-newCrewRate');if(nr)nr.value='';var nt=op_gV('op-newCrewType');if(nt)nt.value='share';var rw=op_gV('op-rateWrap');if(rw)rw.style.display='none';
+  input.focus();op_startTick();op_renderCrew();op_refreshAllJobUi();
+}
+function op_removeCrewMember(id){
+  if(op_crewTimers[id]&&op_crewTimers[id].on)op_stopCT(id);
+  op_sessionCrew=op_sessionCrew.filter(function(x){return x.id!==id;});
+  op_renderCrew();op_refreshAllJobUi();
+}
+function op_renderCrew(){
+  var el=op_gV('op-sessionCrewList');if(!el)return;
+  if(!op_sessionCrew.length){el.innerHTML='<div style="font-size:0.75rem;color:var(--color-text-tertiary);">Enter your handle above to get started.</div>';return;}
+  el.innerHTML=op_sessionCrew.map(function(c){
+    var t=op_crewTimers[c.id]||{on:false,acc:0},isH=c.pt==='hourly';
+    var avCls=c.isOwner?'op-av-owner':isH?'op-av-hourly':'op-av-share';
+    var bdgCls=c.isOwner?'op-badge-owner':isH?'op-badge-hourly':'op-badge-share';
+    var bdgTxt=c.isOwner?'owner':isH?'hourly':'profit share';
+    return '<div class="op-crew-card">'
+      +'<div style="display:flex;align-items:center;gap:0.5rem;">'
+      +'<div class="op-crew-av '+avCls+'">'+op_ini(c.name)+'</div>'
+      +'<div style="flex:1;"><div style="font-size:0.875rem;font-weight:600;display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center;color:var(--color-text-primary);">'+esc(c.name)
+      +' <span class="op-crew-badge '+bdgCls+'">'+bdgTxt+'</span></div>'
+      +(isH?'<div style="font-size:0.69rem;color:var(--color-text-tertiary);">'+op_fmt(c.rate)+' aUEC/hr</div>':'')+'</div>'
+      +(!c.isOwner?'<button class="op-small-btn danger" onclick="op_removeCrewMember('+c.id+')" style="padding:0.15rem 0.5rem;font-size:0.6rem;">Remove</button>':'')
+      +'</div>'
+      +(isH?'<div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">'
+        +'<span class="op-crew-elapsed'+(t.on?' running':'')+'" id="op-ce-'+c.id+'">'+op_hms(op_getMs(c.id))+'</span>'
+        +'<span style="font-size:0.72rem;color:var(--color-text-tertiary);flex:1;" id="op-cp-'+c.id+'">'+op_fa(Math.round(op_getHrs(c.id)*c.rate))+' earned</span>'
+        +(!t.on?'<button class="op-small-btn success" onclick="op_startCT('+c.id+')" style="font-size:0.6rem;">▶ Start</button>'
+               :'<button class="op-small-btn primary" onclick="op_stopCT('+c.id+')" style="font-size:0.6rem;">⏸ Stop</button>')
+        +'<button class="op-small-btn" onclick="op_resetCT('+c.id+')" style="font-size:0.6rem;">Reset</button>'
+        +'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+// ── Job crew helpers ──────────────────────────────────────────────────────────
+function op_jobCrewOf(job){
+  return job.crewIds.map(function(cid){
+    for(var i=0;i<op_sessionCrew.length;i++) if(op_sessionCrew[i].id===cid) return op_sessionCrew[i];
+    if(job.crewSnapshot){for(var j=0;j<job.crewSnapshot.length;j++) if(job.crewSnapshot[j].id===cid) return job.crewSnapshot[j];}
+    return null;
+  }).filter(Boolean);
+}
+
+// ── Jobs ──────────────────────────────────────────────────────────────────────
+function op_addJob(){
+  var owner=null;for(var i=0;i<op_sessionCrew.length;i++){if(op_sessionCrew[i].isOwner){owner=op_sessionCrew[i];break;}}
+  if(!owner&&op_sessionCrew.length)owner=op_sessionCrew[0];
+  var jid=op_jobIdCtr++;
+  var allIds=op_sessionCrew.map(function(c){return c.id;});
+  var snap=op_sessionCrew.map(function(c){return {id:c.id,name:c.name,share:c.share,pt:c.pt,rate:c.rate,isOwner:c.isOwner||false};});
+  op_sessionJobs.push({id:jid,loc:'',cost:0,payer:owner?owner.name:'',crewIds:allIds,crewSnapshot:snap,items:[],timerEnd:0,timerTotal:0,timerDone:false});
+  op_renderAllJobs();op_renderSessionSummary();
+}
+function op_removeJob(jid){
+  if(op_jobTimerInts[jid]){clearInterval(op_jobTimerInts[jid]);delete op_jobTimerInts[jid];}
+  op_sessionJobs=op_sessionJobs.filter(function(j){return j.id!==jid;});
+  var el=op_gV('op-job-'+jid);if(el)el.remove();
+  op_renderSessionSummary();
+}
+function op_refreshAllJobUi(){op_sessionJobs.forEach(function(j){op_renderJob(j.id);});op_renderSessionSummary();}
+function op_renderAllJobs(){
+  var el=op_gV('op-jobList');if(!el)return;
+  if(!op_sessionJobs.length){el.innerHTML='<div style="font-size:0.75rem;color:var(--color-text-tertiary);">No sales orders yet.</div>';return;}
+  el.innerHTML='';
+  op_sessionJobs.forEach(function(j){var div=document.createElement('div');div.id='op-job-'+j.id;el.appendChild(div);op_renderJob(j.id);});
+}
+function op_toggleJobCrew(jid,crewId){
+  var job=op_getJob(jid);if(!job)return;
+  var idx=job.crewIds.indexOf(crewId);
+  if(idx===-1){job.crewIds.push(crewId);}
+  else{job.crewIds.splice(idx,1);var c=null;for(var i=0;i<op_sessionCrew.length;i++){if(op_sessionCrew[i].id===crewId){c=op_sessionCrew[i];break;}}if(c&&c.name===job.payer)job.payer='';}
+  op_renderJob(jid);op_renderSessionSummary();
+}
+function op_renderJob(jid){
+  var job=op_getJob(jid);var el=op_gV('op-job-'+jid);if(!job||!el)return;
+  var jc=op_jobCrewOf(job);
+  var gross=job.items.filter(function(i){return i.status==='sold';}).reduce(function(s,i){return s+i.price;},0);
+  var pending=job.items.filter(function(i){return i.status!=='sold';}).length;
+  var jobIdx=0;for(var i=0;i<op_sessionJobs.length;i++){if(op_sessionJobs[i].id===jid){jobIdx=i;break;}}
+  var guildPct=0;var sf=op_gV('op-sessionForm');if(sf){var gi=sf.querySelector('#op-sGuild');if(gi)guildPct=parseFloat(gi.value)||0;}
+
+  var chips='<div class="op-crew-chips">';
+  if(!op_sessionCrew.length)chips+='<div style="font-size:0.72rem;color:var(--color-text-tertiary);">Add crew to session first.</div>';
+  op_sessionCrew.forEach(function(c){
+    var inJob=job.crewIds.indexOf(c.id)!==-1,isH=c.pt==='hourly';
+    var avCls=c.isOwner?'op-av-owner':isH?'op-av-hourly':'op-av-share';
+    chips+='<div class="op-crew-chip'+(inJob?' selected':'')+'" onclick="op_toggleJobCrew('+jid+','+c.id+')">'
+      +'<div class="op-crew-av '+avCls+'" style="width:1.25rem;height:1.25rem;font-size:0.5rem;">'+op_ini(c.name)+'</div>'
+      +esc(c.name)+(c.isOwner?' <span style="font-size:0.56rem;opacity:0.6;">(owner)</span>':'')
+      +(isH?' <span style="font-size:0.56rem;opacity:0.6;">(hourly)</span>':'')+'</div>';
+  });
+  chips+='</div>';
+
+  var shareCrew=jc.filter(function(c){return c.pt==='share';});
+  var payerOpts='<option value="">— select —</option>'+shareCrew.map(function(c){return '<option value="'+esc(c.name)+'"'+(c.name===job.payer?' selected':'')+'>'+esc(c.name)+(c.isOwner?' (owner)':'')+'</option>';}).join('');
+
+  var rem=job.timerEnd>0?job.timerEnd-Date.now():0;
+  var timerHtml='';
+  if(job.timerDone){
+    timerHtml='<div class="op-prog-wrap"><div class="op-prog-fill done" style="width:100%"></div></div>'
+      +'<div style="display:flex;align-items:center;gap:0.5rem;"><span class="op-ref-timer done">Done!</span><span style="font-size:0.72rem;color:var(--color-text-tertiary);">Refining complete</span>'
+      +'<button class="op-small-btn" onclick="op_resetJobTimer('+jid+')" style="padding:0.15rem 0.5rem;font-size:0.6rem;">Reset</button></div>';
+  } else if(job.timerEnd>0&&rem>0){
+    var pct=Math.max(0,Math.min(100,((job.timerTotal-rem)/job.timerTotal)*100));
+    timerHtml='<div class="op-prog-wrap"><div class="op-prog-fill" id="op-tbar-'+jid+'" style="width:'+pct.toFixed(1)+'%"></div></div>'
+      +'<div style="display:flex;align-items:center;gap:0.5rem;"><span class="op-ref-timer'+(rem<300000?' warn':'')+'" id="op-tcd-'+jid+'">'+op_hms(rem)+'</span>'
+      +'<span style="font-size:0.72rem;color:var(--color-text-tertiary);" id="op-teta-'+jid+'">Done at '+new Date(job.timerEnd).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</span>'
+      +'<button class="op-small-btn" onclick="op_resetJobTimer('+jid+')" style="padding:0.15rem 0.5rem;font-size:0.6rem;">Reset</button></div>';
   } else {
-    // Custom split — show per-crew % inputs
-    const pctRows = crew.map(c => {
-      const pct     = Number(c.split_pct)||0;
-      const netAmt  = distributable * (pct/100) * (1 - WALLET_FEE_PCT/100);
-      return `<div class="op-settle-row">
-        <span style="flex:1;font-size:0.81rem;">${esc(c.display_name)}</span>
-        <input type="number" min="0" max="100" step="0.1" value="${pct||''}" placeholder="0"
-               class="op-field input op-pct-input"
-               onchange="saveCrewSplitPct('${esc(c.id)}', this.value, '${esc(op.id)}')">
-        <span style="font-size:0.625rem;color:var(--color-text-tertiary);">%</span>
-        <span class="op-settle-amt" style="font-size:0.75rem;min-width:5rem;text-align:right;">${pct>0 ? fmtUEC(netAmt) : ''}</span>
-      </div>`;
+    timerHtml='<div style="display:flex;gap:0.375rem;align-items:center;flex-wrap:wrap;">'
+      +'<div class="op-qty-wrap"><input type="number" id="op-th-'+jid+'" placeholder="0" style="width:3.25rem;" min="0" max="99"><span class="op-qty-unit">h</span></div>'
+      +'<div class="op-qty-wrap"><input type="number" id="op-tm-'+jid+'" placeholder="0" style="width:3.25rem;" min="0" max="59"><span class="op-qty-unit">m</span></div>'
+      +'<div class="op-qty-wrap"><input type="number" id="op-ts-'+jid+'" placeholder="0" style="width:3.25rem;" min="0" max="59"><span class="op-qty-unit">s</span></div>'
+      +'<button class="op-small-btn primary" onclick="op_startJobTimer('+jid+')" style="font-size:0.6rem;">▶ Start</button></div>';
+  }
+
+  var itemsHtml=!job.items.length?'<div style="font-size:0.72rem;color:var(--color-text-tertiary);padding:0.375rem 0;">No items yet</div>'
+    :job.items.map(function(item){
+      var col=op_vc(item.val);
+      var vd=(item.val===null||item.val===undefined)?'<span style="color:var(--color-text-tertiary);">—</span>'
+        :'<span style="display:inline-block;width:0.5rem;height:0.5rem;border-radius:50%;background:'+col+';margin-right:0.2rem;vertical-align:middle;"></span><span style="color:'+col+';font-weight:600;">'+item.val+'</span>';
+      var tip={pending:'→ Refining',refining:'→ Sell',sold:'→ Reset'}[item.status]||'';
+      var pc=item.status==='sold'?'<span style="color:#5a9e3f;font-weight:500;">'+op_fmt(item.price)+'</span>':'<span style="color:var(--color-text-tertiary);">—</span>';
+      return '<div class="op-item-row"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--color-text-primary);">'+esc(item.name)+'</span>'
+        +'<span style="font-size:0.72rem;color:var(--color-text-secondary);">'+(Math.floor(item.qty/100)||'—')+'</span>'
+        +'<span style="font-size:0.72rem;color:var(--color-text-secondary);">'+(item.qty%100||'—')+'</span>'
+        +'<span>'+vd+'</span>'
+        +'<span class="op-item-status op-item-'+item.status+'" onclick="op_cycleItemStatus('+jid+','+item.id+')" title="'+tip+'">'+item.status+'</span>'
+        +pc+'<button class="op-delete-btn" onclick="op_removeItem('+jid+','+item.id+')" style="font-size:0.75rem;">✕</button></div>';
     }).join('');
 
-    // Creator row (auto-remainder)
-    const creatorRow = inclCreator ? `<div class="op-settle-row" style="background:rgba(126,184,247,0.05);border-radius:3px;padding-left:0.25rem;">
-      <span style="flex:1;font-size:0.81rem;color:#7eb8f7;">${esc(creatorName)} <span style="font-size:0.625rem;opacity:0.7;">(you)</span></span>
-      <span class="op-pct-remainder" style="color:${creatorPct<0?'#e05a5a':'var(--color-text-secondary)'};">${creatorPct.toFixed(1)}%</span>
-      <span style="font-size:0.625rem;color:var(--color-text-tertiary);margin-left:0.25rem;">%</span>
-      <span class="op-settle-amt" style="font-size:0.75rem;min-width:5rem;text-align:right;">${creatorPct>0 ? fmtUEC(distributable*(creatorPct/100)*(1-WALLET_FEE_PCT/100)) : ''}</span>
-    </div>` : '';
+  el.innerHTML='<div class="op-job-card">'
+    +'<div class="op-job-hdr"><div class="op-job-num">'+(jobIdx+1)+'</div>'
+    +'<span style="font-size:0.875rem;font-weight:600;flex:1;color:var(--color-text-primary);">Sales order '+(jobIdx+1)+'</span>'
+    +'<button class="op-small-btn danger" onclick="op_removeJob('+jid+')" style="padding:0.15rem 0.5rem;font-size:0.6rem;">Remove</button></div>'
+    +'<div class="op-job-body">'
+    +'<div><div class="op-section-title">Crew in this job</div>'+chips+'</div>'
+    +'<div class="op-grid-3" style="align-items:end;">'
+    +'<div class="op-field"><label>Refinery location</label><div class="op-loc-ac-wrap">'
+    +'<input type="text" id="op-loc-'+jid+'" placeholder="Search…" style="width:100%;" value="'+esc(job.loc)+'" oninput="op_onLocInput('+jid+')" onkeydown="op_onLocKeydown(event,'+jid+')" autocomplete="off">'
+    +'<div class="op-ac-list" id="op-locList-'+jid+'" style="display:none;"></div></div></div>'
+    +'<div class="op-field"><label>Refining cost (aUEC)</label>'
+    +'<input type="number" id="op-cost-'+jid+'" placeholder="0" style="width:100%;" min="0" value="'+job.cost+'" oninput="op_updateJobCost('+jid+')"></div>'
+    +'<div class="op-field"><label>Payer (holds all funds)</label>'
+    +'<select id="op-payer-'+jid+'" style="width:100%;" onchange="op_updateJobPayer('+jid+')">'+payerOpts+'</select></div></div>'
+    +'<div><div class="op-section-title" style="margin-bottom:0.375rem;">Refining timer</div>'+timerHtml+'</div>'
+    +'<div><div class="op-item-row op-item-hdr" style="padding-bottom:0.25rem;"><span>Item</span><span>SCU</span><span>cSCU</span><span>Val</span><span>Status</span><span>Sell (aUEC)</span><span></span></div>'
+    +itemsHtml
+    +'<div style="display:flex;gap:0.375rem;margin-top:0.625rem;flex-wrap:wrap;align-items:flex-end;">'
+    +'<div class="op-ac-wrap"><input type="text" id="op-iname-'+jid+'" placeholder="Item name" style="width:100%;" oninput="op_onItemInput('+jid+')" onkeydown="op_onItemKeydown(event,'+jid+')" autocomplete="off">'
+    +'<div class="op-ac-list" id="op-acList-'+jid+'" style="display:none;"></div></div>'
+    +'<div class="op-qty-wrap"><input type="number" id="op-iscu-'+jid+'" placeholder="0" style="width:3.5rem;" min="0" step="1" onkeydown="if(event.keyCode===13)op_addItem('+jid+')"><span class="op-qty-unit">SCU</span></div>'
+    +'<div class="op-qty-wrap"><input type="number" id="op-iqty-'+jid+'" placeholder="0" style="width:3.5rem;" min="0" step="1" onkeydown="if(event.keyCode===13)op_addItem('+jid+')"><span class="op-qty-unit">cSCU</span></div>'
+    +'<div class="op-qty-wrap"><input type="number" id="op-ival-'+jid+'" placeholder="0" style="width:3.25rem;" min="0" max="999" onkeydown="if(event.keyCode===13)op_addItem('+jid+')"><span class="op-qty-unit">/999</span></div>'
+    +'<button class="op-small-btn" onclick="op_addItem('+jid+')">Add</button></div>'
+    +'<div style="font-size:0.6rem;color:var(--color-text-tertiary);margin-top:0.3rem;">Pending → Refining → click badge to Sell. UEX live prices load automatically.</div></div>'
+    +'<div id="op-settle-'+jid+'"></div>'
+    +'</div></div>';
 
-    const effectivePctTotal = inclCreator ? totalPct : crewTotalPct;
-    const pctValid = Math.abs(effectivePctTotal - 100) < 0.05;
-    const totalRow = `<div class="op-pct-total ${pctValid?'valid':'invalid'}">Total: ${effectivePctTotal.toFixed(1)}% ${pctValid ? '✓' : '— must equal 100%'}</div>`;
-
-    splitDetails = pctRows + creatorRow + totalRow;
-
-    if (canEdit && crew.length > 0 && gross > 0) {
-      distributeBtn = pctValid
-        ? `<div style="margin-top:0.75rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-            <button class="op-small-btn op-small-btn-primary" onclick="confirmDistribute('${esc(op.id)}')">Confirm & Distribute</button>
-            <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Distributes custom shares to each crew member.</span>
-          </div>`
-        : `<div style="margin-top:0.75rem;display:flex;gap:0.625rem;align-items:center;">
-            <button class="op-small-btn" disabled>Confirm & Distribute</button>
-            <span style="font-size:0.69rem;color:#e05a5a;">Percentages must sum to 100%</span>
-          </div>`;
-    }
-  }
-
-  // ── Guild bank banner ────────────────────────────────────────────────────
-  const guildBanner = guildTake > 0 && !alreadyDist ? `
-    <div class="op-guild-banner" style="margin-top:0.25rem;">
-      <span class="op-guild-label">Guild Bank</span>
-      <span class="op-guild-amount">${fmtUEC(guildTake)}</span>
-    </div>` : '';
-
-  return grossInput + splitControls + breakdownHdr + splitDetails + guildBanner + distributeBtn;
+  op_renderJobSettlement(jid);
 }
-
-// ── Save gross payout (inline input) ─────────────────────────────────────────
-async function saveGrossPayout(opId, value) {
-  const gross = Number(value)||0;
-  if (!sb) return;
-  const { error } = await sb.from('operations').update({ gross_payout: gross }).eq('id', opId);
-  if (error) { showError(error.message); return; }
-  const idx = orgOperations.findIndex(o=>o.id===opId);
-  if (idx !== -1) orgOperations[idx].gross_payout = gross;
-  // Soft re-render just the settlement panel to show updated math without losing focus
-  const op   = orgOperations[idx];
-  const crew = orgOpCrew.filter(c=>c.operation_id===opId);
-  const s    = calcSettlement(op, crew);
-  const canEdit = (isOfficer || isAdmin) && op.status==='active';
-  const panel = document.querySelector('.op-section:last-child .op-section-body');
-  if (panel) panel.innerHTML = renderSettlementPanel(op, s, crew, canEdit);
-}
-
-// ── Confirm & Distribute ──────────────────────────────────────────────────────
-async function confirmDistribute(opId) {
-  if (!sb) return;
-  const op   = orgOperations.find(o=>o.id===opId);
-  const crew = orgOpCrew.filter(c=>c.operation_id===opId);
-  if (!op || !crew.length) return;
-
-  const s = calcSettlement(op, crew);
-  const { guildTake, distributable } = s;
-  const isEven       = s.splitType === 'even';
-  const inclCreator  = s.inclCreator;
-  const creatorName  = authMember?.display_name || authMember?.username || 'You';
-
-  // Build confirm message
-  let confirmMsg;
-  if (isEven) {
-    const total = crew.length + (inclCreator ? 1 : 0);
-    confirmMsg = `Distribute payouts for "${op.name}"?\n\n`
-      + `${total} member${total!==1?'s':''} × ${fmtUEC(s.netPer)} each`
-      + (inclCreator ? `\n(includes you — ${creatorName})` : '')
-      + (guildTake > 0 ? `\nGuild bank receives ${fmtUEC(guildTake)}` : '');
-  } else {
-    const lines = crew.map(c => {
-      const pct = Number(c.split_pct)||0;
-      return `  ${c.display_name}: ${fmtUEC(distributable*(pct/100)*(1-WALLET_FEE_PCT/100))}`;
-    });
-    if (inclCreator && s.creatorPct > 0) {
-      lines.push(`  ${creatorName} (you): ${fmtUEC(distributable*(s.creatorPct/100)*(1-WALLET_FEE_PCT/100))}`);
-    }
-    confirmMsg = `Distribute payouts for "${op.name}"?\n\n${lines.join('\n')}`
-      + (guildTake > 0 ? `\n\nGuild bank receives ${fmtUEC(guildTake)}` : '');
+function op_renderJobSettlement(jid){
+  var el=op_gV('op-settle-'+jid);if(!el)return;
+  var job=op_getJob(jid);if(!job)return;
+  if(!job.payer){el.innerHTML='<div style="font-size:0.75rem;color:#c47a2a;padding:0.5rem 0.625rem;background:#1e1408;border-radius:var(--border-radius-md);margin-top:0.75rem;">Select a payer above to see the settlement breakdown.</div>';return;}
+  var jc=op_jobCrewOf(job);
+  var payerInCrew=false;for(var pi=0;pi<jc.length;pi++){if(jc[pi].name===job.payer){payerInCrew=true;break;}}
+  if(!payerInCrew){for(var si=0;si<op_sessionCrew.length;si++){if(op_sessionCrew[si].name===job.payer){jc.unshift(op_sessionCrew[si]);break;}}}
+  if(jc.filter(function(c){return c.pt==='share';}).length<=1){
+    op_sessionCrew.forEach(function(c){var already=false;for(var xi=0;xi<jc.length;xi++){if(jc[xi].id===c.id){already=true;break;}}if(!already)jc.push(c);});
   }
-  if (!confirm(confirmMsg + '\n\nThis cannot be undone.')) return;
+  var guildPct=0;var sf=op_gV('op-sessionForm');if(sf){var gi=sf.querySelector('#op-sGuild');if(gi)guildPct=parseFloat(gi.value)||0;}
+  var gross=job.items.filter(function(i){return i.status==='sold';}).reduce(function(s,i){return s+i.price;},0);
+  var pending=job.items.filter(function(i){return i.status!=='sold';}).length;
+  var s=op_settleJob(jc,gross,job.cost,guildPct,op_walletFee,op_getHrs,job.payer);
+  var jobIdx=0;for(var i=0;i<op_sessionJobs.length;i++){if(op_sessionJobs[i].id===jid){jobIdx=i;break;}}
 
-  // Phase 1: update existing crew rows
-  const updates = isEven
-    ? crew.map(c => sb.from('operation_crew').update({ payout_amount: s.netPer, payout_claimed: false }).eq('id', c.id))
-    : crew.map(c => {
-        const pct = Number(c.split_pct)||0;
-        const amt = distributable * (pct/100) * (1 - WALLET_FEE_PCT/100);
-        return sb.from('operation_crew').update({ payout_amount: amt, payout_claimed: false }).eq('id', c.id);
-      });
+  function op_paidBtn(name,jid){var pd=op_isPaid(jid,name);return '<button class="op-paid-btn'+(pd?' paid':'')+'" onclick="op_togglePaid('+jid+',this.dataset.name)" data-name="'+esc(name)+'">'+(pd?'✓ Paid':'Mark paid')+'</button>';}
 
-  if (guildTake > 0) {
-    updates.push(sb.from('guild_bank_ledger').insert({
-      operation_id: opId, amount: guildTake, pct_used: op.guild_bank_pct,
-      recorded_by: authMember?.id||null, notes: `Distributed: ${op.name}`,
-    }));
-  }
+  var payerCard='<div class="op-settle-card payer">'
+    +'<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">'
+    +'<div class="op-crew-av op-av-payer" style="width:1.625rem;height:1.625rem;font-size:0.56rem;">'+op_ini(job.payer)+'</div>'
+    +'<div><div style="font-size:0.81rem;font-weight:600;color:var(--color-text-primary);">'+esc(job.payer)+' <span class="op-crew-badge op-badge-payer">payer</span></div>'
+    +'<div style="font-size:0.6rem;color:var(--color-text-tertiary);">Holds all funds · pays costs · sends crew their cuts</div></div></div>'
+    +'<div class="op-totals-line"><span>Gross received from sale</span><span>'+op_fa(gross)+'</span></div>'
+    +(s.guildTake>0?'<div class="op-totals-line"><span>Guild bank ('+(guildPct)+'%)</span><span style="color:#c47a2a;">−'+op_fa(s.guildTake)+'</span></div>':'')
+    +'<div class="op-totals-line"><span>Refining cost paid</span><span style="color:#e05a5a;">−'+op_fa(job.cost)+'</span></div>'
+    +'<div class="op-totals-line"><span>Sent to others</span><span style="color:#e05a5a;">−'+op_fa(s.sent)+'</span></div>'
+    +'<div class="op-totals-line"><span>Transfer fees paid ('+op_walletFee+'%)</span><span style="color:#e05a5a;">−'+op_fa(s.fees)+'</span></div>'
+    +'<div class="op-totals-line final"><span>Payer keeps</span><span style="color:#5a9e3f;">'+op_fa(s.pk)+'</span></div>'
+    +'<div style="margin-top:0.5rem;">'+op_paidBtn(job.payer,jid)+'</div>'
+    +'</div>';
 
-  const results = await Promise.all(updates);
-  const err = results.find(r=>r?.error)?.error;
-  if (err) { showError(err.message); return; }
-
-  // Phase 2: insert a crew row for the creator if included
-  if (inclCreator && authMember) {
-    const creatorAmt = isEven
-      ? s.netPer
-      : distributable * (s.creatorPct/100) * (1 - WALLET_FEE_PCT/100);
-    if (creatorAmt > 0) {
-      const { data: crow, error: cErr } = await sb.from('operation_crew').insert({
-        operation_id: opId, member_id: authMember.id, display_name: creatorName,
-        crew_type: 'share', elapsed_ms: 0, is_owner: true,
-        display_order: crew.length, split_pct: isEven ? 0 : s.creatorPct,
-        payout_amount: creatorAmt, payout_claimed: false,
-      }).select().single();
-      if (cErr) { showError(cErr.message); return; }
-      if (crow) orgOpCrew.push(crow);
-    }
-  }
-
-  // Update in-memory payout amounts for existing crew
-  crew.forEach(c => {
-    const idx = orgOpCrew.findIndex(x=>x.id===c.id);
-    if (idx === -1) return;
-    const amt = isEven ? s.netPer : distributable * ((Number(c.split_pct)||0)/100) * (1 - WALLET_FEE_PCT/100);
-    orgOpCrew[idx].payout_amount  = amt;
-    orgOpCrew[idx].payout_claimed = false;
-  });
-
-  if (guildTake > 0) guildBankBalance += guildTake;
-  updateOrgStats();
-  renderOrg();
-}
-
-// ── Payout panel ──────────────────────────────────────────────────────────────
-function renderOpPayoutPanel() {
-  const panel = document.getElementById('op-payout-panel');
-  if (!panel) return;
-
-  const pending = orgOpCrew.filter(c => c.payout_amount > 0 && !c.payout_claimed);
-  if (!pending.length) {
-    panel.innerHTML = `<div class="lp-panel-box"><div class="lp-panel-hdr">Pending Payouts</div><div class="lp-empty">No pending payouts.</div></div>`;
-    return;
-  }
-
-  const cards = pending.map(c => {
-    const op = orgOperations.find(o=>o.id===c.operation_id);
-    return `<div class="lp-card">
-      <div style="font-size:0.625rem;color:var(--color-text-tertiary);margin-bottom:0.25rem;text-transform:uppercase;letter-spacing:0.08em;">${esc(op?.name||'Unknown')}</div>
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        <span style="font-size:0.81rem;font-weight:500;flex:1;">${esc(c.display_name)}</span>
-        <span style="font-size:0.81rem;color:#5a9e3f;font-weight:600;">${fmtUEC(c.payout_amount)}</span>
-      </div>
-      <div style="margin-top:0.5rem;">
-        <button class="lp-approve" onclick="markPayoutClaimed('${esc(c.id)}', this)">✓ Collected</button>
-      </div>
-    </div>`;
+  var otherCards=s.sr.filter(function(r){return !r.ip;}).concat(s.hr).map(function(r){
+    var isH=r.pt==='hourly';
+    return '<div class="op-settle-card">'
+      +'<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">'
+      +'<div class="op-crew-av '+(isH?'op-av-hourly':'op-av-share')+'" style="width:1.625rem;height:1.625rem;font-size:0.56rem;">'+op_ini(r.name)+'</div>'
+      +'<div><div style="font-size:0.81rem;font-weight:600;color:var(--color-text-primary);">'+esc(r.name)+' <span class="op-crew-badge '+(isH?'op-badge-hourly':'op-badge-share')+'">'+(isH?'hourly':'profit share')+'</span></div>'
+      +(isH?'<div style="font-size:0.6rem;color:var(--color-text-tertiary);">'+r.detail+'</div>':'')+'</div></div>'
+      +'<div class="op-totals-line"><span>Gross cut</span><span>'+op_fa(r.gc)+'</span></div>'
+      +'<div class="op-totals-line"><span>Transfer fee ('+op_walletFee+'%)</span><span style="color:#e05a5a;">−'+op_fa(r.fee)+'</span></div>'
+      +'<div class="op-totals-line final"><span>Receives</span><span style="color:#5a9e3f;">'+op_fa(r.recv)+'</span></div>'
+      +'<div style="margin-top:0.5rem;">'+op_paidBtn(r.name,jid)+'</div>'
+      +'</div>';
   }).join('');
 
-  panel.innerHTML = `<div class="lp-panel-box"><div class="lp-panel-hdr">Pending Payouts</div>${cards}</div>`;
+  el.innerHTML='<div style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.75rem;margin-top:0.875rem;">'
+    +'<div class="op-section-title" style="margin-bottom:0.625rem;">Settlement — Job '+(jobIdx+1)+'</div>'
+    +(pending>0?'<div style="font-size:0.72rem;color:#c47a2a;margin-bottom:0.5rem;padding:0.375rem 0.625rem;background:#1e1408;border-radius:var(--border-radius-md);">⚠ '+pending+' item'+(pending>1?'s':'')+' still pending/refining</div>':'')
+    +(s.guildTake>0?'<div style="font-size:0.72rem;color:var(--color-text-secondary);margin-bottom:0.5rem;">Net after costs: <strong style="color:var(--color-text-primary);">'+op_fa(s.net)+'</strong> &nbsp;·&nbsp; Guild bank: <strong style="color:#c47a2a;">'+op_fa(s.guildTake)+'</strong></div>'
+      :'<div style="font-size:0.72rem;color:var(--color-text-secondary);margin-bottom:0.5rem;">Net after costs: <strong style="color:var(--color-text-primary);">'+op_fa(s.net)+'</strong></div>')
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(12rem,1fr));gap:0.5rem;">'+payerCard+otherCards+'</div></div>';
 }
 
-// ── Mark payout collected ─────────────────────────────────────────────────────
-async function markPayoutClaimed(crewId, btn) {
-  btn.disabled = true;
-  const { error } = await sb.from('operation_crew').update({ payout_claimed: true }).eq('id', crewId);
-  if (error) { showError(error.message); btn.disabled = false; return; }
-  const idx = orgOpCrew.findIndex(c=>c.id===crewId);
-  if (idx !== -1) orgOpCrew[idx].payout_claimed = true;
-  renderOrg();
+// ── Job cost & payer ──────────────────────────────────────────────────────────
+function op_updateJobCost(jid){var job=op_getJob(jid);if(!job)return;job.cost=parseFloat((op_gV('op-cost-'+jid)||{}).value)||0;op_renderJobSettlement(jid);op_renderSessionSummary();}
+function op_updateJobPayer(jid){var job=op_getJob(jid);if(!job)return;job.payer=(op_gV('op-payer-'+jid)||{}).value||'';op_renderJobSettlement(jid);op_renderSessionSummary();}
+
+// ── Refining timer ────────────────────────────────────────────────────────────
+function op_startJobTimer(jid){
+  var job=op_getJob(jid);if(!job)return;
+  var h=parseInt((op_gV('op-th-'+jid)||{}).value)||0,m=parseInt((op_gV('op-tm-'+jid)||{}).value)||0,s=parseInt((op_gV('op-ts-'+jid)||{}).value)||0;
+  var total=((h*3600)+(m*60)+s)*1000;if(total<=0)return;
+  if(op_jobTimerInts[jid])clearInterval(op_jobTimerInts[jid]);
+  job.timerTotal=total;job.timerEnd=Date.now()+total;job.timerDone=false;
+  op_renderJob(jid);
+  op_jobTimerInts[jid]=setInterval(function(){op_tickJobTimer(jid);},1000);
+}
+function op_tickJobTimer(jid){
+  var job=op_getJob(jid);if(!job)return;
+  var rem=job.timerEnd-Date.now();
+  var cd=op_gV('op-tcd-'+jid),bar=op_gV('op-tbar-'+jid),eta=op_gV('op-teta-'+jid);
+  if(rem<=0){clearInterval(op_jobTimerInts[jid]);delete op_jobTimerInts[jid];job.timerDone=true;op_renderJob(jid);return;}
+  if(cd){cd.textContent=op_hms(rem);cd.className='op-ref-timer'+(rem<300000?' warn':'');}
+  if(bar)bar.style.width=Math.max(0,Math.min(100,((job.timerTotal-rem)/job.timerTotal)*100)).toFixed(1)+'%';
+  if(eta)eta.textContent='Done at '+new Date(job.timerEnd).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+function op_resetJobTimer(jid){
+  var job=op_getJob(jid);if(!job)return;
+  if(op_jobTimerInts[jid]){clearInterval(op_jobTimerInts[jid]);delete op_jobTimerInts[jid];}
+  job.timerEnd=0;job.timerTotal=0;job.timerDone=false;op_renderJob(jid);
 }
 
-// ── Split type toggle ─────────────────────────────────────────────────────────
-async function toggleSplitType(opId, type) {
-  if (!sb) return;
-  const { error } = await sb.from('operations').update({ split_type: type }).eq('id', opId);
-  if (error) { showError(error.message); return; }
-  const idx = orgOperations.findIndex(o=>o.id===opId);
-  if (idx !== -1) orgOperations[idx].split_type = type;
-  _softRenderSettlement(opId);
+// ── Items ─────────────────────────────────────────────────────────────────────
+function op_addItem(jid){
+  var job=op_getJob(jid);if(!job)return;
+  var name=((op_gV('op-iname-'+jid)||{}).value||'').trim();if(!name)return;
+  var scu=parseInt((op_gV('op-iscu-'+jid)||{}).value)||0;
+  var cscu=parseInt((op_gV('op-iqty-'+jid)||{}).value)||0;
+  var totalCscu=(scu*100)+cscu;
+  var rv=((op_gV('op-ival-'+jid)||{}).value||'').trim();
+  var val=rv===''?null:Math.min(999,Math.max(0,parseInt(rv)||0));
+  job.items.push({id:op_itemIdCtr++,name:name,qty:totalCscu,val:val,price:0,status:'pending'});
+  ['op-iname-','op-iscu-','op-iqty-','op-ival-'].forEach(function(p){var i=op_gV(p+jid);if(i)i.value='';});
+  var al=op_gV('op-acList-'+jid);if(al)al.style.display='none';
+  op_renderJob(jid);op_renderSessionSummary();
+  var ni=op_gV('op-iname-'+jid);if(ni)ni.focus();
 }
-
-// ── Include-creator toggle ────────────────────────────────────────────────────
-async function saveIncludeCreator(opId, val) {
-  if (!sb) return;
-  const { error } = await sb.from('operations').update({ include_creator: val }).eq('id', opId);
-  if (error) { showError(error.message); return; }
-  const idx = orgOperations.findIndex(o=>o.id===opId);
-  if (idx !== -1) orgOperations[idx].include_creator = val;
-  _softRenderSettlement(opId);
-}
-
-// ── Custom split pct (per crew member) ───────────────────────────────────────
-async function saveCrewSplitPct(crewId, value, opId) {
-  if (!sb) return;
-  const pct = Math.max(0, Math.min(100, Number(value)||0));
-  const { error } = await sb.from('operation_crew').update({ split_pct: pct }).eq('id', crewId);
-  if (error) { showError(error.message); return; }
-  const idx = orgOpCrew.findIndex(c=>c.id===crewId);
-  if (idx !== -1) orgOpCrew[idx].split_pct = pct;
-  _softRenderSettlement(opId);
-}
-
-// Shared soft re-render: updates just the Payout section body without a full renderOrg()
-function _softRenderSettlement(opId) {
-  const op = orgOperations.find(o=>o.id===opId);
-  if (!op) return;
-  const crew    = orgOpCrew.filter(c=>c.operation_id===opId);
-  const s       = calcSettlement(op, crew);
-  const canEdit = (isOfficer || isAdmin) && op.status==='active';
-  const panel   = document.querySelector('.op-section:last-child .op-section-body');
-  if (panel) panel.innerHTML = renderSettlementPanel(op, s, crew, canEdit);
-}
-
-// ── Searchable crew dropdown ──────────────────────────────────────────────────
-let _crewSearchFocusIdx = -1;
-
-function filterCrewSearch(query) {
-  const dd = document.getElementById('op-crew-dropdown');
-  if (!dd) return;
-  const q = (query||'').trim().toLowerCase();
-
-  const matches = q
-    ? orgMembers.filter(m => {
-        const dn = (m.display_name||'').toLowerCase();
-        const un = (m.username||'').toLowerCase();
-        return dn.includes(q) || un.includes(q);
-      }).slice(0, 14)
-    : orgMembers.slice(0, 14);
-
-  _crewSearchFocusIdx = -1;
-  const options = [];
-
-  options.push(...matches.map((m,i) => {
-    const name = m.display_name || m.username || '';
-    const sub  = m.display_name && m.username && m.display_name !== m.username
-      ? `<div class="op-member-opt-sub">${esc(m.username)}</div>` : '';
-    return `<div class="op-member-option" data-idx="${i}"
-                 onmousedown="selectCrewMember('${esc(name).replace(/'/g,"\\'")}','${esc(m.id)}')">${esc(name)}${sub}</div>`;
-  }));
-
-  // "Add as guest" when query doesn't exactly match any member
-  if (q && !matches.find(m => (m.display_name||m.username||'').toLowerCase() === q)) {
-    const gq = query.replace(/'/g,"\\'");
-    options.push(`<div class="op-member-option" onmousedown="selectCrewMember('${gq}',null)"><em style="color:var(--color-text-tertiary)">Add "${esc(query)}" as guest</em></div>`);
-  }
-
-  dd.innerHTML = options.join('');
-  dd.classList.toggle('open', options.length > 0);
-}
-
-function closeCrewDropdown() {
-  const dd = document.getElementById('op-crew-dropdown');
-  if (dd) dd.classList.remove('open');
-  _crewSearchFocusIdx = -1;
-}
-
-function selectCrewMember(name, memberId) {
-  const inp = document.getElementById('op-crew-name');
-  if (!inp) return;
-  inp.value = name;
-  inp.dataset.memberId = memberId || '';
-  closeCrewDropdown();
-}
-
-function handleCrewSearchKey(e) {
-  const dd = document.getElementById('op-crew-dropdown');
-  if (!dd || !dd.classList.contains('open')) {
-    if (e.key === 'Enter') { e.preventDefault(); confirmAddCrew(); }
-    return;
-  }
-  const items = dd.querySelectorAll('.op-member-option');
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    _crewSearchFocusIdx = Math.min(_crewSearchFocusIdx + 1, items.length - 1);
-    items.forEach((it,i) => it.classList.toggle('focused', i === _crewSearchFocusIdx));
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    _crewSearchFocusIdx = Math.max(_crewSearchFocusIdx - 1, 0);
-    items.forEach((it,i) => it.classList.toggle('focused', i === _crewSearchFocusIdx));
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (_crewSearchFocusIdx >= 0 && items[_crewSearchFocusIdx]) {
-      items[_crewSearchFocusIdx].dispatchEvent(new MouseEvent('mousedown'));
-    } else {
-      confirmAddCrew();
+function op_removeItem(jid,iid){var job=op_getJob(jid);if(!job)return;job.items=job.items.filter(function(i){return i.id!==iid;});op_renderJob(jid);op_renderSessionSummary();}
+function op_cycleItemStatus(jid,iid){
+  var job=op_getJob(jid);if(!job)return;
+  for(var i=0;i<job.items.length;i++){
+    if(job.items[i].id===iid){
+      var st=job.items[i].status;
+      if(st==='pending'){job.items[i].status='refining';op_renderJob(jid);op_renderSessionSummary();}
+      else if(st==='refining'){op_openSellModal(jid,iid);}
+      else if(st==='sold'){job.items[i].status='pending';job.items[i].price=0;op_renderJob(jid);op_renderSessionSummary();}
+      break;
     }
-  } else if (e.key === 'Escape') {
-    closeCrewDropdown();
   }
 }
 
-// ── Incurred costs ────────────────────────────────────────────────────────────
-let _addCostOpId = null;
+// ── Item autocomplete ─────────────────────────────────────────────────────────
+function op_onItemInput(jid){
+  var inp=op_gV('op-iname-'+jid);if(!inp)return;
+  var v=inp.value.trim().toLowerCase();op_acIdx=-1;
+  var list=op_gV('op-acList-'+jid);
+  if(!v||!op_commodities.length){list.style.display='none';return;}
+  var m=op_commodities.filter(function(c){return c.toLowerCase().indexOf(v)!==-1;}).slice(0,10);
+  if(!m.length){list.style.display='none';return;}
+  list.innerHTML=m.map(function(x){return '<div class="op-ac-item" onmousedown="op_pickComm('+jid+',\''+x.replace(/'/g,"\\'")+'\')">'+esc(x)+'</div>';}).join('');
+  list.style.display='block';
+}
+function op_onItemKeydown(e,jid){
+  var list=op_gV('op-acList-'+jid),items=list.querySelectorAll('.op-ac-item');
+  if(e.key==='ArrowDown'){e.preventDefault();op_acIdx=Math.min(op_acIdx+1,items.length-1);items.forEach(function(el,i){el.classList.toggle('sel',i===op_acIdx);});}
+  else if(e.key==='ArrowUp'){e.preventDefault();op_acIdx=Math.max(op_acIdx-1,0);items.forEach(function(el,i){el.classList.toggle('sel',i===op_acIdx);});}
+  else if(e.key==='Enter'){if(op_acIdx>=0&&items[op_acIdx])op_pickComm(jid,items[op_acIdx].textContent);else{list.style.display='none';op_addItem(jid);}}
+  else if(e.key==='Escape'){list.style.display='none';}
+}
+function op_pickComm(jid,name){var inp=op_gV('op-iname-'+jid);if(inp)inp.value=name;var list=op_gV('op-acList-'+jid);if(list)list.style.display='none';var qty=op_gV('op-iscu-'+jid);if(qty)qty.focus();}
 
-function openAddCostModal(opId) {
-  _addCostOpId = opId;
-  document.getElementById('op-cost-desc').value   = '';
-  document.getElementById('op-cost-amount').value = '';
-  document.getElementById('op-cost-error').textContent = '';
-  document.getElementById('op-cost-modal').style.display = 'flex';
-  setTimeout(()=>document.getElementById('op-cost-desc').focus(), 50);
+// ── Location autocomplete ─────────────────────────────────────────────────────
+function op_onLocInput(jid){
+  var inp=op_gV('op-loc-'+jid);if(!inp)return;
+  var job=op_getJob(jid);if(job)job.loc=inp.value.trim();
+  var v=inp.value.trim().toLowerCase(),list=op_gV('op-locList-'+jid);op_locIdx=-1;
+  var m=OP_REFINERIES.filter(function(r){return !v||r.name.toLowerCase().indexOf(v)!==-1||OP_SYS[r.sys].toLowerCase().indexOf(v)!==-1;}).slice(0,10);
+  if(!m.length){list.style.display='none';return;}
+  list.innerHTML=m.map(function(r){return '<div class="op-ac-item" onmousedown="op_pickLoc('+jid+',\''+r.name.replace(/'/g,"\\'")+'\')">'+esc(r.name)+'<span class="op-ac-sys">'+OP_SYS[r.sys]+'</span></div>';}).join('');
+  list.style.display='block';
+}
+function op_onLocKeydown(e,jid){
+  var list=op_gV('op-locList-'+jid),items=list.querySelectorAll('.op-ac-item');
+  if(e.key==='ArrowDown'){e.preventDefault();op_locIdx=Math.min(op_locIdx+1,items.length-1);items.forEach(function(el,i){el.classList.toggle('sel',i===op_locIdx);});}
+  else if(e.key==='ArrowUp'){e.preventDefault();op_locIdx=Math.max(op_locIdx-1,0);items.forEach(function(el,i){el.classList.toggle('sel',i===op_locIdx);});}
+  else if(e.key==='Enter'){if(op_locIdx>=0&&items[op_locIdx])op_pickLoc(jid,items[op_locIdx].childNodes[0].textContent.trim());else list.style.display='none';}
+  else if(e.key==='Escape'){list.style.display='none';}
+}
+function op_pickLoc(jid,name){var inp=op_gV('op-loc-'+jid);if(inp)inp.value=name;var list=op_gV('op-locList-'+jid);if(list)list.style.display='none';var job=op_getJob(jid);if(job)job.loc=name;}
+document.addEventListener('click',function(e){if(!e.target.closest('.op-ac-wrap')&&!e.target.closest('.op-loc-ac-wrap')){document.querySelectorAll('.op-ac-list').forEach(function(l){l.style.display='none';});}});
+
+// ── Session summary ───────────────────────────────────────────────────────────
+function op_renderSessionSummary(){
+  var el=op_gV('op-sessionSummary');if(!el)return;
+  if(!op_sessionJobs.length){el.innerHTML='';return;}
+  var tGross=0,tNet=0,tCSCU=0,tPending=0,crewTotals={};
+  var guildPct=0;var sf=op_gV('op-sessionForm');if(sf){var gi=sf.querySelector('#op-sGuild');if(gi)guildPct=parseFloat(gi.value)||0;}
+  op_sessionJobs.forEach(function(job){
+    var jc=op_jobCrewOf(job);
+    var payerInCrew=false;for(var pi=0;pi<jc.length;pi++){if(jc[pi].name===job.payer){payerInCrew=true;break;}}
+    if(!payerInCrew&&job.payer){for(var si=0;si<op_sessionCrew.length;si++){if(op_sessionCrew[si].name===job.payer){jc.unshift(op_sessionCrew[si]);break;}}}
+    var gross=job.items.filter(function(i){return i.status==='sold';}).reduce(function(s,i){return s+i.price;},0);
+    tGross+=gross;tCSCU+=job.items.reduce(function(s,i){return s+i.qty;},0);
+    tPending+=job.items.filter(function(i){return i.status!=='sold';}).length;
+    if(job.payer){
+      var s=op_settleJob(jc,gross,job.cost,guildPct,op_walletFee,op_getHrs,job.payer);
+      tNet+=s.net;
+      s.sr.forEach(function(r){if(!crewTotals[r.name])crewTotals[r.name]={name:r.name,pt:'share',total:0};crewTotals[r.name].total+=r.ip?r.gc:r.recv;});
+      s.hr.forEach(function(r){if(!crewTotals[r.name])crewTotals[r.name]={name:r.name,pt:'hourly',total:0};crewTotals[r.name].total+=r.recv;});
+    }
+  });
+  var rows=Object.keys(crewTotals).map(function(k){return crewTotals[k];}).sort(function(a,b){return b.total-a.total;});
+  var scu=Math.floor(tCSCU/100),cscu=tCSCU%100;
+  el.innerHTML='<div class="op-subbox" style="margin-top:0.875rem;">'
+    +'<div class="op-section-title">Session summary — all orders</div>'
+    +'<div class="op-metrics-grid">'
+    +'<div class="op-metric"><div class="op-metric-label">Orders</div><div class="op-metric-value">'+op_sessionJobs.length+'</div></div>'
+    +'<div class="op-metric"><div class="op-metric-label">Volume</div><div class="op-metric-value" style="font-size:0.875rem;">'+scu+' SCU'+(cscu>0?'<span style="font-size:0.69rem;font-weight:400;margin-left:0.2rem;">+'+cscu+' cSCU</span>':'')+'</div></div>'
+    +'<div class="op-metric"><div class="op-metric-label">Gross sold</div><div class="op-metric-value amber">'+op_fmt(tGross)+'</div></div>'
+    +'<div class="op-metric"><div class="op-metric-label">Net total</div><div class="op-metric-value green">'+op_fmt(tNet)+'</div></div>'
+    +'</div>'
+    +(tPending>0?'<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-bottom:0.5rem;">'+tPending+' item'+(tPending>1?'s':'')+' still pending/refining</div>':'')
+    +(rows.length?'<div class="op-section-title" style="margin-top:0.75rem;margin-bottom:0.375rem;">Combined crew earnings</div>'
+      +rows.map(function(c){var isH=c.pt==='hourly';return '<div class="op-summary-crew">'
+        +'<div class="op-crew-av '+(isH?'op-av-hourly':'op-av-share')+'" style="width:1.625rem;height:1.625rem;font-size:0.56rem;">'+op_ini(c.name)+'</div>'
+        +'<div style="flex:1;font-size:0.81rem;font-weight:600;color:var(--color-text-primary);">'+esc(c.name)+'</div>'
+        +'<span class="op-crew-badge '+(isH?'op-badge-hourly':'op-badge-share')+'" style="margin-right:0.5rem;">'+(isH?'hourly':'profit share')+'</span>'
+        +'<div style="font-size:0.875rem;font-weight:700;color:'+(isH?'#c47a2a':'#5a9e3f')+';">'+op_fa(c.total)+'</div></div>';}).join(''):'')
+    +'</div>';
 }
 
-function closeAddCostModal() {
-  _addCostOpId = null;
-  document.getElementById('op-cost-modal').style.display = 'none';
+// ── Session form ──────────────────────────────────────────────────────────────
+function op_clearState(){
+  op_stopTick();
+  Object.keys(op_jobTimerInts).forEach(function(jid){clearInterval(op_jobTimerInts[jid]);});
+  op_jobTimerInts={};op_crewTimers={};op_sessionCrew=[];op_sessionJobs=[];op_editingSession=null;
+}
+function op_openNewSession(){
+  op_clearState();
+  var sf=op_gV('op-sessionForm');if(!sf)return;
+  sf.innerHTML=op_buildSessionFormHTML('New session');
+  sf.style.display='block';
+  op_renderCrew();
+  op_fetchCommodities(function(){});
+  sf.scrollIntoView({behavior:'smooth'});
+}
+function op_cancelSession(){op_clearState();var sf=op_gV('op-sessionForm');if(sf)sf.style.display='none';}
+function op_buildSessionFormHTML(title){
+  return '<div class="op-form-section">'
+    +'<div class="op-section-title">'+esc(title)+'</div>'
+    +'<div class="op-grid-2">'
+    +'<div class="op-field"><label>Session name</label><input type="text" id="op-sName" placeholder="e.g. Crusader mining run" style="width:100%;"></div>'
+    +'<div class="op-field"><label>Your handle (session owner)</label><input type="text" id="op-sOwner" placeholder="Your handle" style="width:100%;" oninput="op_onOwnerInput()">'
+    +'<div style="font-size:0.6rem;color:var(--color-text-tertiary);margin-top:0.2rem;">Auto-added as profit share. Default payer on new orders.</div></div>'
+    +'</div>'
+    +'<div class="op-field" style="max-width:10rem;margin-top:0.5rem;"><label>Guild bank %</label>'
+    +'<input type="number" id="op-sGuild" min="0" max="100" step="1" value="0" style="width:100%;" oninput="op_refreshAllJobUi()"></div>'
+    +'<div class="op-subbox">'
+    +'<div class="op-section-title">Session crew</div>'
+    +'<div id="op-sessionCrewList"></div>'
+    +'<div style="display:flex;gap:0.375rem;margin-top:0.5rem;flex-wrap:wrap;align-items:center;">'
+    +'<input type="text" id="op-newCrewInput" placeholder="Add crew handle" style="flex:1;min-width:6rem;" onkeydown="if(event.keyCode===13)op_addCrewInline()">'
+    +'<select id="op-newCrewType" onchange="op_onCrewTypeChange()" style="width:8rem;">'
+    +'<option value="share">Profit share</option><option value="hourly">Hourly</option></select>'
+    +'<div class="op-qty-wrap" id="op-rateWrap" style="display:none;">'
+    +'<input type="number" id="op-newCrewRate" placeholder="0" style="width:4.5rem;" min="0" step="1000">'
+    +'<span class="op-qty-unit">aUEC/hr</span></div>'
+    +'<button class="op-small-btn primary" onclick="op_addCrewInline()">+ Add</button>'
+    +'</div>'
+    +'<div style="font-size:0.6rem;color:var(--color-text-tertiary);margin-top:0.375rem;">'
+    +'<span class="op-crew-badge op-badge-owner">owner</span> you &nbsp;'
+    +'<span class="op-crew-badge op-badge-share">profit share</span> cut of net &nbsp;'
+    +'<span class="op-crew-badge op-badge-hourly">hourly</span> paid for time only</div>'
+    +'</div>'
+    +'<div style="margin-top:0.875rem;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">'
+    +'<div class="op-section-title" style="margin-bottom:0;">Sales orders</div>'
+    +'<button class="op-small-btn primary" onclick="op_addJob()" style="font-size:0.6rem;">+ Add order</button></div>'
+    +'<div id="op-jobList"><div style="font-size:0.75rem;color:var(--color-text-tertiary);">No sales orders yet.</div></div>'
+    +'</div>'
+    +'<div id="op-sessionSummary"></div>'
+    +'<div style="display:flex;gap:0.5rem;margin-top:1rem;">'
+    +'<button class="op-small-btn primary" onclick="op_saveSession()">Save session</button>'
+    +'<button class="op-small-btn" onclick="op_cancelSession()">Cancel</button>'
+    +'</div>'
+    +'</div>';
+}
+function op_saveSession(){
+  var snap=op_sessionCrew.map(function(c){var t=op_crewTimers[c.id]||{acc:0,on:false,st:0};return {id:c.id,name:c.name,share:c.share,pt:c.pt,rate:c.rate,isOwner:c.isOwner||false,elapsedMs:t.acc+(t.on?Date.now()-t.st:0)};});
+  var jobSnap=op_sessionJobs.map(function(j){return {id:j.id,loc:j.loc,cost:j.cost,payer:j.payer,crewIds:j.crewIds.slice(),crewSnapshot:j.crewSnapshot?j.crewSnapshot.slice():[],items:j.items.slice(),timerEnd:j.timerEnd,timerTotal:j.timerTotal,timerDone:j.timerDone||false};});
+  var guildPct=parseFloat((op_gV('op-sGuild')||{}).value)||0;
+  var s={id:op_editingSession||op_sessionIdCtr++,name:((op_gV('op-sName')||{}).value||'').trim()||'Unnamed session',owner:((op_gV('op-sOwner')||{}).value||'').trim(),crew:snap,jobs:jobSnap,date:new Date().toLocaleDateString(),fee:op_walletFee,guildPct:guildPct};
+  if(op_editingSession){for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===op_editingSession){op_sessions[i]=s;break;}}}
+  else op_sessions.unshift(s);
+  op_cancelSession();op_renderSessionList();updateOrgStats();
+}
+function op_editSession(id){
+  var s=null;for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===id){s=op_sessions[i];break;}}if(!s)return;
+  op_clearState();op_editingSession=id;
+  op_sessionCrew=s.crew.map(function(c){return {id:c.id,name:c.name,share:c.share,pt:c.pt||'share',rate:c.rate||0,isOwner:c.isOwner||false};});
+  op_sessionCrew.forEach(function(c){var sv=null;for(var i=0;i<s.crew.length;i++){if(s.crew[i].id===c.id){sv=s.crew[i];break;}}op_crewTimers[c.id]={on:false,st:0,acc:sv&&sv.elapsedMs?sv.elapsedMs:0};});
+  op_sessionJobs=s.jobs.map(function(j){return {id:j.id,loc:j.loc||'',cost:j.cost||0,payer:j.payer||'',crewIds:j.crewIds?j.crewIds.slice():[],crewSnapshot:j.crewSnapshot?j.crewSnapshot.slice():[],items:j.items.slice(),timerEnd:j.timerEnd||0,timerTotal:j.timerTotal||0,timerDone:j.timerDone||false};});
+  var sf=op_gV('op-sessionForm');if(!sf)return;
+  sf.innerHTML=op_buildSessionFormHTML('Edit session');
+  var sn=op_gV('op-sName');if(sn)sn.value=s.name;
+  var so=op_gV('op-sOwner');if(so)so.value=s.owner||'';
+  var sg=op_gV('op-sGuild');if(sg)sg.value=s.guildPct||0;
+  sf.style.display='block';
+  op_startTick();op_renderCrew();
+  op_sessionJobs.forEach(function(j){var div=document.createElement('div');div.id='op-job-'+j.id;op_gV('op-jobList').appendChild(div);op_renderJob(j.id);});
+  op_renderSessionSummary();op_fetchCommodities(function(){});
+  sf.scrollIntoView({behavior:'smooth'});
+}
+function op_deleteSession(id){if(!confirm('Delete this session?'))return;op_sessions=op_sessions.filter(function(s){return s.id!==id;});op_renderSessionList();updateOrgStats();}
+
+// ── Session list ──────────────────────────────────────────────────────────────
+function op_renderSessionList(){
+  var el=op_gV('op-sessionList');if(!el)return;
+  if(!op_sessions.length){el.innerHTML='<div class="empty">No sessions yet. Click "+ New session" to get started.</div>';return;}
+  el.innerHTML=op_sessions.map(function(s){
+    var tGross=0,tNet=0,tCSCU=0,tPending=0,fee=s.fee||op_walletFee,guildPct=s.guildPct||0;
+    s.jobs.forEach(function(j){
+      var jc=j.crewIds.map(function(cid){
+        for(var i=0;i<s.crew.length;i++) if(s.crew[i].id===cid) return s.crew[i];
+        var snap=j.crewSnapshot||[];for(var si=0;si<snap.length;si++) if(snap[si].id===cid) return snap[si];
+        return null;
+      }).filter(Boolean);
+      var pip=false;for(var pi=0;pi<jc.length;pi++){if(jc[pi].name===j.payer){pip=true;break;}}
+      if(!pip&&j.payer){var allsrc=s.crew.concat(j.crewSnapshot||[]);for(var ai=0;ai<allsrc.length;ai++){if(allsrc[ai].name===j.payer){jc.unshift(allsrc[ai]);break;}}}
+      var gross=j.items.filter(function(i){return i.status==='sold';}).reduce(function(sum,i){return sum+i.price;},0);
+      tGross+=gross;tCSCU+=j.items.reduce(function(sum,i){return sum+i.qty;},0);
+      tPending+=j.items.filter(function(i){return i.status!=='sold';}).length;
+      if(j.payer){var sv=op_settleJob(jc,gross,j.cost||0,guildPct,fee,function(cid){
+        var c=null;var allc=s.crew.concat(j.crewSnapshot||[]);
+        for(var i=0;i<allc.length;i++){if(allc[i].id===cid){c=allc[i];break;}}
+        return c&&c.elapsedMs?c.elapsedMs/3600000:0;
+      },j.payer);tNet+=sv.net;}
+    });
+    var scu=Math.floor(tCSCU/100),cscu=tCSCU%100;
+    return '<div class="op-session-card">'
+      +'<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;">'
+      +'<span class="op-session-name" style="color:var(--color-text-primary);flex:1;">'+esc(s.name)+'</span>'
+      +'<span style="font-size:0.69rem;color:var(--color-text-tertiary);">'+esc(s.date)+'</span></div>'
+      +(s.owner?'<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-bottom:0.5rem;">Owner: <strong style="color:var(--color-text-secondary);">'+esc(s.owner)+'</strong> · '+s.crew.length+' crew · '+s.jobs.length+' order'+(s.jobs.length!==1?'s':'')+(guildPct>0?' · '+guildPct+'% guild bank':'')+'</div>':'')
+      +'<div class="op-metrics-grid">'
+      +'<div class="op-metric"><div class="op-metric-label">Orders</div><div class="op-metric-value">'+s.jobs.length+'</div></div>'
+      +'<div class="op-metric"><div class="op-metric-label">Volume</div><div class="op-metric-value" style="font-size:0.875rem;">'+scu+' SCU'+(cscu>0?' <span style="font-size:0.69rem;font-weight:400;">+'+cscu+'</span>':'')+'</div></div>'
+      +'<div class="op-metric"><div class="op-metric-label">Gross sold</div><div class="op-metric-value amber">'+op_fmt(tGross)+'</div></div>'
+      +'<div class="op-metric"><div class="op-metric-label">Net total</div><div class="op-metric-value green">'+op_fmt(tNet)+'</div></div>'
+      +'</div>'
+      +(tPending>0?'<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-top:0.375rem;">'+tPending+' item'+(tPending>1?'s':'')+' still pending/refining</div>':'')
+      +'<div style="display:flex;gap:0.375rem;margin-top:0.625rem;">'
+      +'<button class="op-small-btn" onclick="op_editSession('+s.id+')" style="font-size:0.6rem;">✏ Edit</button>'
+      +'<button class="op-small-btn danger" onclick="op_deleteSession('+s.id+')" style="font-size:0.6rem;">✕ Delete</button>'
+      +'</div></div>';
+  }).join('');
 }
 
-async function confirmAddCost() {
-  if (!_addCostOpId||!sb) return;
-  const desc   = document.getElementById('op-cost-desc').value.trim();
-  const amount = Number(document.getElementById('op-cost-amount').value)||0;
-  if (!desc)     { document.getElementById('op-cost-error').textContent='Enter a description.'; return; }
-  if (amount<=0) { document.getElementById('op-cost-error').textContent='Enter an amount greater than 0.'; return; }
-  const { data, error } = await sb.from('operation_costs').insert({
-    operation_id: _addCostOpId, description: desc, amount,
-    display_order: orgOpCosts.filter(c=>c.operation_id===_addCostOpId).length,
-  }).select().single();
-  if (error) { document.getElementById('op-cost-error').textContent=error.message; return; }
-  orgOpCosts.push(data);
-  closeAddCostModal();
-  renderOrg();
+// ── Summary tab ───────────────────────────────────────────────────────────────
+function op_renderSummary(){
+  var el=op_gV('op-summaryContent');if(!el)return;
+  if(!op_sessions.length){el.innerHTML='<div class="empty">No sessions yet.</div>';return;}
+  var allCrew={},tGross=0,tNet=0,tCSCU=0;
+  op_sessions.forEach(function(s){
+    var fee=s.fee||op_walletFee,guildPct=s.guildPct||0;
+    s.jobs.forEach(function(j){
+      var jc=j.crewIds.map(function(cid){
+        for(var i=0;i<s.crew.length;i++) if(s.crew[i].id===cid) return s.crew[i];
+        var snap=j.crewSnapshot||[];for(var si=0;si<snap.length;si++) if(snap[si].id===cid) return snap[si];
+        return null;
+      }).filter(Boolean);
+      var pip=false;for(var pi=0;pi<jc.length;pi++){if(jc[pi].name===j.payer){pip=true;break;}}
+      if(!pip&&j.payer){var allsrc=s.crew.concat(j.crewSnapshot||[]);for(var ai=0;ai<allsrc.length;ai++){if(allsrc[ai].name===j.payer){jc.unshift(allsrc[ai]);break;}}}
+      var gross=j.items.filter(function(i){return i.status==='sold';}).reduce(function(sum,i){return sum+i.price;},0);
+      tGross+=gross;tCSCU+=j.items.reduce(function(sum,i){return sum+i.qty;},0);
+      if(j.payer){
+        var sv=op_settleJob(jc,gross,j.cost||0,guildPct,fee,function(cid){
+          var c=null;var allc=s.crew.concat(j.crewSnapshot||[]);
+          for(var i=0;i<allc.length;i++){if(allc[i].id===cid){c=allc[i];break;}}
+          return c&&c.elapsedMs?c.elapsedMs/3600000:0;
+        },j.payer);
+        tNet+=sv.net;
+        sv.sr.forEach(function(r){if(!allCrew[r.name])allCrew[r.name]={name:r.name,pt:'share',total:0};allCrew[r.name].total+=r.ip?r.gc:r.recv;});
+        sv.hr.forEach(function(r){if(!allCrew[r.name])allCrew[r.name]={name:r.name,pt:'hourly',total:0};allCrew[r.name].total+=r.recv;});
+      }
+    });
+  });
+  var rows=Object.keys(allCrew).map(function(k){return allCrew[k];}).sort(function(a,b){return b.total-a.total;});
+  var scu=Math.floor(tCSCU/100),cscu=tCSCU%100;
+  el.innerHTML='<div class="op-metrics-grid op-metrics-grid-3" style="margin-bottom:0.875rem;">'
+    +'<div class="op-metric"><div class="op-metric-label">Sessions</div><div class="op-metric-value">'+op_sessions.length+'</div></div>'
+    +'<div class="op-metric"><div class="op-metric-label">Total volume</div><div class="op-metric-value" style="font-size:0.875rem;">'+scu+' SCU'+(cscu>0?' <span style="font-size:0.69rem;font-weight:400;">+'+cscu+' cSCU</span>':'')+'</div></div>'
+    +'<div class="op-metric"><div class="op-metric-label">Total net</div><div class="op-metric-value green">'+op_fmt(tNet)+' aUEC</div></div>'
+    +'</div>'
+    +'<div class="op-metrics-grid" style="grid-template-columns:1fr 1fr;margin-bottom:0.875rem;">'
+    +'<div class="op-metric"><div class="op-metric-label">Total gross</div><div class="op-metric-value amber">'+op_fmt(tGross)+' aUEC</div></div>'
+    +'<div class="op-metric"><div class="op-metric-label">Total sessions</div><div class="op-metric-value">'+op_sessions.length+'</div></div>'
+    +'</div>'
+    +'<div class="op-form-section"><div class="op-section-title">All crew earnings</div>'
+    +(rows.length?rows.map(function(c){var isH=c.pt==='hourly';return '<div class="op-summary-crew">'
+      +'<div class="op-crew-av '+(isH?'op-av-hourly':'op-av-share')+'" style="width:2rem;height:2rem;font-size:0.69rem;">'+op_ini(c.name)+'</div>'
+      +'<div style="flex:1;"><div style="font-size:0.875rem;font-weight:600;color:var(--color-text-primary);">'+esc(c.name)+'</div>'
+      +'<span class="op-crew-badge '+(isH?'op-badge-hourly':'op-badge-share')+'">'+(isH?'hourly':'profit share')+'</span></div>'
+      +'<div style="font-size:0.94rem;font-weight:700;color:'+(isH?'#c47a2a':'#5a9e3f')+';">'+op_fmt(c.total)+' aUEC</div></div>';}).join('')
+      :'<div class="empty" style="padding:1.25rem 0;">No earnings recorded yet</div>')
+    +'</div>';
 }
 
-async function removeCost(costId) {
-  if (!confirm('Remove this cost?')) return;
-  const { error } = await sb.from('operation_costs').delete().eq('id', costId);
-  if (error) { showError(error.message); return; }
-  orgOpCosts = orgOpCosts.filter(c=>c.id!==costId);
-  renderOrg();
-}
-
-// ── Add crew modal ────────────────────────────────────────────────────────────
-let _addCrewOpId = null;
-
-function openAddCrewModal(opId) {
-  _addCrewOpId = opId;
-  const inp = document.getElementById('op-crew-name');
-  if (inp) { inp.value = ''; inp.dataset.memberId = ''; }
-  document.getElementById('op-crew-error').textContent = '';
-  closeCrewDropdown();
-  document.getElementById('op-crew-modal').style.display = 'flex';
-  setTimeout(() => { document.getElementById('op-crew-name').focus(); filterCrewSearch(''); }, 50);
-}
-
-function closeCrewModal() {
-  _addCrewOpId = null;
-  document.getElementById('op-crew-modal').style.display = 'none';
-}
-
-async function confirmAddCrew() {
-  if (!_addCrewOpId||!sb) return;
-  const inp      = document.getElementById('op-crew-name');
-  const name     = inp.value.trim();
-  if (!name) { document.getElementById('op-crew-error').textContent='Enter a name.'; return; }
-  const storedId = inp.dataset.memberId || null;
-  const member   = storedId
-    ? orgMembers.find(m=>m.id===storedId)
-    : orgMembers.find(m=>(m.display_name||m.username)===name);
-  const { data, error } = await sb.from('operation_crew').insert({
-    operation_id: _addCrewOpId, member_id: member?.id||storedId||null, display_name: name,
-    crew_type: 'share', elapsed_ms: 0, is_owner: false, split_pct: 0,
-    display_order: orgOpCrew.filter(c=>c.operation_id===_addCrewOpId).length,
-  }).select().single();
-  if (error) { document.getElementById('op-crew-error').textContent=error.message; return; }
-  orgOpCrew.push(data);
-  closeCrewModal();
-  renderOrg();
-}
-
-async function removeCrew(crewId) {
-  if (!confirm('Remove this crew member?')) return;
-  const { error } = await sb.from('operation_crew').delete().eq('id', crewId);
-  if (error) { showError(error.message); return; }
-  orgOpCrew = orgOpCrew.filter(c=>c.id!==crewId);
-  renderOrg();
-}
-
-// ── New operation modal ───────────────────────────────────────────────────────
-function openNewOpModal() {
-  document.getElementById('op-new-name').value        = '';
-  document.getElementById('op-new-type').value        = 'mining';
-  document.getElementById('op-new-guild').value       = '0';
-  document.getElementById('op-new-notes').value       = '';
-  document.getElementById('op-new-error').textContent = '';
-  document.getElementById('op-new-modal').style.display = 'flex';
-  setTimeout(()=>document.getElementById('op-new-name').focus(), 50);
-}
-
-function closeNewOpModal() {
-  document.getElementById('op-new-modal').style.display = 'none';
-}
-
-async function confirmNewOp() {
-  if (!sb) return;
-  const name  = document.getElementById('op-new-name').value.trim();
-  const type  = document.getElementById('op-new-type').value;
-  const guild = Number(document.getElementById('op-new-guild').value)||0;
-  const notes = document.getElementById('op-new-notes').value.trim()||null;
-  if (!name)            { document.getElementById('op-new-error').textContent='Operation name is required.'; return; }
-  if (guild<0||guild>100) { document.getElementById('op-new-error').textContent='Guild % must be 0–100.'; return; }
-  const { data, error } = await sb.from('operations').insert({
-    name, type, wallet_fee: WALLET_FEE_PCT, guild_bank_pct: guild, notes,
-    owner_id: authMember?.id||null, status: 'active', gross_payout: 0,
-  }).select().single();
-  if (error) { document.getElementById('op-new-error').textContent=error.message; return; }
-  orgOperations.unshift(data);
-  closeNewOpModal();
-  activeOpId = data.id;
-  updateOrgStats();
-  renderOrg();
-}
-
-// ── Op detail back button — event delegation (belt-and-suspenders) ───────────
-// Catches clicks on .op-back regardless of how the button was injected into the DOM.
-document.addEventListener('click', function(e) {
-  if (e.target.closest && e.target.closest('.op-back')) closeOpDetail();
-});
-
-// ── Archive ───────────────────────────────────────────────────────────────────
-async function archiveOp(opId) {
-  const crew = orgOpCrew.filter(c=>c.operation_id===opId && c.payout_amount>0);
-  if (crew.length > 0 && !crew.every(c=>c.payout_claimed)) {
-    showError('All payouts must be confirmed collected before archiving.'); return;
-  }
-  if (!confirm('Archive this operation? It will be hidden from the default view.')) return;
-  const { error } = await sb.from('operations').update({ status: 'archived' }).eq('id', opId);
-  if (error) { showError(error.message); return; }
-  const idx = orgOperations.findIndex(o=>o.id===opId);
-  if (idx !== -1) orgOperations[idx].status = 'archived';
-  updateOrgStats();
-  closeOpDetail();
-}
+// Dummy stubs to prevent JS errors from any lingering onclick refs (old code)
+function renderOpList(){} function renderOpDetail(){} function closeOpDetail(){}
 </script>
 
-<!-- ── Operations modals ── -->
-
-<!-- Add incurred cost -->
-<!-- Event detail modal -->
+<!-- ── Modals ── -->
 <div id="ev-detail-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;" onclick="if(event.target===this)closeEventDetailModal()"></div>
-
-<div id="op-cost-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeAddCostModal()">
-  <div class="op-sell-modal-inner">
-    <div class="op-modal-title">Add Incurred Cost</div>
-    <div class="op-field">
-      <label>Description</label>
-      <input id="op-cost-desc" type="text" placeholder="e.g. Refinery fee, Hull repair, Fuel…"
-        onkeydown="if(event.key==='Enter')document.getElementById('op-cost-amount').focus()">
-    </div>
-    <div class="op-field">
-      <label>Amount (aUEC)</label>
-      <input id="op-cost-amount" type="number" min="1" step="1" placeholder="0"
-        onkeydown="if(event.key==='Enter')confirmAddCost()">
-    </div>
-    <div id="op-cost-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
-    <div class="op-modal-actions">
-      <button class="op-small-btn" onclick="closeAddCostModal()">Cancel</button>
-      <button class="op-small-btn op-small-btn-primary" onclick="confirmAddCost()">Add Cost</button>
-    </div>
-  </div>
-</div>
-
-<!-- Add crew -->
-<div id="op-crew-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeCrewModal()">
-  <div class="op-sell-modal-inner">
-    <div class="op-modal-title">Add Crew Member</div>
-    <div class="op-field op-member-search">
-      <label>Member or guest name</label>
-      <input id="op-crew-name" type="text" placeholder="Type to search members…" autocomplete="off"
-        oninput="filterCrewSearch(this.value)"
-        onkeydown="handleCrewSearchKey(event)"
-        onfocus="filterCrewSearch(this.value)"
-        onblur="setTimeout(()=>closeCrewDropdown(),150)">
-      <div id="op-crew-dropdown" class="op-member-dropdown"></div>
-    </div>
-    <div id="op-crew-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
-    <div class="op-modal-actions">
-      <button class="op-small-btn" onclick="closeCrewModal()">Cancel</button>
-      <button class="op-small-btn op-small-btn-primary" onclick="confirmAddCrew()">Add</button>
-    </div>
-  </div>
-</div>
-
-<!-- New operation -->
-<div id="op-new-modal" class="op-new-modal" style="display:none;" onclick="if(event.target===this)closeNewOpModal()">
-  <div class="op-new-modal-inner">
-    <div class="op-modal-title">New Operation</div>
-    <div class="op-field">
-      <label>Operation name</label>
-      <input id="op-new-name" type="text" placeholder="e.g. Lyria Mining Run #12" onkeydown="if(event.key==='Enter')document.getElementById('op-new-type').focus()">
-    </div>
-    <div class="op-field-row">
-      <div class="op-field" style="flex:1;">
-        <label>Type</label>
-        <select id="op-new-type">
-          <option value="mining">⛏️ Mining</option>
-          <option value="salvage">🔧 Salvage</option>
-          <option value="cargo">📦 Cargo</option>
-          <option value="other">🎯 Other</option>
-        </select>
-      </div>
-      <div class="op-field" style="min-width:10rem;">
-        <label>Guild bank % (optional)</label>
-        <input id="op-new-guild" type="number" min="0" max="100" step="1" value="0">
-      </div>
-    </div>
-    <div class="op-field">
-      <label>Notes (optional)</label>
-      <input id="op-new-notes" type="text" placeholder="Any context for this run…">
-    </div>
-    <div id="op-new-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
-    <div class="op-modal-actions">
-      <button class="op-small-btn" onclick="closeNewOpModal()">Cancel</button>
-      <button class="op-small-btn op-small-btn-primary" onclick="confirmNewOp()">Create</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
