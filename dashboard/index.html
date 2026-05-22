@@ -2304,8 +2304,12 @@ function openDetail(id){
   else if(it.cat==='wikelo'){const totDkp=(it.wkDkp||0)*(it.wkQty||0);info=`<div class="info-item"><div class="label">Quantity Held</div><div class="value">${it.wkQty}</div></div><div class="info-item"><div class="label">DKP / unit</div><div class="value">${it.wkDkp||0}</div></div><div class="info-item"><div class="label">Total DKP held</div><div class="value" style="color:#a89cf7;">${totDkp}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.wkHolder||'—'}</div></div>`;}
   document.getElementById('d-grid').innerHTML=info;
   const notes=document.getElementById('d-notes');notes.textContent=it.notes||'';notes.style.display=it.notes?'block':'none';
+  const canManage = isAdmin || isOfficer;
+  document.getElementById('d-edit').style.display   = canManage ? '' : 'none';
+  document.getElementById('d-delete').style.display = canManage ? '' : 'none';
   document.getElementById('d-edit').onclick=()=>{closeModal('detailModal');editItem(id);};
   document.getElementById('d-delete').onclick=async()=>{
+    if (!canManage) { showError('Only officers can remove items.'); return; }
     try{await sbDelete(id,it.cat);closeModal('detailModal');render();}
     catch(err){showError('Failed to delete: '+(err.message||String(err)));}
   };
