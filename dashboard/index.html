@@ -623,6 +623,46 @@
   .op-new-modal-inner { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: 100%; max-width: 26rem; display: flex; flex-direction: column; gap: 1rem; }
   .op-modal-title { font-size: 0.875rem; font-weight: 600; letter-spacing: 0.04em; }
   .op-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+  /* ── Searchable member dropdown ── */
+  .op-member-search { position: relative; }
+  .op-member-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 300;
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-secondary);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+    max-height: 11rem; overflow-y: auto; display: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+  }
+  .op-member-dropdown.open { display: block; }
+  .op-member-option {
+    padding: 0.45rem 0.625rem; font-size: 0.81rem; cursor: pointer;
+    color: var(--color-text-primary);
+    border-bottom: 0.5px solid var(--color-border-tertiary); transition: background 0.08s;
+  }
+  .op-member-option:last-child { border-bottom: none; }
+  .op-member-option:hover, .op-member-option.focused { background: var(--color-background-info); color: #7eb8f7; }
+  .op-member-opt-sub { font-size: 0.625rem; color: var(--color-text-tertiary); margin-top: 0.1rem; }
+
+  /* ── Even / Custom split toggle ── */
+  .op-split-toggle { display: flex; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); overflow: hidden; }
+  .op-split-btn { padding: 0.2rem 0.75rem; font-size: 0.625rem; letter-spacing: 0.08em; text-transform: uppercase; background: none; border: none; border-right: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); cursor: pointer; font-family: var(--font-mono); transition: all 0.12s; }
+  .op-split-btn:last-child { border-right: none; }
+  .op-split-btn.active { background: var(--color-background-info); color: #7eb8f7; font-weight: 500; }
+  .op-split-btn:hover:not(.active) { background: var(--color-background-primary); color: var(--color-text-primary); }
+
+  /* ── Creator include-me checkbox ── */
+  .op-include-me { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none; }
+  .op-include-me input[type=checkbox] { accent-color: #7eb8f7; width: 0.875rem; height: 0.875rem; cursor: pointer; flex-shrink: 0; }
+  .op-include-me span { font-size: 0.72rem; color: var(--color-text-secondary); }
+
+  /* ── Custom split percentage inputs ── */
+  .op-pct-input { width: 4.25rem !important; text-align: right; padding: 0.2rem 0.375rem !important; font-size: 0.78rem !important; }
+  .op-pct-remainder { font-size: 0.81rem; min-width: 3.5rem; text-align: right; }
+  .op-pct-total { font-size: 0.69rem; padding: 0.3rem 0; text-align: right; }
+  .op-pct-total.valid   { color: #5a9e3f; }
+  .op-pct-total.invalid { color: #e05a5a; }
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4452,7 +4492,6 @@ function openOpDetail(id) {
 
 function closeOpDetail() {
   activeOpId = null;
-  if (_opTimerInterval) { clearInterval(_opTimerInterval); _opTimerInterval = null; }
   renderOrg();
 }
 
@@ -4521,21 +4560,53 @@ function renderOpDetail(grid) {
 
 // ── Settlement math ───────────────────────────────────────────────────────────
 function calcSettlement(op, crew) {
-  const gross      = Number(op.gross_payout||0);
-  const guildTake  = Math.floor(gross * (Number(op.guild_bank_pct||0)/100));
+  const gross         = Number(op.gross_payout||0);
+  const guildTake     = Math.floor(gross * (Number(op.guild_bank_pct||0)/100));
   const distributable = gross - guildTake;
-  const shares     = crew.length;
-  const perShare   = shares > 0 ? distributable / shares : 0;
-  const netPer     = perShare * (1 - WALLET_FEE_PCT/100);
-  return { gross, guildTake, distributable, shares, perShare, netPer };
+  const splitType     = op.split_type || 'even';
+  const inclCreator   = op.include_creator !== false; // default true when column missing
+
+  if (splitType === 'even') {
+    const shares   = crew.length + (inclCreator ? 1 : 0);
+    const perShare = shares > 0 ? distributable / shares : 0;
+    const netPer   = perShare * (1 - WALLET_FEE_PCT/100);
+    return { gross, guildTake, distributable, shares, perShare, netPer, splitType, inclCreator };
+  } else {
+    // Custom — each crew member has split_pct; creator gets the remainder
+    const crewTotalPct = crew.reduce((sum,c) => sum + (Number(c.split_pct)||0), 0);
+    const creatorPct   = inclCreator ? Math.max(0, 100 - crewTotalPct) : 0;
+    const totalPct     = crewTotalPct + (inclCreator ? creatorPct : 0);
+    const shares       = crew.length + (inclCreator ? 1 : 0);
+    return { gross, guildTake, distributable, shares, perShare: 0, netPer: 0,
+             splitType, inclCreator, crewTotalPct, creatorPct, totalPct };
+  }
 }
 
 // ── Settlement panel HTML ─────────────────────────────────────────────────────
+function renderSplitControls(op, alreadyDist, isEven, inclCreator) {
+  if (alreadyDist) return '';
+  const creatorName = authMember?.display_name || authMember?.username || 'You';
+  return `<div style="display:flex;align-items:center;gap:0.875rem;flex-wrap:wrap;margin-bottom:0.25rem;">
+    <div class="op-split-toggle">
+      <button class="op-split-btn${isEven?' active':''}" onclick="toggleSplitType('${esc(op.id)}','even')">Even</button>
+      <button class="op-split-btn${!isEven?' active':''}" onclick="toggleSplitType('${esc(op.id)}','custom')">Custom</button>
+    </div>
+    <label class="op-include-me">
+      <input type="checkbox" ${inclCreator?'checked':''} onchange="saveIncludeCreator('${esc(op.id)}', this.checked)">
+      <span>Include <strong>${esc(creatorName)}</strong> in split</span>
+    </label>
+  </div>`;
+}
+
 function renderSettlementPanel(op, s, crew, canEdit) {
-  const { gross, guildTake, distributable, shares, perShare, netPer } = s;
+  const { gross, guildTake, distributable, shares, perShare, netPer,
+          splitType, inclCreator, crewTotalPct, creatorPct, totalPct } = s;
   const distributed = crew.filter(c=>c.payout_amount>0);
   const alreadyDist = distributed.length > 0;
+  const isEven      = splitType === 'even';
+  const creatorName = authMember?.display_name || authMember?.username || 'You';
 
+  // ── Gross input ──────────────────────────────────────────────────────────
   const grossInput = canEdit && !alreadyDist ? `
     <div class="op-field" style="max-width:22rem;">
       <label>Total gross payout (aUEC)</label>
@@ -4545,39 +4616,96 @@ function renderSettlementPanel(op, s, crew, canEdit) {
              onchange="saveGrossPayout('${esc(op.id)}', this.value)">
     </div>` : (gross > 0 ? `<div style="font-size:0.78rem;color:var(--color-text-secondary);">Gross: <strong style="color:var(--color-text-primary);">${fmtUEC(gross)}</strong></div>` : '');
 
+  // ── Split controls (toggle + creator checkbox) ───────────────────────────
+  const splitControls = canEdit ? renderSplitControls(op, alreadyDist, isEven, inclCreator) : '';
+
   if (gross === 0 && !alreadyDist) {
-    return grossInput + `<div style="font-size:0.78rem;color:var(--color-text-tertiary);margin-top:0.5rem;">Enter the total aUEC earned above — the split will appear here.</div>`;
+    return grossInput + splitControls +
+      `<div style="font-size:0.78rem;color:var(--color-text-tertiary);margin-top:0.5rem;">Enter the total aUEC earned above — the split will appear here.</div>`;
   }
 
-  const breakdown = [
+  // ── Breakdown header (gross → guild take → distributable) ────────────────
+  const breakdownHdr = [
     `<div class="op-settle-row"><span>Gross payout</span><span class="op-settle-amt">${fmtUEC(gross)}</span></div>`,
     guildTake>0 ? `<div class="op-settle-row"><span>Guild bank (${op.guild_bank_pct}%)</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(guildTake)}</span></div>` : '',
     `<div class="op-settle-row" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.4rem;margin-top:0.25rem;font-weight:600;">
        <span>Distributable · ${shares} member${shares!==1?'s':''}</span>
        <span class="op-settle-amt" style="color:#7eb8f7;">${fmtUEC(distributable)}</span>
      </div>`,
-    shares>0 ? `<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin:0.2rem 0 0.5rem;">
-      ${fmtUEC(perShare)} per member · ${WALLET_FEE_PCT}% wallet fee → <strong style="color:#5a9e3f;">${fmtUEC(netPer)} each</strong>
-    </div>` : '',
   ].filter(Boolean).join('');
 
-  const guildBanner = guildTake>0 ? `
+  // ── Per-member details ───────────────────────────────────────────────────
+  let splitDetails = '';
+  let distributeBtn = '';
+
+  if (alreadyDist) {
+    splitDetails = `<div style="font-size:0.72rem;color:#a89cf7;margin-top:0.25rem;">✓ Distributed — payouts visible in the panel on the right.</div>`;
+  } else if (isEven) {
+    // Even split
+    if (shares > 0) {
+      splitDetails = `<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin:0.2rem 0 0.25rem;">
+        ${fmtUEC(perShare)} per member · ${WALLET_FEE_PCT}% wallet fee → <strong style="color:#5a9e3f;">${fmtUEC(netPer)} each</strong>
+      </div>`;
+      if (inclCreator) {
+        splitDetails += `<div style="font-size:0.72rem;color:var(--color-text-tertiary);">Includes <strong style="color:var(--color-text-secondary);">${esc(creatorName)}</strong> (you)</div>`;
+      }
+    }
+    if (canEdit && crew.length > 0 && gross > 0) {
+      distributeBtn = `<div style="margin-top:0.75rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+        <button class="op-small-btn op-small-btn-primary" onclick="confirmDistribute('${esc(op.id)}')">Confirm & Distribute</button>
+        <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Stamps each crew member's payout and records the guild bank contribution.</span>
+      </div>`;
+    }
+  } else {
+    // Custom split — show per-crew % inputs
+    const pctRows = crew.map(c => {
+      const pct     = Number(c.split_pct)||0;
+      const netAmt  = distributable * (pct/100) * (1 - WALLET_FEE_PCT/100);
+      return `<div class="op-settle-row">
+        <span style="flex:1;font-size:0.81rem;">${esc(c.display_name)}</span>
+        <input type="number" min="0" max="100" step="0.1" value="${pct||''}" placeholder="0"
+               class="op-field input op-pct-input"
+               onchange="saveCrewSplitPct('${esc(c.id)}', this.value, '${esc(op.id)}')">
+        <span style="font-size:0.625rem;color:var(--color-text-tertiary);">%</span>
+        <span class="op-settle-amt" style="font-size:0.75rem;min-width:5rem;text-align:right;">${pct>0 ? fmtUEC(netAmt) : ''}</span>
+      </div>`;
+    }).join('');
+
+    // Creator row (auto-remainder)
+    const creatorRow = inclCreator ? `<div class="op-settle-row" style="background:rgba(126,184,247,0.05);border-radius:3px;padding-left:0.25rem;">
+      <span style="flex:1;font-size:0.81rem;color:#7eb8f7;">${esc(creatorName)} <span style="font-size:0.625rem;opacity:0.7;">(you)</span></span>
+      <span class="op-pct-remainder" style="color:${creatorPct<0?'#e05a5a':'var(--color-text-secondary)'};">${creatorPct.toFixed(1)}%</span>
+      <span style="font-size:0.625rem;color:var(--color-text-tertiary);margin-left:0.25rem;">%</span>
+      <span class="op-settle-amt" style="font-size:0.75rem;min-width:5rem;text-align:right;">${creatorPct>0 ? fmtUEC(distributable*(creatorPct/100)*(1-WALLET_FEE_PCT/100)) : ''}</span>
+    </div>` : '';
+
+    const effectivePctTotal = inclCreator ? totalPct : crewTotalPct;
+    const pctValid = Math.abs(effectivePctTotal - 100) < 0.05;
+    const totalRow = `<div class="op-pct-total ${pctValid?'valid':'invalid'}">Total: ${effectivePctTotal.toFixed(1)}% ${pctValid ? '✓' : '— must equal 100%'}</div>`;
+
+    splitDetails = pctRows + creatorRow + totalRow;
+
+    if (canEdit && crew.length > 0 && gross > 0) {
+      distributeBtn = pctValid
+        ? `<div style="margin-top:0.75rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+            <button class="op-small-btn op-small-btn-primary" onclick="confirmDistribute('${esc(op.id)}')">Confirm & Distribute</button>
+            <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Distributes custom shares to each crew member.</span>
+          </div>`
+        : `<div style="margin-top:0.75rem;display:flex;gap:0.625rem;align-items:center;">
+            <button class="op-small-btn" disabled>Confirm & Distribute</button>
+            <span style="font-size:0.69rem;color:#e05a5a;">Percentages must sum to 100%</span>
+          </div>`;
+    }
+  }
+
+  // ── Guild bank banner ────────────────────────────────────────────────────
+  const guildBanner = guildTake > 0 && !alreadyDist ? `
     <div class="op-guild-banner" style="margin-top:0.25rem;">
       <span class="op-guild-label">Guild Bank</span>
       <span class="op-guild-amount">${fmtUEC(guildTake)}</span>
     </div>` : '';
 
-  const distributeBtn = canEdit && !alreadyDist && gross>0 && crew.length>0 ? `
-    <div style="margin-top:0.75rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-      <button class="op-small-btn op-small-btn-primary" onclick="confirmDistribute('${esc(op.id)}')">Confirm & Distribute</button>
-      <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Stamps each crew member's payout and records the guild bank contribution.</span>
-    </div>` : '';
-
-  const distNote = alreadyDist ? `<div style="font-size:0.72rem;color:#a89cf7;margin-top:0.5rem;">
-    ✓ Distributed — payouts visible in the panel on the right.
-  </div>` : '';
-
-  return grossInput + breakdown + guildBanner + distributeBtn + distNote;
+  return grossInput + splitControls + breakdownHdr + splitDetails + guildBanner + distributeBtn;
 }
 
 // ── Save gross payout (inline input) ─────────────────────────────────────────
@@ -4604,12 +4732,42 @@ async function confirmDistribute(opId) {
   const crew = orgOpCrew.filter(c=>c.operation_id===opId);
   if (!op || !crew.length) return;
 
-  const { netPer, guildTake } = calcSettlement(op, crew);
-  if (!confirm(`Distribute payouts for "${op.name}"?\n\n${crew.length} crew member${crew.length!==1?'s':''} × ${fmtUEC(netPer)} each\n${guildTake>0?`Guild bank receives ${fmtUEC(guildTake)}\n`:''}\nThis cannot be undone.`)) return;
+  const s = calcSettlement(op, crew);
+  const { guildTake, distributable } = s;
+  const isEven       = s.splitType === 'even';
+  const inclCreator  = s.inclCreator;
+  const creatorName  = authMember?.display_name || authMember?.username || 'You';
 
-  const updates = crew.map(c =>
-    sb.from('operation_crew').update({ payout_amount: netPer, payout_claimed: false }).eq('id', c.id)
-  );
+  // Build confirm message
+  let confirmMsg;
+  if (isEven) {
+    const total = crew.length + (inclCreator ? 1 : 0);
+    confirmMsg = `Distribute payouts for "${op.name}"?\n\n`
+      + `${total} member${total!==1?'s':''} × ${fmtUEC(s.netPer)} each`
+      + (inclCreator ? `\n(includes you — ${creatorName})` : '')
+      + (guildTake > 0 ? `\nGuild bank receives ${fmtUEC(guildTake)}` : '');
+  } else {
+    const lines = crew.map(c => {
+      const pct = Number(c.split_pct)||0;
+      return `  ${c.display_name}: ${fmtUEC(distributable*(pct/100)*(1-WALLET_FEE_PCT/100))}`;
+    });
+    if (inclCreator && s.creatorPct > 0) {
+      lines.push(`  ${creatorName} (you): ${fmtUEC(distributable*(s.creatorPct/100)*(1-WALLET_FEE_PCT/100))}`);
+    }
+    confirmMsg = `Distribute payouts for "${op.name}"?\n\n${lines.join('\n')}`
+      + (guildTake > 0 ? `\n\nGuild bank receives ${fmtUEC(guildTake)}` : '');
+  }
+  if (!confirm(confirmMsg + '\n\nThis cannot be undone.')) return;
+
+  // Phase 1: update existing crew rows
+  const updates = isEven
+    ? crew.map(c => sb.from('operation_crew').update({ payout_amount: s.netPer, payout_claimed: false }).eq('id', c.id))
+    : crew.map(c => {
+        const pct = Number(c.split_pct)||0;
+        const amt = distributable * (pct/100) * (1 - WALLET_FEE_PCT/100);
+        return sb.from('operation_crew').update({ payout_amount: amt, payout_claimed: false }).eq('id', c.id);
+      });
+
   if (guildTake > 0) {
     updates.push(sb.from('guild_bank_ledger').insert({
       operation_id: opId, amount: guildTake, pct_used: op.guild_bank_pct,
@@ -4618,13 +4776,35 @@ async function confirmDistribute(opId) {
   }
 
   const results = await Promise.all(updates);
-  const err = results.find(r=>r.error)?.error;
+  const err = results.find(r=>r?.error)?.error;
   if (err) { showError(err.message); return; }
 
+  // Phase 2: insert a crew row for the creator if included
+  if (inclCreator && authMember) {
+    const creatorAmt = isEven
+      ? s.netPer
+      : distributable * (s.creatorPct/100) * (1 - WALLET_FEE_PCT/100);
+    if (creatorAmt > 0) {
+      const { data: crow, error: cErr } = await sb.from('operation_crew').insert({
+        operation_id: opId, member_id: authMember.id, display_name: creatorName,
+        crew_type: 'share', elapsed_ms: 0, is_owner: true,
+        display_order: crew.length, split_pct: isEven ? 0 : s.creatorPct,
+        payout_amount: creatorAmt, payout_claimed: false,
+      }).select().single();
+      if (cErr) { showError(cErr.message); return; }
+      if (crow) orgOpCrew.push(crow);
+    }
+  }
+
+  // Update in-memory payout amounts for existing crew
   crew.forEach(c => {
     const idx = orgOpCrew.findIndex(x=>x.id===c.id);
-    if (idx !== -1) { orgOpCrew[idx].payout_amount = netPer; orgOpCrew[idx].payout_claimed = false; }
+    if (idx === -1) return;
+    const amt = isEven ? s.netPer : distributable * ((Number(c.split_pct)||0)/100) * (1 - WALLET_FEE_PCT/100);
+    orgOpCrew[idx].payout_amount  = amt;
+    orgOpCrew[idx].payout_claimed = false;
   });
+
   if (guildTake > 0) guildBankBalance += guildTake;
   updateOrgStats();
   renderOrg();
@@ -4668,17 +4848,137 @@ async function markPayoutClaimed(crewId, btn) {
   renderOrg();
 }
 
+// ── Split type toggle ─────────────────────────────────────────────────────────
+async function toggleSplitType(opId, type) {
+  if (!sb) return;
+  const { error } = await sb.from('operations').update({ split_type: type }).eq('id', opId);
+  if (error) { showError(error.message); return; }
+  const idx = orgOperations.findIndex(o=>o.id===opId);
+  if (idx !== -1) orgOperations[idx].split_type = type;
+  _softRenderSettlement(opId);
+}
+
+// ── Include-creator toggle ────────────────────────────────────────────────────
+async function saveIncludeCreator(opId, val) {
+  if (!sb) return;
+  const { error } = await sb.from('operations').update({ include_creator: val }).eq('id', opId);
+  if (error) { showError(error.message); return; }
+  const idx = orgOperations.findIndex(o=>o.id===opId);
+  if (idx !== -1) orgOperations[idx].include_creator = val;
+  _softRenderSettlement(opId);
+}
+
+// ── Custom split pct (per crew member) ───────────────────────────────────────
+async function saveCrewSplitPct(crewId, value, opId) {
+  if (!sb) return;
+  const pct = Math.max(0, Math.min(100, Number(value)||0));
+  const { error } = await sb.from('operation_crew').update({ split_pct: pct }).eq('id', crewId);
+  if (error) { showError(error.message); return; }
+  const idx = orgOpCrew.findIndex(c=>c.id===crewId);
+  if (idx !== -1) orgOpCrew[idx].split_pct = pct;
+  _softRenderSettlement(opId);
+}
+
+// Shared soft re-render: updates just the Payout section body without a full renderOrg()
+function _softRenderSettlement(opId) {
+  const op = orgOperations.find(o=>o.id===opId);
+  if (!op) return;
+  const crew    = orgOpCrew.filter(c=>c.operation_id===opId);
+  const s       = calcSettlement(op, crew);
+  const canEdit = (isOfficer || isAdmin) && op.status==='active';
+  const panel   = document.querySelector('.op-section:last-child .op-section-body');
+  if (panel) panel.innerHTML = renderSettlementPanel(op, s, crew, canEdit);
+}
+
+// ── Searchable crew dropdown ──────────────────────────────────────────────────
+let _crewSearchFocusIdx = -1;
+
+function filterCrewSearch(query) {
+  const dd = document.getElementById('op-crew-dropdown');
+  if (!dd) return;
+  const q = (query||'').trim().toLowerCase();
+
+  const matches = q
+    ? orgMembers.filter(m => {
+        const dn = (m.display_name||'').toLowerCase();
+        const un = (m.username||'').toLowerCase();
+        return dn.includes(q) || un.includes(q);
+      }).slice(0, 14)
+    : orgMembers.slice(0, 14);
+
+  _crewSearchFocusIdx = -1;
+  const options = [];
+
+  options.push(...matches.map((m,i) => {
+    const name = m.display_name || m.username || '';
+    const sub  = m.display_name && m.username && m.display_name !== m.username
+      ? `<div class="op-member-opt-sub">${esc(m.username)}</div>` : '';
+    return `<div class="op-member-option" data-idx="${i}"
+                 onmousedown="selectCrewMember('${esc(name).replace(/'/g,"\\'")}','${esc(m.id)}')">${esc(name)}${sub}</div>`;
+  }));
+
+  // "Add as guest" when query doesn't exactly match any member
+  if (q && !matches.find(m => (m.display_name||m.username||'').toLowerCase() === q)) {
+    const gq = query.replace(/'/g,"\\'");
+    options.push(`<div class="op-member-option" onmousedown="selectCrewMember('${gq}',null)"><em style="color:var(--color-text-tertiary)">Add "${esc(query)}" as guest</em></div>`);
+  }
+
+  dd.innerHTML = options.join('');
+  dd.classList.toggle('open', options.length > 0);
+}
+
+function closeCrewDropdown() {
+  const dd = document.getElementById('op-crew-dropdown');
+  if (dd) dd.classList.remove('open');
+  _crewSearchFocusIdx = -1;
+}
+
+function selectCrewMember(name, memberId) {
+  const inp = document.getElementById('op-crew-name');
+  if (!inp) return;
+  inp.value = name;
+  inp.dataset.memberId = memberId || '';
+  closeCrewDropdown();
+}
+
+function handleCrewSearchKey(e) {
+  const dd = document.getElementById('op-crew-dropdown');
+  if (!dd || !dd.classList.contains('open')) {
+    if (e.key === 'Enter') { e.preventDefault(); confirmAddCrew(); }
+    return;
+  }
+  const items = dd.querySelectorAll('.op-member-option');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _crewSearchFocusIdx = Math.min(_crewSearchFocusIdx + 1, items.length - 1);
+    items.forEach((it,i) => it.classList.toggle('focused', i === _crewSearchFocusIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _crewSearchFocusIdx = Math.max(_crewSearchFocusIdx - 1, 0);
+    items.forEach((it,i) => it.classList.toggle('focused', i === _crewSearchFocusIdx));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (_crewSearchFocusIdx >= 0 && items[_crewSearchFocusIdx]) {
+      items[_crewSearchFocusIdx].dispatchEvent(new MouseEvent('mousedown'));
+    } else {
+      confirmAddCrew();
+    }
+  } else if (e.key === 'Escape') {
+    closeCrewDropdown();
+  }
+}
+
 // ── Add crew modal ────────────────────────────────────────────────────────────
 let _addCrewOpId = null;
 
 function openAddCrewModal(opId) {
   _addCrewOpId = opId;
-  document.getElementById('op-crew-name').value        = '';
+  const inp = document.getElementById('op-crew-name');
+  if (inp) { inp.value = ''; inp.dataset.memberId = ''; }
   document.getElementById('op-crew-error').textContent = '';
-  const dl = document.getElementById('op-crew-members-list');
-  if (dl) dl.innerHTML = orgMembers.map(m=>`<option value="${esc(m.display_name||m.username)}">`).join('');
+  closeCrewDropdown();
   document.getElementById('op-crew-modal').style.display = 'flex';
-  setTimeout(()=>document.getElementById('op-crew-name').focus(), 50);
+  setTimeout(() => { document.getElementById('op-crew-name').focus(); filterCrewSearch(''); }, 50);
 }
 
 function closeCrewModal() {
@@ -4688,12 +4988,16 @@ function closeCrewModal() {
 
 async function confirmAddCrew() {
   if (!_addCrewOpId||!sb) return;
-  const name = document.getElementById('op-crew-name').value.trim();
+  const inp      = document.getElementById('op-crew-name');
+  const name     = inp.value.trim();
   if (!name) { document.getElementById('op-crew-error').textContent='Enter a name.'; return; }
-  const member = orgMembers.find(m=>(m.display_name||m.username)===name);
+  const storedId = inp.dataset.memberId || null;
+  const member   = storedId
+    ? orgMembers.find(m=>m.id===storedId)
+    : orgMembers.find(m=>(m.display_name||m.username)===name);
   const { data, error } = await sb.from('operation_crew').insert({
-    operation_id: _addCrewOpId, member_id: member?.id||null, display_name: name,
-    crew_type: 'share', elapsed_ms: 0, is_owner: false,
+    operation_id: _addCrewOpId, member_id: member?.id||storedId||null, display_name: name,
+    crew_type: 'share', elapsed_ms: 0, is_owner: false, split_pct: 0,
     display_order: orgOpCrew.filter(c=>c.operation_id===_addCrewOpId).length,
   }).select().single();
   if (error) { document.getElementById('op-crew-error').textContent=error.message; return; }
@@ -4767,10 +5071,14 @@ async function archiveOp(opId) {
 <div id="op-crew-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeCrewModal()">
   <div class="op-sell-modal-inner">
     <div class="op-modal-title">Add Crew Member</div>
-    <div class="op-field">
-      <label>Display name</label>
-      <input id="op-crew-name" type="text" list="op-crew-members-list" placeholder="Member name or guest" autocomplete="off" onkeydown="if(event.key==='Enter')confirmAddCrew()">
-      <datalist id="op-crew-members-list"></datalist>
+    <div class="op-field op-member-search">
+      <label>Member or guest name</label>
+      <input id="op-crew-name" type="text" placeholder="Type to search members…" autocomplete="off"
+        oninput="filterCrewSearch(this.value)"
+        onkeydown="handleCrewSearchKey(event)"
+        onfocus="filterCrewSearch(this.value)"
+        onblur="setTimeout(()=>closeCrewDropdown(),150)">
+      <div id="op-crew-dropdown" class="op-member-dropdown"></div>
     </div>
     <div id="op-crew-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
     <div class="op-modal-actions">
