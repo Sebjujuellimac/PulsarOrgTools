@@ -663,6 +663,12 @@
   .op-pct-total { font-size: 0.69rem; padding: 0.3rem 0; text-align: right; }
   .op-pct-total.valid   { color: #5a9e3f; }
   .op-pct-total.invalid { color: #e05a5a; }
+
+  /* ── Incurred costs ── */
+  .op-cost-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.45rem 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .op-cost-row:last-child { border-bottom: none; }
+  .op-cost-desc { font-size: 0.81rem; flex: 1; }
+  .op-cost-amt  { font-size: 0.81rem; color: #e05a5a; font-weight: 500; white-space: nowrap; }
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2659,7 +2665,7 @@ async function denyLootPending(pendingId) {
 // ORG TOOLS
 // ============================================================
 let orgMembers=[], orgEvents=[], orgCerts=[];
-let orgOperations=[], orgOpCrew=[], orgOpJobs=[], orgOpItems=[], guildBankBalance=0;
+let orgOperations=[], orgOpCrew=[], orgOpJobs=[], orgOpItems=[], orgOpCosts=[], guildBankBalance=0;
 let activeOpId=null;
 let activeOrgTab='members', activeSection='inventory', orgLoaded=false;
 let calWeekOffset = 0;  // 0 = current week, ±n = weeks from today
@@ -3694,7 +3700,7 @@ async function loadOrg() {
   document.getElementById('loadingBar').style.display = 'block';
   document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
   try {
-    const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes,opRes,opCrewRes,opJobsRes,opItemsRes,gbRes] = await Promise.all([
+    const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes,opRes,opCrewRes,opJobsRes,opItemsRes,opCostsRes,gbRes] = await Promise.all([
       sb.from('members').select('id,username,display_name,dkp_balance,joined_at,rsi_handle,rsi_verified,rsi_citizen_number,rsi_avatar_url').eq('is_system',false).order('dkp_balance',{ascending:false}),
       sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
@@ -3707,6 +3713,7 @@ async function loadOrg() {
       sb.from('operation_crew').select('*').order('display_order',{ascending:true}),
       sb.from('operation_jobs').select('*').order('display_order',{ascending:true}),
       sb.from('operation_items').select('*').order('display_order',{ascending:true}),
+      sb.from('operation_costs').select('*').order('display_order',{ascending:true}),
       sb.from('guild_bank_balance').select('balance').single(),
     ]);
     if (mRes.error) throw mRes.error;
@@ -3726,8 +3733,9 @@ async function loadOrg() {
     orgSubmissions = sRes.data || [];  // ignore sRes.error — table may not exist in dev
     orgOperations = opRes.data || [];
     orgOpCrew     = opCrewRes.data || [];
-    orgOpJobs     = opJobsRes.data || [];
+    orgOpJobs     = opJobsRes.data  || [];
     orgOpItems    = opItemsRes.data || [];
+    orgOpCosts    = opCostsRes.data || [];
     guildBankBalance = Number(gbRes.data?.balance || 0);
     orgLoaded = true;
   } catch(err) {
@@ -4492,7 +4500,7 @@ function openOpDetail(id) {
 
 function closeOpDetail() {
   activeOpId = null;
-  renderOrg();
+  try { renderOrg(); } catch(e) { console.error('closeOpDetail renderOrg error:', e); }
 }
 
 // ── Detail view ──────────────────────────────────────────────────────────────
@@ -4549,6 +4557,28 @@ function renderOpDetail(grid) {
     </div>
 
     <div class="op-section">
+      <div class="op-section-hdr">
+        <span>Incurred Costs</span>
+        ${canEdit && distributed.length===0 ? `<button class="op-small-btn" onclick="openAddCostModal('${esc(op.id)}')">+ Add</button>` : ''}
+      </div>
+      <div class="op-section-body">
+        ${(()=>{
+          const costs = orgOpCosts.filter(c=>c.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
+          if (!costs.length) return '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No costs recorded.</div>';
+          const total = costs.reduce((s,c)=>s+Number(c.amount||0),0);
+          const rows = costs.map(c=>`<div class="op-cost-row">
+            <span class="op-cost-desc">${esc(c.description)}</span>
+            <span class="op-cost-amt">− ${fmtUEC(c.amount)}</span>
+            ${canEdit && distributed.length===0 ? `<button class="op-delete-btn" onclick="removeCost('${esc(c.id)}')">×</button>` : ''}
+          </div>`).join('');
+          const totalRow = costs.length>1
+            ? `<div style="display:flex;justify-content:flex-end;font-size:0.72rem;color:var(--color-text-tertiary);padding-top:0.25rem;border-top:0.5px solid var(--color-border-tertiary);margin-top:0.25rem;">Total costs: <strong style="color:#e05a5a;margin-left:0.375rem;">${fmtUEC(total)}</strong></div>` : '';
+          return rows + totalRow;
+        })()}
+      </div>
+    </div>
+
+    <div class="op-section">
       <div class="op-section-hdr"><span>Payout</span></div>
       <div class="op-section-body">
         ${renderSettlementPanel(op, s, crew, canEdit)}
@@ -4560,9 +4590,12 @@ function renderOpDetail(grid) {
 
 // ── Settlement math ───────────────────────────────────────────────────────────
 function calcSettlement(op, crew) {
-  const gross         = Number(op.gross_payout||0);
-  const guildTake     = Math.floor(gross * (Number(op.guild_bank_pct||0)/100));
-  const distributable = gross - guildTake;
+  const gross      = Number(op.gross_payout||0);
+  const guildTake  = Math.floor(gross * (Number(op.guild_bank_pct||0)/100));
+  const totalCosts = orgOpCosts
+    .filter(c => c.operation_id === op.id)
+    .reduce((sum,c) => sum + Number(c.amount||0), 0);
+  const distributable = gross - guildTake - totalCosts;
   const splitType     = op.split_type || 'even';
   const inclCreator   = op.include_creator !== false; // default true when column missing
 
@@ -4570,14 +4603,14 @@ function calcSettlement(op, crew) {
     const shares   = crew.length + (inclCreator ? 1 : 0);
     const perShare = shares > 0 ? distributable / shares : 0;
     const netPer   = perShare * (1 - WALLET_FEE_PCT/100);
-    return { gross, guildTake, distributable, shares, perShare, netPer, splitType, inclCreator };
+    return { gross, guildTake, totalCosts, distributable, shares, perShare, netPer, splitType, inclCreator };
   } else {
     // Custom — each crew member has split_pct; creator gets the remainder
     const crewTotalPct = crew.reduce((sum,c) => sum + (Number(c.split_pct)||0), 0);
     const creatorPct   = inclCreator ? Math.max(0, 100 - crewTotalPct) : 0;
     const totalPct     = crewTotalPct + (inclCreator ? creatorPct : 0);
     const shares       = crew.length + (inclCreator ? 1 : 0);
-    return { gross, guildTake, distributable, shares, perShare: 0, netPer: 0,
+    return { gross, guildTake, totalCosts, distributable, shares, perShare: 0, netPer: 0,
              splitType, inclCreator, crewTotalPct, creatorPct, totalPct };
   }
 }
@@ -4599,7 +4632,7 @@ function renderSplitControls(op, alreadyDist, isEven, inclCreator) {
 }
 
 function renderSettlementPanel(op, s, crew, canEdit) {
-  const { gross, guildTake, distributable, shares, perShare, netPer,
+  const { gross, guildTake, totalCosts, distributable, shares, perShare, netPer,
           splitType, inclCreator, crewTotalPct, creatorPct, totalPct } = s;
   const distributed = crew.filter(c=>c.payout_amount>0);
   const alreadyDist = distributed.length > 0;
@@ -4624,10 +4657,11 @@ function renderSettlementPanel(op, s, crew, canEdit) {
       `<div style="font-size:0.78rem;color:var(--color-text-tertiary);margin-top:0.5rem;">Enter the total aUEC earned above — the split will appear here.</div>`;
   }
 
-  // ── Breakdown header (gross → guild take → distributable) ────────────────
+  // ── Breakdown header (gross → costs → guild take → distributable) ─────────
   const breakdownHdr = [
     `<div class="op-settle-row"><span>Gross payout</span><span class="op-settle-amt">${fmtUEC(gross)}</span></div>`,
     guildTake>0 ? `<div class="op-settle-row"><span>Guild bank (${op.guild_bank_pct}%)</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(guildTake)}</span></div>` : '',
+    totalCosts>0 ? `<div class="op-settle-row"><span>Incurred costs</span><span class="op-settle-amt" style="color:#e05a5a;">− ${fmtUEC(totalCosts)}</span></div>` : '',
     `<div class="op-settle-row" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.4rem;margin-top:0.25rem;font-weight:600;">
        <span>Distributable · ${shares} member${shares!==1?'s':''}</span>
        <span class="op-settle-amt" style="color:#7eb8f7;">${fmtUEC(distributable)}</span>
@@ -4968,6 +5002,47 @@ function handleCrewSearchKey(e) {
   }
 }
 
+// ── Incurred costs ────────────────────────────────────────────────────────────
+let _addCostOpId = null;
+
+function openAddCostModal(opId) {
+  _addCostOpId = opId;
+  document.getElementById('op-cost-desc').value   = '';
+  document.getElementById('op-cost-amount').value = '';
+  document.getElementById('op-cost-error').textContent = '';
+  document.getElementById('op-cost-modal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('op-cost-desc').focus(), 50);
+}
+
+function closeAddCostModal() {
+  _addCostOpId = null;
+  document.getElementById('op-cost-modal').style.display = 'none';
+}
+
+async function confirmAddCost() {
+  if (!_addCostOpId||!sb) return;
+  const desc   = document.getElementById('op-cost-desc').value.trim();
+  const amount = Number(document.getElementById('op-cost-amount').value)||0;
+  if (!desc)     { document.getElementById('op-cost-error').textContent='Enter a description.'; return; }
+  if (amount<=0) { document.getElementById('op-cost-error').textContent='Enter an amount greater than 0.'; return; }
+  const { data, error } = await sb.from('operation_costs').insert({
+    operation_id: _addCostOpId, description: desc, amount,
+    display_order: orgOpCosts.filter(c=>c.operation_id===_addCostOpId).length,
+  }).select().single();
+  if (error) { document.getElementById('op-cost-error').textContent=error.message; return; }
+  orgOpCosts.push(data);
+  closeAddCostModal();
+  renderOrg();
+}
+
+async function removeCost(costId) {
+  if (!confirm('Remove this cost?')) return;
+  const { error } = await sb.from('operation_costs').delete().eq('id', costId);
+  if (error) { showError(error.message); return; }
+  orgOpCosts = orgOpCosts.filter(c=>c.id!==costId);
+  renderOrg();
+}
+
 // ── Add crew modal ────────────────────────────────────────────────────────────
 let _addCrewOpId = null;
 
@@ -5049,6 +5124,12 @@ async function confirmNewOp() {
   renderOrg();
 }
 
+// ── Op detail back button — event delegation (belt-and-suspenders) ───────────
+// Catches clicks on .op-back regardless of how the button was injected into the DOM.
+document.addEventListener('click', function(e) {
+  if (e.target.closest && e.target.closest('.op-back')) closeOpDetail();
+});
+
 // ── Archive ───────────────────────────────────────────────────────────────────
 async function archiveOp(opId) {
   const crew = orgOpCrew.filter(c=>c.operation_id===opId && c.payout_amount>0);
@@ -5066,6 +5147,28 @@ async function archiveOp(opId) {
 </script>
 
 <!-- ── Operations modals ── -->
+
+<!-- Add incurred cost -->
+<div id="op-cost-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeAddCostModal()">
+  <div class="op-sell-modal-inner">
+    <div class="op-modal-title">Add Incurred Cost</div>
+    <div class="op-field">
+      <label>Description</label>
+      <input id="op-cost-desc" type="text" placeholder="e.g. Refinery fee, Hull repair, Fuel…"
+        onkeydown="if(event.key==='Enter')document.getElementById('op-cost-amount').focus()">
+    </div>
+    <div class="op-field">
+      <label>Amount (aUEC)</label>
+      <input id="op-cost-amount" type="number" min="1" step="1" placeholder="0"
+        onkeydown="if(event.key==='Enter')confirmAddCost()">
+    </div>
+    <div id="op-cost-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
+    <div class="op-modal-actions">
+      <button class="op-small-btn" onclick="closeAddCostModal()">Cancel</button>
+      <button class="op-small-btn op-small-btn-primary" onclick="confirmAddCost()">Add Cost</button>
+    </div>
+  </div>
+</div>
 
 <!-- Add crew -->
 <div id="op-crew-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeCrewModal()">
