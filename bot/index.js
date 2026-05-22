@@ -74,12 +74,22 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 // Auto-close events: when a Discord Scheduled Event ends, close it in DB + award DKP
+// Also sweep voice channel when event goes ACTIVE to catch early arrivals.
 client.on(Events.GuildScheduledEventUpdate, async (oldEvent, newEvent) => {
   // Status 4 = COMPLETED (event ended)
   if (newEvent.status === 4 && oldEvent.status !== 4) {
     const { autoCloseEvent } = await import('./eventHelpers.js');
     await autoCloseEvent(newEvent, client).catch(err =>
       console.error('autoCloseEvent error:', err)
+    );
+  }
+
+  // Status 2 = ACTIVE (event just started)
+  // Sweep the linked voice channel so anyone already present gets clocked in.
+  if (newEvent.status === 2 && oldEvent.status !== 2) {
+    const { sweepVoiceChannelOnStart } = await import('./voiceTracker.js');
+    await sweepVoiceChannelOnStart(newEvent).catch(err =>
+      console.error('sweepVoiceChannelOnStart error:', err)
     );
   }
 });

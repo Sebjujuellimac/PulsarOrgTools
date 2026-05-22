@@ -492,7 +492,34 @@
   .cal-ev-title { font-size: 0.625rem; font-weight: 600; line-height: 1.3; color: var(--color-text-primary); word-break: break-word; margin-top: 0.1rem; }
   .cal-ev-loc   { font-size: 0.5rem; color: var(--color-text-tertiary); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cal-ev-dkp   { font-size: 0.5rem; color: #a89cf7; margin-top: 0.1rem; }
+  .cal-ev-rates { display: flex; flex-wrap: wrap; gap: 0.15rem; margin-top: 0.15rem; }
+  .cal-ev-rate-badge { font-size: 0.45rem; font-weight: 700; padding: 0.05rem 0.25rem; border-radius: 2px; white-space: nowrap; }
+  .cal-ev-rate-dkp   { background: rgba(168,156,247,0.18); color: #a89cf7; }
+  .cal-ev-rate-auec  { background: rgba(196,122,42,0.18);  color: #c47a2a; }
+  .cal-ev-clickable  { cursor: pointer; }
+  .cal-ev-clickable:hover { filter: brightness(1.15); }
   .cal-no-events { font-size: 0.69rem; color: var(--color-text-tertiary); text-align: center; padding: 1rem 0.5rem; }
+
+  /* ── Event detail modal ── */
+  .ev-detail-panel { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: min(680px, 95vw); max-height: 85vh; overflow-y: auto; position: relative; }
+  .ev-modal-close  { position: absolute; top: 0.75rem; right: 0.875rem; background: none; border: none; color: var(--color-text-secondary); font-size: 1rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; }
+  .ev-modal-close:hover { background: var(--color-border-secondary); color: var(--color-text-primary); }
+  .ev-modal-title  { font-size: 1.1rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 0.35rem; padding-right: 2rem; }
+  .ev-modal-meta   { font-size: 0.78rem; color: var(--color-text-secondary); margin-bottom: 0.2rem; }
+  .ev-modal-desc   { font-size: 0.82rem; color: var(--color-text-secondary); line-height: 1.55; margin: 0.6rem 0; white-space: pre-wrap; }
+  .ev-modal-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0; }
+  .ev-modal-badge  { font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.6rem; border-radius: 99px; }
+  .ev-badge-open   { background: rgba(90,158,63,0.18);  color: #5a9e3f; border: 0.5px solid #5a9e3f55; }
+  .ev-badge-closed { background: rgba(90,90,90,0.18);   color: var(--color-text-tertiary); border: 0.5px solid var(--color-border-secondary); }
+  .ev-badge-dkp    { background: rgba(168,156,247,0.18); color: #a89cf7; border: 0.5px solid #a89cf755; }
+  .ev-badge-auec   { background: rgba(196,122,42,0.18);  color: #c47a2a; border: 0.5px solid #c47a2a55; }
+  .ev-badge-cert   { background: rgba(126,184,247,0.18); color: #7eb8f7; border: 0.5px solid #7eb8f755; }
+  .ev-modal-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-tertiary); margin-top: 1.25rem; margin-bottom: 0.5rem; }
+  .ev-modal-timelog-wrap { overflow-x: auto; }
+  .ev-modal-timelog { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .ev-modal-timelog th { text-align: left; color: var(--color-text-tertiary); font-weight: 600; border-bottom: 0.5px solid var(--color-border-secondary); padding: 0.3rem 0.5rem; white-space: nowrap; }
+  .ev-modal-timelog td { padding: 0.35rem 0.5rem; border-bottom: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); }
+  .ev-modal-timelog tr:last-child td { border-bottom: none; }
 
   /* ── TODO banner ── */
   .todo-banner { background: #2e1e0a; border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 0.625rem 0.875rem; margin-bottom: 1rem; font-size: 0.75rem; color: #c47a2a; }
@@ -2664,7 +2691,7 @@ async function denyLootPending(pendingId) {
 // ============================================================
 // ORG TOOLS
 // ============================================================
-let orgMembers=[], orgEvents=[], orgCerts=[];
+let orgMembers=[], orgEvents=[], orgCerts=[], orgAttendance=[];
 let orgOperations=[], orgOpCrew=[], orgOpJobs=[], orgOpItems=[], orgOpCosts=[], guildBankBalance=0;
 let activeOpId=null;
 let activeOrgTab='members', activeSection='inventory', orgLoaded=false;
@@ -2958,7 +2985,13 @@ function renderEvents(grid) {
 
       const timeStr = dt.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York'});
       const locLine = ev.location ? `<div class="cal-ev-loc">📍 ${esc(ev.location)}</div>` : '';
-      const dkpLine = isOrg && ev.dkp_reward > 0 ? `<div class="cal-ev-dkp">${ev.dkp_reward} DKP</div>` : '';
+      let rateBadges = '';
+      if (isOrg) {
+        if (ev.dkp_reward > 0)    rateBadges += `<span class="cal-ev-rate-badge cal-ev-rate-dkp">${ev.dkp_reward} DKP</span>`;
+        if (ev.dkp_per_hour > 0)  rateBadges += `<span class="cal-ev-rate-badge cal-ev-rate-dkp">${ev.dkp_per_hour}/hr</span>`;
+        if (ev.auec_per_hour > 0) rateBadges += `<span class="cal-ev-rate-badge cal-ev-rate-auec">${(ev.auec_per_hour/1000).toFixed(0)}k aUEC/hr</span>`;
+      }
+      const rateLine = rateBadges ? `<div class="cal-ev-rates">${rateBadges}</div>` : '';
       const srcTag  = src === 'youtube' ? `<div class="cal-ev-src-tag cal-ev-src-yt">YouTube</div>`
                     : src === 'twitch'  ? `<div class="cal-ev-src-tag cal-ev-src-twitch">Twitch</div>`
                     : '';
@@ -2966,14 +2999,15 @@ function renderEvents(grid) {
       const inner = `${srcTag}
         <div class="cal-ev-time">${timeStr} ET</div>
         <div class="cal-ev-title">${esc(ev.title)}</div>
-        ${locLine}${dkpLine}`;
+        ${locLine}${rateLine}`;
 
-      // External events wrap in a link; org events are plain divs
+      // External events wrap in a link; org events get a click handler for detail modal
       const content = ev.source_url
         ? `<a class="cal-ev-link" href="${esc(ev.source_url)}" target="_blank" rel="noopener">${inner}</a>`
         : inner;
 
-      return `<div class="cal-ev-block ${cls}" style="top:${top}rem;height:${heightRem}rem;">${content}</div>`;
+      const clickAttr = isOrg ? ` onclick="openEventDetailModal('${esc(ev.id)}')"` : '';
+      return `<div class="cal-ev-block ${cls}${isOrg ? ' cal-ev-clickable' : ''}" style="top:${top}rem;height:${heightRem}rem;"${clickAttr}>${content}</div>`;
     }).join('');
     return `<div class="cal-day-col${isToday ? ' cal-today-col' : ''}">${slots}${evBlocks}</div>`;
   }).join('');
@@ -3018,6 +3052,101 @@ function renderEvents(grid) {
     const basePx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     scrollEl.scrollTop = 8 * HOUR_H * basePx;
   }
+}
+
+// ── Event Detail Modal ──────────────────────────────────────────────────────
+function openEventDetailModal(evId) {
+  const ev = orgEvents.find(e => e.id === evId);
+  if (!ev) return;
+
+  const isOrg = !ev.source || ev.source === 'org';
+  const dt    = ev.scheduled_start_time ? new Date(ev.scheduled_start_time) : null;
+  const dtEnd = ev.scheduled_end_time   ? new Date(ev.scheduled_end_time)   : null;
+  const timeStr = dt
+    ? dt.toLocaleString('en-US', {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZone:'America/New_York'}) + ' ET'
+    : 'TBD';
+  const endStr = dtEnd
+    ? dtEnd.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/New_York'}) + ' ET'
+    : '';
+
+  // Badges row
+  let badges = '';
+  if (ev.status === 'open')   badges += `<span class="ev-modal-badge ev-badge-open">Open</span>`;
+  if (ev.status === 'closed') badges += `<span class="ev-modal-badge ev-badge-closed">Closed</span>`;
+  if (ev.dkp_reward > 0)     badges += `<span class="ev-modal-badge ev-badge-dkp">${ev.dkp_reward} DKP</span>`;
+  if (ev.dkp_per_hour > 0)   badges += `<span class="ev-modal-badge ev-badge-dkp">${ev.dkp_per_hour} DKP/hr</span>`;
+  if (ev.auec_per_hour > 0)  badges += `<span class="ev-modal-badge ev-badge-auec">${ev.auec_per_hour.toLocaleString()} aUEC/hr</span>`;
+  if (ev.course_code)        badges += `<span class="ev-modal-badge ev-badge-cert">${esc(ev.course_code)}</span>`;
+
+  // Time log — only show to officers/admins and only for org events that have attendance data
+  let timeLogHTML = '';
+  if (isOrg && (isOfficer || isAdmin)) {
+    const evAttendees = orgAttendance.filter(a => a.event_id === evId);
+    if (evAttendees.length) {
+      const rows = evAttendees.map(a => {
+        const member = orgMembers.find(m => m.id === a.member_id);
+        const name   = member ? esc(member.display_name || member.username) : `<span style="opacity:.5">${a.member_id.slice(-6)}</span>`;
+
+        const fmtTime = iso => iso
+          ? new Date(iso).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/New_York'})
+          : '—';
+
+        const dur = a.duration_minutes > 0
+          ? `${Math.floor(a.duration_minutes / 60)}h ${a.duration_minutes % 60}m`
+          : (a.clock_in && !a.clock_out ? '<span style="color:#5a9e3f">in progress</span>' : '—');
+
+        const dkpEarned  = (a.time_dkp  || 0) > 0 ? `+${a.time_dkp} DKP`  : '';
+        const auecOwed   = (a.time_auec || 0) > 0 ? `${(a.time_auec/1000).toFixed(1)}k aUEC` : '';
+        const rewardCell = [dkpEarned, auecOwed].filter(Boolean).join(' / ') || '—';
+
+        return `<tr>
+          <td>${name}</td>
+          <td>${fmtTime(a.clock_in)}</td>
+          <td>${fmtTime(a.clock_out)}</td>
+          <td>${dur}</td>
+          <td style="color:#5a9e3f">${rewardCell}</td>
+        </tr>`;
+      }).join('');
+
+      timeLogHTML = `
+        <div class="ev-modal-section-label">Time Log</div>
+        <div class="ev-modal-timelog-wrap">
+          <table class="ev-modal-timelog">
+            <thead><tr>
+              <th>Member</th><th>Clock-In</th><th>Clock-Out</th><th>Duration</th><th>Earned</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    } else {
+      timeLogHTML = `<div class="ev-modal-section-label">Time Log</div>
+        <div style="color:var(--color-text-tertiary);font-size:.85rem;margin-top:.25rem;">No time data recorded yet.</div>`;
+    }
+  }
+
+  const descHTML = ev.description
+    ? `<div class="ev-modal-desc">${esc(ev.description)}</div>`
+    : '';
+  const locHTML = ev.location
+    ? `<div class="ev-modal-meta">📍 ${esc(ev.location)}</div>`
+    : '';
+
+  const el = document.getElementById('ev-detail-modal');
+  el.innerHTML = `
+    <div class="ev-detail-panel">
+      <button class="ev-modal-close" onclick="closeEventDetailModal()">✕</button>
+      <div class="ev-modal-title">${esc(ev.title)}</div>
+      <div class="ev-modal-meta">${timeStr}${endStr ? ' – ' + endStr : ''}</div>
+      ${locHTML}
+      ${descHTML}
+      <div class="ev-modal-badges">${badges}</div>
+      ${timeLogHTML}
+    </div>`;
+  el.style.display = 'flex';
+}
+
+function closeEventDetailModal() {
+  document.getElementById('ev-detail-modal').style.display = 'none';
 }
 
 // ── Leaderboard ──
@@ -3702,9 +3831,9 @@ async function loadOrg() {
   try {
     const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes,opRes,opCrewRes,opJobsRes,opItemsRes,opCostsRes,gbRes] = await Promise.all([
       sb.from('members').select('id,username,display_name,dkp_balance,joined_at,rsi_handle,rsi_verified,rsi_citizen_number,rsi_avatar_url').eq('is_system',false).order('dkp_balance',{ascending:false}),
-      sb.from('events').select('id,title,description,dkp_reward,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url').order('scheduled_start_time',{ascending:false}),
+      sb.from('events').select('id,title,description,dkp_reward,dkp_per_hour,auec_per_hour,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url,voice_channel_id,course_code').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
-      sb.from('attendance').select('member_id').eq('attended',true),
+      sb.from('attendance').select('member_id,event_id,clock_in,clock_out,duration_minutes,time_dkp,time_auec').eq('attended',true),
       sb.from('quests').select('id,title,description,dkp_reward,status,created_at,quest_type,faction,location,goal,item_name,item_wk_type,item_qty,item_dkp,item_listing_type,item_listing_price').order('created_at',{ascending:false}),
       sb.from('quest_submissions').select('id,quest_id,member_id,notes,submitted_at,members(display_name,username),quests(title,dkp_reward)').order('submitted_at',{ascending:true}),
       sb.from('courses').select('*').order('display_order',{ascending:true}),
@@ -3722,7 +3851,8 @@ async function loadOrg() {
     rebuildCourseLookups();
     orgCerts = cRes.data || [];
     const attendCounts = {};
-    for (const r of (aRes.data||[])) attendCounts[r.member_id] = (attendCounts[r.member_id]||0)+1;
+    orgAttendance = aRes.data || [];
+    for (const r of orgAttendance) attendCounts[r.member_id] = (attendCounts[r.member_id]||0)+1;
     orgMembers = (mRes.data||[]).map(m=>({
       ...m,
       cert_count: orgCerts.filter(c=>c.member_id===m.id).length,
@@ -5149,6 +5279,9 @@ async function archiveOp(opId) {
 <!-- ── Operations modals ── -->
 
 <!-- Add incurred cost -->
+<!-- Event detail modal -->
+<div id="ev-detail-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;" onclick="if(event.target===this)closeEventDetailModal()"></div>
+
 <div id="op-cost-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeAddCostModal()">
   <div class="op-sell-modal-inner">
     <div class="op-modal-title">Add Incurred Cost</div>

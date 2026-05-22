@@ -1,66 +1,179 @@
 // ============================================================
-// PULSAR ORG TOOLS — Voice Channel Auto-Attendance
-// Watches for members joining voice channels linked to open
-// events and marks them attended automatically.
+// PULSAR ORG TOOLS — Voice Channel Clock-In / Clock-Out
+//
+// Tracks attendance time for events with a linked voice channel.
+//   • First join  = clock_in  (never overwritten on rejoin)
+//   • Every leave = clock_out (updated so the LAST departure is recorded)
+//   • Rejoin after leave  = clock_out cleared (next leave becomes final)
+//   • Event ends          = any still-present members are clocked out
+//
+// Time-based DKP and aUEC payouts are calculated by finalizeTimeTracking()
+// in eventHelpers.js when the event closes.
 // ============================================================
 
 import { db } from './db.js';
 
-// How early before scheduled_start_time and how long after
-// scheduled_end_time we still credit a voice join as attendance.
-const PRE_WINDOW_MS  = 15 * 60 * 1000;          // 15 min before
-const POST_WINDOW_MS = 30 * 60 * 1000;          // 30 min after end
-const DEFAULT_DURATION_MS = 2 * 60 * 60 * 1000; // 2h fallback if no end time
+const PRE_WINDOW_MS       = 15 * 60 * 1000;          // 15 min before start
+const POST_WINDOW_MS      = 30 * 60 * 1000;          // 30 min after end
+const DEFAULT_DURATION_MS =  2 * 60 * 60 * 1000;     // 2 h fallback
 
-/**
- * Called from voiceStateUpdate. Checks if the member just joined
- * a voice channel that's linked to an active event and, if so,
- * marks them attended.
- */
+// ── Main handler ─────────────────────────────────────────────────────────────
+
 export async function handleVoiceStateUpdate(oldState, newState) {
-  // Only care about joins / channel switches into a new channel
-  const newChannelId = newState.channelId;
-  if (!newChannelId) return;                    // user left voice
-  if (oldState.channelId === newChannelId) return; // didn't change channel
-
-  const memberId = newState.id;
+  const memberId     = newState.member?.id ?? oldState.member?.id;
   if (!memberId) return;
 
-  // Find any open event linked to this voice channel that's currently in window
-  const now = Date.now();
-  const { data: events, error } = await db
-    .from('events')
-    .select('id, title, scheduled_start_time, scheduled_end_time, voice_channel_id, status')
-    .eq('voice_channel_id', newChannelId)
-    .eq('status', 'open');
+  const oldChannelId = oldState.channelId;
+  const newChannelId = newState.channelId;
 
-  if (error) { console.error('voiceTracker fetch error:', error.message); return; }
-  if (!events?.length) return;
+  // No channel change (mute/deafen/stream toggle, etc.)
+  if (oldChannelId === newChannelId) return;
 
-  for (const evt of events) {
-    if (!isInAttendanceWindow(evt, now)) continue;
+  // Left a channel (fully or switched) — process as leave from old channel
+  if (oldChannelId) {
+    await handleVoiceLeave(memberId, oldChannelId).catch(e =>
+      console.error('voiceTracker leave error:', e)
+    );
+  }
 
-    // Member must be registered to be tracked
-    const { data: member } = await db
-      .from('members').select('id, display_name').eq('id', memberId).maybeSingle();
-    if (!member) {
-      console.log(`voiceTracker: ${memberId} joined "${evt.title}" voice but isn't registered (skipping).`);
-      continue;
-    }
+  // Joined a channel (new join or channel switch) — process as join to new channel
+  if (newChannelId) {
+    await handleVoiceJoin(memberId, newChannelId).catch(e =>
+      console.error('voiceTracker join error:', e)
+    );
+  }
+}
 
-    // Insert (or noop if already marked)
-    const { error: upsertErr } = await db.from('attendance').upsert({
+// ── Join ─────────────────────────────────────────────────────────────────────
+
+async function handleVoiceJoin(memberId, channelId) {
+  const evt = await findEventForChannel(channelId, Date.now());
+  if (!evt) return;
+
+  const { data: member } = await db
+    .from('members').select('id, display_name').eq('id', memberId).maybeSingle();
+  if (!member) {
+    console.log(`voiceTracker: ${memberId} not registered — skipping clock-in for "${evt.title}"`);
+    return;
+  }
+
+  const name        = member.display_name || memberId;
+  const clockInTime = new Date().toISOString();
+
+  const { data: existing } = await db
+    .from('attendance')
+    .select('id, clock_in')
+    .eq('event_id', evt.id)
+    .eq('member_id', memberId)
+    .maybeSingle();
+
+  if (!existing) {
+    // First time seen — insert with clock_in
+    await db.from('attendance').insert({
       event_id:  evt.id,
       member_id: memberId,
       attended:  true,
-    }, { onConflict: 'event_id,member_id' });
+      clock_in:  clockInTime,
+    });
+    console.log(`voiceTracker: clocked IN  ${name} for "${evt.title}"`);
 
-    if (upsertErr) {
-      console.error(`voiceTracker upsert error for ${memberId} on ${evt.id}:`, upsertErr.message);
-    } else {
-      console.log(`voiceTracker: marked ${member.display_name || memberId} attended for "${evt.title}".`);
-    }
+  } else if (!existing.clock_in) {
+    // Manually-marked record with no clock_in — set it now
+    await db.from('attendance')
+      .update({ attended: true, clock_in: clockInTime })
+      .eq('id', existing.id);
+    console.log(`voiceTracker: set clock_in for ${name} on "${evt.title}" (manual record)`);
+
+  } else {
+    // Rejoin — clear clock_out so the next departure becomes the final one
+    await db.from('attendance')
+      .update({ attended: true, clock_out: null })
+      .eq('id', existing.id);
+    console.log(`voiceTracker: ${name} re-joined "${evt.title}" — clock_out cleared`);
   }
+}
+
+// ── Leave ─────────────────────────────────────────────────────────────────────
+
+async function handleVoiceLeave(memberId, channelId) {
+  const evt = await findEventForChannel(channelId, Date.now());
+  if (!evt) return;
+
+  const clockOutTime = new Date().toISOString();
+
+  await db.from('attendance')
+    .update({ clock_out: clockOutTime })
+    .eq('event_id',  evt.id)
+    .eq('member_id', memberId)
+    .not('clock_in', 'is', null);   // only clock out if we have a clock-in
+
+  console.log(`voiceTracker: clocked OUT ${memberId} from "${evt.title}"`);
+}
+
+// ── Sweep on event ACTIVE ─────────────────────────────────────────────────────
+// Called from index.js when a Discord Scheduled Event transitions to ACTIVE.
+// Clocks in anyone already sitting in the voice channel before the transition.
+
+export async function sweepVoiceChannelOnStart(discordEvent) {
+  const voiceChannelId = discordEvent.channelId;
+  if (!voiceChannelId) return;
+
+  const { data: evt } = await db
+    .from('events')
+    .select('id, title')
+    .eq('discord_event_id', discordEvent.id)
+    .maybeSingle();
+  if (!evt) return;
+
+  const guild = discordEvent.guild;
+  if (!guild) return;
+
+  const channel = await guild.channels.fetch(voiceChannelId).catch(() => null);
+  if (!channel?.members) return;
+
+  const now   = new Date().toISOString();
+  let   count = 0;
+
+  for (const [memberId, guildMember] of channel.members) {
+    if (guildMember.user.bot) continue;
+
+    const { data: dbMember } = await db
+      .from('members').select('id').eq('id', memberId).maybeSingle();
+    if (!dbMember) continue;
+
+    const { data: existing } = await db
+      .from('attendance')
+      .select('id, clock_in')
+      .eq('event_id',  evt.id)
+      .eq('member_id', memberId)
+      .maybeSingle();
+
+    if (!existing) {
+      await db.from('attendance').insert({
+        event_id: evt.id, member_id: memberId, attended: true, clock_in: now,
+      });
+      count++;
+    } else if (!existing.clock_in) {
+      await db.from('attendance').update({ clock_in: now }).eq('id', existing.id);
+      count++;
+    }
+    // Already has a clock_in — no action needed
+  }
+
+  console.log(`sweepVoiceChannelOnStart: clocked in ${count} early arrival(s) for "${evt.title}"`);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+async function findEventForChannel(channelId, nowMs) {
+  const { data: events, error } = await db
+    .from('events')
+    .select('id, title, scheduled_start_time, scheduled_end_time, status')
+    .eq('voice_channel_id', channelId)
+    .eq('status', 'open');
+
+  if (error || !events?.length) return null;
+  return events.find(evt => isInAttendanceWindow(evt, nowMs)) ?? null;
 }
 
 function isInAttendanceWindow(evt, now) {

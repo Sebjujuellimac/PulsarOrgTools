@@ -36,6 +36,11 @@ export async function autoCloseEvent(discordEvent, client = null) {
   // Mark event closed
   await db.from('events').update({ status: 'closed' }).eq('id', evt.id);
 
+  // Finalise time tracking: clock out any still-present members, calculate
+  // duration and time-based DKP/aUEC for everyone who has a clock_in.
+  const eventEndTime = discordEvent.scheduledEndTime?.toISOString() ?? new Date().toISOString();
+  await finalizeTimeTracking(evt, eventEndTime);
+
   // Fetch all attendance records for this event
   const { data: attendees } = await db
     .from('attendance')
@@ -45,7 +50,7 @@ export async function autoCloseEvent(discordEvent, client = null) {
 
   const attendeeIds = (attendees ?? []).map(a => a.member_id);
 
-  // Award DKP if applicable
+  // Award flat DKP if applicable
   if (dkpReward > 0 && attendeeIds.length > 0) {
     for (const memberId of attendeeIds) {
       await awardDkp({
@@ -57,7 +62,7 @@ export async function autoCloseEvent(discordEvent, client = null) {
     }
     console.log(`autoCloseEvent: awarded ${dkpReward} DKP to ${attendeeIds.length} attendees for "${evt.title}"`);
   } else {
-    console.log(`autoCloseEvent: event ${evt.id} closed, no DKP awarded (reward=${dkpReward}, attendees=${attendeeIds.length})`);
+    console.log(`autoCloseEvent: event ${evt.id} closed, no flat DKP (reward=${dkpReward}, attendees=${attendeeIds.length})`);
   }
 
   // Cert confirmation prompt — only if course_code is set and we have a client
@@ -198,6 +203,71 @@ export async function awardDkp({ memberId, amount, reason, eventId = null, quest
   if (txInsert.error) console.error('awardDkp tx insert error:', txInsert.error);
 
   return newBalance;
+}
+
+/**
+ * Finalise time tracking for a closing event.
+ *
+ * 1. Clock out anyone with clock_in but no clock_out (still in voice at close).
+ * 2. For every attendee that has both clock_in and clock_out:
+ *    - Calculate duration_minutes
+ *    - Calculate time_dkp  = dkp_per_hour  × hours  (if rate > 0)
+ *    - Calculate time_auec = auec_per_hour × hours  (if rate > 0)
+ *    - Award time_dkp via awardDkp(); time_auec is recorded only (paid manually).
+ *
+ * @param {Object}  evt      - DB events row (must include id, title, dkp_per_hour, auec_per_hour)
+ * @param {string}  endTime  - ISO timestamp to use as the auto clock-out
+ */
+export async function finalizeTimeTracking(evt, endTime) {
+  if (!evt?.id) return;
+
+  // Step 1: auto clock-out anyone without one
+  await db.from('attendance')
+    .update({ clock_out: endTime })
+    .eq('event_id', evt.id)
+    .is('clock_out', null)
+    .not('clock_in', 'is', null);
+
+  const dkpRate  = Number(evt.dkp_per_hour  ?? 0);
+  const auecRate = Number(evt.auec_per_hour ?? 0);
+  if (dkpRate <= 0 && auecRate <= 0) return;
+
+  // Step 2: calculate duration and rates for all timed rows
+  const { data: timedRows } = await db
+    .from('attendance')
+    .select('id, member_id, clock_in, clock_out')
+    .eq('event_id', evt.id)
+    .not('clock_in',  'is', null)
+    .not('clock_out', 'is', null);
+
+  let rewarded = 0;
+  for (const a of timedRows ?? []) {
+    const durationMs = new Date(a.clock_out) - new Date(a.clock_in);
+    if (durationMs <= 0) continue;
+
+    const durationMinutes = Math.round(durationMs / 60_000);
+    const hours    = durationMinutes / 60;
+    const timeDkp  = dkpRate  > 0 ? Math.floor(dkpRate  * hours) : 0;
+    const timeAuec = auecRate > 0 ? Math.floor(auecRate * hours) : 0;
+
+    await db.from('attendance')
+      .update({ duration_minutes: durationMinutes, time_dkp: timeDkp, time_auec: timeAuec })
+      .eq('id', a.id);
+
+    if (timeDkp > 0) {
+      await awardDkp({
+        memberId: a.member_id,
+        amount:   timeDkp,
+        reason:   `Time bonus: ${evt.title} (${durationMinutes} min @ ${dkpRate} DKP/hr)`,
+        eventId:  evt.id,
+      });
+    }
+    rewarded++;
+  }
+
+  console.log(`finalizeTimeTracking: processed ${rewarded} timed attendee(s) for "${evt.title}"`
+    + (dkpRate  > 0 ? ` [${dkpRate} DKP/hr]`  : '')
+    + (auecRate > 0 ? ` [${auecRate} aUEC/hr]` : ''));
 }
 
 /**

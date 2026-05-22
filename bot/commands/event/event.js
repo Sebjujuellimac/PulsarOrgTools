@@ -2,7 +2,7 @@ import { SlashCommandBuilder, GuildScheduledEventPrivacyLevel, GuildScheduledEve
 import { db } from '../../db.js';
 import { TIMEZONE_MAP, parseEventTime } from '../../utils/timeUtils.js';
 import { getCourses, autocompleteCourses } from '../../courseData.js';
-import { awardCertsToAttendees } from '../../eventHelpers.js';
+import { awardCertsToAttendees, finalizeTimeTracking, awardDkp } from '../../eventHelpers.js';
 
 // ──────────────────────────────────────────────
 // Command definition
@@ -69,6 +69,18 @@ export default {
             .setRequired(false)
             .setAutocomplete(true)
         )
+        .addNumberOption(opt =>
+          opt.setName('dkp_per_hour')
+            .setDescription('Time-based DKP per hour of voice attendance (stacks with flat reward, default: 0)')
+            .setRequired(false)
+            .setMinValue(0)
+        )
+        .addNumberOption(opt =>
+          opt.setName('auec_per_hour')
+            .setDescription('aUEC owed per hour of voice attendance (recorded for manual payout, default: 0)')
+            .setRequired(false)
+            .setMinValue(0)
+        )
     )
 
     .addSubcommand(sub =>
@@ -92,6 +104,18 @@ export default {
             .setDescription('Course this event teaches')
             .setRequired(false)
             .setAutocomplete(true)
+        )
+        .addNumberOption(opt =>
+          opt.setName('dkp_per_hour')
+            .setDescription('Time-based DKP per hour of voice attendance')
+            .setRequired(false)
+            .setMinValue(0)
+        )
+        .addNumberOption(opt =>
+          opt.setName('auec_per_hour')
+            .setDescription('aUEC owed per hour of voice attendance')
+            .setRequired(false)
+            .setMinValue(0)
         )
     )
 
@@ -184,6 +208,8 @@ async function handleCreate(interaction) {
   const description  = interaction.options.getString('description') ?? null;
   const voiceChannel = interaction.options.getChannel('voice_channel');
   const courseCode   = interaction.options.getString('course');
+  const dkpPerHour   = interaction.options.getNumber('dkp_per_hour')  ?? 0;
+  const auecPerHour  = interaction.options.getNumber('auec_per_hour') ?? 0;
 
   const startTime = parseEventTime(dateStr, timeStr, tzAbbr);
   if (!startTime) {
@@ -237,6 +263,8 @@ async function handleCreate(interaction) {
     voice_channel_id:   voiceChannel?.id ?? null,
     course_code:        courseCode ?? null,
     officer_channel_id: interaction.channelId,
+    dkp_per_hour:  dkpPerHour  > 0 ? dkpPerHour  : null,
+    auec_per_hour: auecPerHour > 0 ? auecPerHour : null,
   }).select().single();
 
   if (dbErr) return interaction.editReply(`Discord event created but DB save failed: ${dbErr.message}`);
@@ -256,6 +284,8 @@ async function handleCreate(interaction) {
   const extras = [
     voiceChannel ? `🎙️ Auto-attendance from <#${voiceChannel.id}>` : '',
     courseCode   ? `🎓 Course: **${courseCode} — ${courseTitle}** (cert prompt on close)` : '',
+    dkpPerHour   > 0 ? `⏱️ Time DKP: **${dkpPerHour} DKP/hr** of voice attendance` : '',
+    auecPerHour  > 0 ? `💵 Time aUEC: **${auecPerHour.toLocaleString()} aUEC/hr** (recorded for manual payout)` : '',
   ].filter(Boolean).join('\n');
 
   return interaction.editReply(
@@ -280,6 +310,8 @@ async function handleIntegrate(interaction) {
   const dkpReward      = interaction.options.getInteger('dkp');
   const voiceChannel   = interaction.options.getChannel('voice_channel');
   const courseCode     = interaction.options.getString('course');
+  const dkpPerHour     = interaction.options.getNumber('dkp_per_hour')  ?? 0;
+  const auecPerHour    = interaction.options.getNumber('auec_per_hour') ?? 0;
 
   // Check not already tracked
   const { data: existing } = await db
@@ -313,6 +345,8 @@ async function handleIntegrate(interaction) {
     voice_channel_id:   voiceChannel?.id ?? null,
     course_code:        courseCode ?? null,
     officer_channel_id: interaction.channelId,
+    dkp_per_hour:  dkpPerHour  > 0 ? dkpPerHour  : null,
+    auec_per_hour: auecPerHour > 0 ? auecPerHour : null,
   }).select().single();
 
   if (dbErr) return interaction.editReply(`Database error: ${dbErr.message}`);
@@ -360,36 +394,36 @@ async function handleClose(interaction) {
 
   await db.from('events').update({ status: 'closed' }).eq('id', eventId);
 
-  if (!evt.dkp_reward || evt.dkp_reward <= 0) {
-    return interaction.editReply(`Event **${evt.title}** closed. No DKP reward set.`);
-  }
+  // Finalize time tracking — clock out remaining members, calculate time DKP/aUEC
+  await finalizeTimeTracking(evt, new Date().toISOString());
 
   const { data: attendees } = await db
     .from('attendance').select('member_id')
     .eq('event_id', eventId).eq('attended', true);
 
+  // Award flat DKP (separate from time-based DKP which finalizeTimeTracking handled)
   let awarded = 0;
-  for (const row of attendees ?? []) {
-    const { data: member } = await db
-      .from('members').select('dkp_balance').eq('id', row.member_id).maybeSingle();
-    if (!member) continue;
-    await Promise.all([
-      db.from('members').update({ dkp_balance: member.dkp_balance + evt.dkp_reward }).eq('id', row.member_id),
-      db.from('dkp_transactions').insert({
-        member_id: row.member_id,
-        amount: evt.dkp_reward,
-        reason: `Event attendance: ${evt.title}`,
-        event_id: eventId,
-        awarded_by: interaction.user.id,
-      }),
-    ]);
-    awarded++;
+  if (evt.dkp_reward > 0) {
+    for (const row of attendees ?? []) {
+      await awardDkp({
+        memberId:  row.member_id,
+        amount:    evt.dkp_reward,
+        reason:    `Event attendance: ${evt.title}`,
+        eventId:   eventId,
+        awardedBy: interaction.user.id,
+      });
+      awarded++;
+    }
   }
 
-  return interaction.editReply(
-    `Event **${evt.title}** closed.\n` +
-    `Awarded **${evt.dkp_reward} DKP** to **${awarded}** attendee(s).`
-  );
+  const lines = [
+    `Event **${evt.title}** closed.`,
+    evt.dkp_reward > 0 ? `Flat DKP: **${evt.dkp_reward}** awarded to **${awarded}** attendee(s).` : '',
+    evt.dkp_per_hour  > 0 ? `Time DKP: **${evt.dkp_per_hour} DKP/hr** calculated per attendee duration.` : '',
+    evt.auec_per_hour > 0 ? `Time aUEC: **${evt.auec_per_hour.toLocaleString()} aUEC/hr** recorded — check the dashboard to see individual amounts owed.` : '',
+  ].filter(Boolean).join('\n');
+
+  return interaction.editReply(lines);
 }
 
 // ──────────────────────────────────────────────
