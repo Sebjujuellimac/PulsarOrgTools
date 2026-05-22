@@ -115,8 +115,35 @@ client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
   }
 });
 
-client.once(Events.ClientReady, c => {
+// Sweep all registered members on startup and correct their officer flag.
+// Handles members who already had Worg/Lycan before the bot came online,
+// and catches any drift that occurred while the bot was offline.
+async function syncOfficerRolesOnStartup(client) {
+  try {
+    const guild = await client.guilds.fetch(process.env.GUILD_ID);
+    const members = await guild.members.fetch(); // requires GuildMembers intent
+
+    const officerIds    = members.filter(m =>  m.roles.cache.some(r => OFFICER_ROLES.has(r.name))).map(m => m.id);
+    const nonOfficerIds = members.filter(m => !m.roles.cache.some(r => OFFICER_ROLES.has(r.name))).map(m => m.id);
+
+    // Two bulk updates — only affects rows that already exist in members table
+    const [r1, r2] = await Promise.all([
+      officerIds.length    ? db.from('members').update({ is_officer: true  }).in('id', officerIds)    : Promise.resolve({}),
+      nonOfficerIds.length ? db.from('members').update({ is_officer: false }).in('id', nonOfficerIds) : Promise.resolve({}),
+    ]);
+
+    if (r1.error) console.error('Officer sync (true) error:',  r1.error.message);
+    if (r2.error) console.error('Officer sync (false) error:', r2.error.message);
+
+    console.log(`Startup officer sync complete — ${officerIds.length} officer(s), ${nonOfficerIds.length} non-officer(s) checked.`);
+  } catch (err) {
+    console.error('Startup officer sync failed:', err);
+  }
+}
+
+client.once(Events.ClientReady, async c => {
   console.log(`Pulsar Org Tools ready — logged in as ${c.user.tag}`);
+  await syncOfficerRolesOnStartup(c);
 });
 
 client.login(process.env.DISCORD_TOKEN);
