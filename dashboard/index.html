@@ -410,11 +410,12 @@
   .lp-deny { flex: 1; padding: 0.3rem 0; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: 0.5px solid #7a2020; border-radius: var(--border-radius-md); color: #c44a4a; cursor: pointer; }
   .lp-deny:hover:not(:disabled) { background: #2e1010; }
   .lp-deny:disabled { opacity: 0.45; cursor: default; }
-  /* ── Quest pending panel ── */
+  /* ── Quest / Operations pending panels ── */
   #quest-body-row { display: flex; gap: 1rem; align-items: flex-start; }
   #quest-main { flex: 1; min-width: 0; }
-  #quest-pending-panel { display: none; width: 17rem; flex-shrink: 0; }
+  #quest-pending-panel, #op-payout-panel { display: none; width: 17rem; flex-shrink: 0; }
   #quest-body-row.has-panel #quest-pending-panel { display: block; }
+  #quest-body-row.has-op-panel #op-payout-panel { display: block; }
   .lp-type-turnin { color: #c47a2a; }
 
   .listing-price { font-size: 0.875rem; font-weight: 500; color: #a89cf7; margin-bottom: 0.375rem; }
@@ -896,6 +897,7 @@
         <div id="org-grid" class="org-grid"></div>
       </div>
       <div id="quest-pending-panel"></div>
+      <div id="op-payout-panel"></div>
     </div>
 
   </div><!-- end section-org -->
@@ -2767,10 +2769,17 @@ function renderOrg() {
   // Quest pending panel — officers only, quests tab only
   const questRow = document.getElementById('quest-body-row');
   if (questRow) {
-    const showPanel = activeOrgTab === 'quests' && (isOfficer || isAdmin);
-    questRow.classList.toggle('has-panel', showPanel);
-    if (showPanel) renderQuestPending();
+    const showQuestPanel = activeOrgTab === 'quests' && (isOfficer || isAdmin);
+    questRow.classList.toggle('has-panel', showQuestPanel);
+    if (showQuestPanel) renderQuestPending();
     else { const p = document.getElementById('quest-pending-panel'); if (p) p.innerHTML = ''; }
+
+    // Operations payout panel — officers only, operations tab only
+    const hasPendingPayouts = orgOpCrew.some(c => c.payout_amount > 0 && !c.payout_claimed);
+    const showOpPanel = activeOrgTab === 'operations' && (isOfficer || isAdmin) && hasPendingPayouts;
+    questRow.classList.toggle('has-op-panel', showOpPanel);
+    if (showOpPanel) renderOpPayoutPanel();
+    else { const p = document.getElementById('op-payout-panel'); if (p) p.innerHTML = ''; }
   }
 }
 
@@ -4368,7 +4377,7 @@ async function revokeCert(memberId, code) {
 // OPERATIONS TAB
 // ═══════════════════════════════════════════════════════════════════════════
 
-let _opTimerInterval = null;
+const WALLET_FEE_PCT = 5; // constant — not configurable per-op
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function fmtUEC(n) {
@@ -4376,18 +4385,6 @@ function fmtUEC(n) {
   if (n >= 1_000_000) return (n/1_000_000).toFixed(2) + 'M aUEC';
   if (n >= 1_000)     return Math.round(n/100)/10 + 'k aUEC';
   return Math.round(n) + ' aUEC';
-}
-function fmtElapsed(ms) {
-  const h = Math.floor(ms/3600000);
-  const m = Math.floor((ms%3600000)/60000);
-  return `${h}h ${String(m).padStart(2,'0')}m`;
-}
-function fmtCountdown(ms) {
-  if (ms <= 0) return 'Done';
-  const h = Math.floor(ms/3600000);
-  const m = Math.floor((ms%3600000)/60000);
-  const s = Math.floor((ms%60000)/1000);
-  return h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
 }
 
 // ── Top-level render dispatcher ──────────────────────────────────────────────
@@ -4422,11 +4419,15 @@ function renderOpList(grid) {
   }
 
   const cards = list.map(op => {
-    const crew  = orgOpCrew.filter(c=>c.operation_id===op.id);
-    const jobs  = orgOpJobs.filter(j=>j.operation_id===op.id);
-    const items = orgOpItems.filter(i=>jobs.some(j=>j.id===i.job_id));
-    const gross = items.filter(i=>i.status==='sold').reduce((s,i)=>s+Number(i.sell_price||0), 0);
-    const icon  = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
+    const crew    = orgOpCrew.filter(c=>c.operation_id===op.id);
+    const claimed = crew.filter(c=>c.payout_claimed).length;
+    const dist    = crew.filter(c=>c.payout_amount>0).length;
+    const icon    = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
+    const gross   = Number(op.gross_payout||0);
+    const payoutLine = dist > 0
+      ? `<div style="font-size:0.72rem;color:${claimed===dist?'#5a9e3f':'#c47a2a'};">
+           Payouts: ${claimed}/${dist} collected</div>`
+      : (gross > 0 ? `<div class="op-card-net">${fmtUEC(gross)} to split</div>` : '');
     return `<div class="op-card" onclick="openOpDetail('${esc(op.id)}')">
       <div class="op-card-head">
         <span>${icon}</span>
@@ -4435,10 +4436,9 @@ function renderOpList(grid) {
       </div>
       <div class="op-card-meta">
         <span>${crew.length} crew</span>
-        <span>${jobs.length} job${jobs.length!==1?'s':''}</span>
         <span>${new Date(op.created_at).toLocaleDateString()}</span>
       </div>
-      ${gross>0 ? `<div class="op-card-net">${fmtUEC(gross)} gross sold</div>` : ''}
+      ${payoutLine}
     </div>`;
   }).join('');
 
@@ -4461,13 +4461,14 @@ function renderOpDetail(grid) {
   const op = orgOperations.find(o=>o.id===activeOpId);
   if (!op) { closeOpDetail(); return; }
 
-  const crew     = orgOpCrew.filter(c=>c.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
-  const jobs     = orgOpJobs.filter(j=>j.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
-  const allItems = orgOpItems.filter(i=>jobs.some(j=>j.id===i.job_id));
-  const canEdit  = (isOfficer || isAdmin) && op.status==='active';
+  const crew    = orgOpCrew.filter(c=>c.operation_id===op.id).sort((a,b)=>a.display_order-b.display_order);
+  const canEdit = (isOfficer || isAdmin) && op.status==='active';
+  const s       = calcSettlement(op, crew);
+  const icon    = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
 
-  const settle = calcSettlement(op, crew, jobs, allItems);
-  const icon   = {mining:'⛏️',salvage:'🔧',cargo:'📦',other:'🎯'}[op.type]||'🎯';
+  const distributed  = crew.filter(c=>c.payout_amount>0);
+  const allClaimed   = distributed.length>0 && distributed.every(c=>c.payout_claimed);
+  const canArchive   = canEdit && (distributed.length===0 || allClaimed);
 
   grid.className = '';
   grid.innerHTML = `<div class="op-detail">
@@ -4477,337 +4478,193 @@ function renderOpDetail(grid) {
       <span>${icon}</span>
       <span style="font-size:1.05rem;font-weight:600;flex:1;">${esc(op.name)}</span>
       <span class="op-status op-status-${esc(op.status)}">${esc(op.status)}</span>
-      ${canEdit ? `<button class="op-small-btn op-small-btn-danger" onclick="archiveOp('${esc(op.id)}')">Archive</button>` : ''}
+      ${canEdit ? `<button class="op-small-btn op-small-btn-danger" ${canArchive?'':'disabled title="All payouts must be collected first"'} onclick="archiveOp('${esc(op.id)}')">Archive</button>` : ''}
     </div>
 
     ${op.notes ? `<div style="font-size:0.78rem;color:var(--color-text-secondary);padding:0 0.25rem;">${esc(op.notes)}</div>` : ''}
 
     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;font-size:0.75rem;color:var(--color-text-secondary);">
-      <span>Wallet fee: <strong style="color:var(--color-text-primary);">${op.wallet_fee}%</strong></span>
-      <span>Guild cut: <strong style="color:#c47a2a;">${op.guild_bank_pct}%</strong></span>
+      ${op.guild_bank_pct>0 ? `<span>Guild cut: <strong style="color:#c47a2a;">${op.guild_bank_pct}%</strong></span>` : ''}
       <span>Started: <strong style="color:var(--color-text-primary);">${new Date(op.created_at).toLocaleDateString()}</strong></span>
-      ${op.settled_at ? `<span>Settled: <strong style="color:#a89cf7;">${new Date(op.settled_at).toLocaleDateString()}</strong></span>` : ''}
     </div>
 
     <div class="op-section">
       <div class="op-section-hdr">
         <span>Crew</span>
-        ${canEdit ? `<button class="op-small-btn" onclick="openAddCrewModal('${esc(op.id)}')">+ Add</button>` : ''}
+        ${canEdit && distributed.length===0 ? `<button class="op-small-btn" onclick="openAddCrewModal('${esc(op.id)}')">+ Add</button>` : ''}
       </div>
       <div class="op-section-body">
         ${crew.length ? crew.map(cm => {
-          const pay = settle.crewPayouts.find(p=>p.id===cm.id);
+          const claimedBadge = cm.payout_claimed
+            ? `<span style="font-size:0.65rem;color:#5a9e3f;">✓ collected</span>`
+            : cm.payout_amount>0 ? `<span style="font-size:0.65rem;color:#c47a2a;">awaiting</span>` : '';
           return `<div class="op-crew-row">
-            <span class="op-crew-name">${esc(cm.display_name)}${cm.is_owner?` <span style="color:#c47a2a;font-size:0.65rem;margin-left:0.25rem;">OWNER</span>`:''}
-            </span>
-            <span class="op-crew-type op-crew-${esc(cm.crew_type)}">${cm.crew_type==='hourly'?`${fmtUEC(cm.hourly_rate)}/hr`:'share'}</span>
-            ${cm.crew_type==='hourly' ? `<span class="op-timer">${fmtElapsed(cm.elapsed_ms||0)}</span>` : ''}
-            ${pay ? `<span style="font-size:0.78rem;color:#5a9e3f;margin-left:auto;">${fmtUEC(pay.net)}</span>` : ''}
-            ${canEdit ? `<button class="op-delete-btn" onclick="removeCrew('${esc(cm.id)}')">×</button>` : ''}
+            <span class="op-crew-name">${esc(cm.display_name)}</span>
+            ${cm.payout_amount>0 ? `<span style="font-size:0.81rem;color:#5a9e3f;font-weight:500;">${fmtUEC(cm.payout_amount)}</span>` : ''}
+            ${claimedBadge}
+            <span style="flex:1;"></span>
+            ${canEdit && distributed.length===0 ? `<button class="op-delete-btn" onclick="removeCrew('${esc(cm.id)}')">×</button>` : ''}
           </div>`;
         }).join('') : '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No crew added yet.</div>'}
       </div>
     </div>
 
     <div class="op-section">
-      <div class="op-section-hdr">
-        <span>Refinery Jobs</span>
-        ${canEdit ? `<button class="op-small-btn" onclick="addJob('${esc(op.id)}')">+ Add Job</button>` : ''}
-      </div>
+      <div class="op-section-hdr"><span>Payout</span></div>
       <div class="op-section-body">
-        ${jobs.length ? jobs.map(job => renderJobCard(job, allItems, canEdit)).join('') :
-          '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No jobs added yet.</div>'}
-      </div>
-    </div>
-
-    <div class="op-section">
-      <div class="op-section-hdr"><span>Settlement</span></div>
-      <div class="op-section-body">
-        ${renderSettlementPanel(op, settle, canEdit)}
+        ${renderSettlementPanel(op, s, crew, canEdit)}
       </div>
     </div>
 
   </div>`;
+}
 
-  // Start countdown ticks if any timer is active
-  if (_opTimerInterval) { clearInterval(_opTimerInterval); _opTimerInterval = null; }
-  if (jobs.some(j=>!j.timer_done && j.timer_end && new Date(j.timer_end)>new Date())) {
-    _opTimerInterval = setInterval(()=>updateTimerDisplays(jobs), 1000);
+// ── Settlement math ───────────────────────────────────────────────────────────
+function calcSettlement(op, crew) {
+  const gross      = Number(op.gross_payout||0);
+  const guildTake  = Math.floor(gross * (Number(op.guild_bank_pct||0)/100));
+  const distributable = gross - guildTake;
+  const shares     = crew.length;
+  const perShare   = shares > 0 ? distributable / shares : 0;
+  const netPer     = perShare * (1 - WALLET_FEE_PCT/100);
+  return { gross, guildTake, distributable, shares, perShare, netPer };
+}
+
+// ── Settlement panel HTML ─────────────────────────────────────────────────────
+function renderSettlementPanel(op, s, crew, canEdit) {
+  const { gross, guildTake, distributable, shares, perShare, netPer } = s;
+  const distributed = crew.filter(c=>c.payout_amount>0);
+  const alreadyDist = distributed.length > 0;
+
+  const grossInput = canEdit && !alreadyDist ? `
+    <div class="op-field" style="max-width:22rem;">
+      <label>Total gross payout (aUEC)</label>
+      <input id="op-gross-input" type="number" min="0" step="1"
+             value="${op.gross_payout > 0 ? op.gross_payout : ''}"
+             placeholder="Enter total aUEC earned this run"
+             onchange="saveGrossPayout('${esc(op.id)}', this.value)">
+    </div>` : (gross > 0 ? `<div style="font-size:0.78rem;color:var(--color-text-secondary);">Gross: <strong style="color:var(--color-text-primary);">${fmtUEC(gross)}</strong></div>` : '');
+
+  if (gross === 0 && !alreadyDist) {
+    return grossInput + `<div style="font-size:0.78rem;color:var(--color-text-tertiary);margin-top:0.5rem;">Enter the total aUEC earned above — the split will appear here.</div>`;
   }
-}
 
-// ── Job card ─────────────────────────────────────────────────────────────────
-function renderJobCard(job, allItems, canEdit) {
-  const items = allItems.filter(i=>i.job_id===job.id).sort((a,b)=>a.display_order-b.display_order);
-  const timerHTML = job.timer_total_ms > 0 ? renderRefineryTimer(job) : '';
-  return `<div class="op-job-card" id="job-card-${esc(job.id)}">
-    <div class="op-job-hdr">
-      <span style="font-weight:500;">${esc(job.location||'Unnamed Job')}</span>
-      ${job.refinery_cost>0 ? `<span style="font-size:0.72rem;color:#c47a2a;">Refinery: ${fmtUEC(job.refinery_cost)}${job.payer_name?` (${esc(job.payer_name)})`:''}</span>` : ''}
-      <span style="flex:1;"></span>
-      ${canEdit ? `
-        <button class="op-small-btn" onclick="addItem('${esc(job.id)}')">+ Item</button>
-        <button class="op-small-btn" onclick="openRefineryModal('${esc(job.id)}')">⏱</button>
-        <button class="op-delete-btn" onclick="removeJob('${esc(job.id)}')">×</button>` : ''}
-    </div>
-    ${timerHTML}
-    <div>
-      ${items.map(item => renderItemRow(item, canEdit)).join('')}
-      ${!items.length ? '<div style="font-size:0.72rem;color:var(--color-text-tertiary);padding:0.3rem 0;">No items yet.</div>' : ''}
-    </div>
-  </div>`;
-}
-
-function renderItemRow(item, canEdit) {
-  const scoreStr = item.value_score != null ? ` · ${item.value_score}/999` : '';
-  const qtyStr   = item.qty_cscu > 0 ? ` · ${(item.qty_cscu/100).toFixed(2)} SCU` : '';
-  return `<div class="op-item-row">
-    <span class="op-item-status op-item-${esc(item.status)}">${esc(item.status)}</span>
-    <span style="flex:1;font-size:0.8rem;">${esc(item.name)}${qtyStr}${scoreStr}</span>
-    ${item.sell_price>0 ? `<span style="font-size:0.78rem;color:#5a9e3f;">${fmtUEC(item.sell_price)}</span>` : ''}
-    ${canEdit ? `${item.status!=='sold' ? `<button class="op-small-btn" onclick="openSellModal('${esc(item.id)}')">Sell</button>` : ''}
-      <button class="op-delete-btn" onclick="removeItem('${esc(item.id)}')">×</button>` : ''}
-  </div>`;
-}
-
-// ── Refinery timer ────────────────────────────────────────────────────────────
-function renderRefineryTimer(job) {
-  const now = Date.now();
-  const end = job.timer_end ? new Date(job.timer_end).getTime() : 0;
-  if (job.timer_done || end <= now) {
-    return `<div class="op-ref-timer" style="color:#5a9e3f;">✓ Refinery complete</div>`;
-  }
-  const remaining = end - now;
-  const pct = Math.min(100, Math.max(0, 100 - (remaining / (job.timer_total_ms||1)) * 100));
-  return `<div class="op-ref-timer" id="timer-${esc(job.id)}">
-    <span style="font-size:0.72rem;color:var(--color-text-secondary);">Refining: <span id="timer-txt-${esc(job.id)}">${fmtCountdown(remaining)}</span></span>
-    <div class="op-prog-wrap"><div class="op-prog-fill" id="timer-fill-${esc(job.id)}" style="width:${pct.toFixed(1)}%;"></div></div>
-  </div>`;
-}
-
-function updateTimerDisplays(jobs) {
-  let anyActive = false;
-  for (const job of jobs) {
-    if (job.timer_done || !job.timer_end) continue;
-    const end = new Date(job.timer_end).getTime();
-    const remaining = end - Date.now();
-    const timerEl = document.getElementById(`timer-${job.id}`);
-    if (!timerEl) continue;
-    if (remaining <= 0) {
-      timerEl.innerHTML = '<span style="color:#5a9e3f;">✓ Refinery complete</span>';
-      timerEl.id = '';
-      job.timer_done = true;
-    } else {
-      const txtEl  = document.getElementById(`timer-txt-${job.id}`);
-      const fillEl = document.getElementById(`timer-fill-${job.id}`);
-      if (txtEl)  txtEl.textContent = fmtCountdown(remaining);
-      if (fillEl) fillEl.style.width = Math.min(100, 100-(remaining/(job.timer_total_ms||1))*100).toFixed(1)+'%';
-      anyActive = true;
-    }
-  }
-  if (!anyActive && _opTimerInterval) { clearInterval(_opTimerInterval); _opTimerInterval = null; }
-}
-
-// ── Settlement panel ──────────────────────────────────────────────────────────
-function renderSettlementPanel(op, s, canEdit) {
-  const { gross, refinery, net, guildTake, distributable, hourlyTotal, shares, perShare, crewPayouts } = s;
-  if (gross === 0) {
-    return '<div style="font-size:0.78rem;color:var(--color-text-tertiary);">No sold items yet — mark items as sold to see the settlement breakdown.</div>';
-  }
-  const settled = op.status==='settled';
-  const rows = [
-    `<div class="op-settle-row"><span>Gross receipts</span><span class="op-settle-amt">${fmtUEC(gross)}</span></div>`,
-    refinery>0 ? `<div class="op-settle-row"><span>Refinery costs</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(refinery)}</span></div>` : '',
-    `<div class="op-settle-row" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.4rem;margin-top:0.25rem;"><span>Net</span><span class="op-settle-amt">${fmtUEC(net)}</span></div>`,
+  const breakdown = [
+    `<div class="op-settle-row"><span>Gross payout</span><span class="op-settle-amt">${fmtUEC(gross)}</span></div>`,
     guildTake>0 ? `<div class="op-settle-row"><span>Guild bank (${op.guild_bank_pct}%)</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(guildTake)}</span></div>` : '',
-    hourlyTotal>0 ? `<div class="op-settle-row"><span>Hourly crew</span><span class="op-settle-amt" style="color:#c47a2a;">− ${fmtUEC(hourlyTotal)}</span></div>` : '',
     `<div class="op-settle-row" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.4rem;margin-top:0.25rem;font-weight:600;">
-      <span>Distributable${shares>0?` · ${shares} share${shares!==1?'s':''}`:''}</span>
-      <span class="op-settle-amt" style="color:#7eb8f7;">${fmtUEC(distributable)}</span>
-    </div>`,
-    (perShare>0&&shares>0) ? `<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-bottom:0.35rem;">${fmtUEC(perShare)} per share before ${op.wallet_fee}% wallet fee</div>` : '',
+       <span>Distributable · ${shares} member${shares!==1?'s':''}</span>
+       <span class="op-settle-amt" style="color:#7eb8f7;">${fmtUEC(distributable)}</span>
+     </div>`,
+    shares>0 ? `<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin:0.2rem 0 0.5rem;">
+      ${fmtUEC(perShare)} per member · ${WALLET_FEE_PCT}% wallet fee → <strong style="color:#5a9e3f;">${fmtUEC(netPer)} each</strong>
+    </div>` : '',
   ].filter(Boolean).join('');
 
-  const payoutRows = crewPayouts.map(p=>`
-    <div class="op-settle-row" style="padding-left:0.75rem;">
-      <span style="font-size:0.8rem;">${esc(p.name)}</span>
-      <div style="display:flex;gap:0.5rem;align-items:center;">
-        ${op.wallet_fee>0 ? `<span style="font-size:0.68rem;color:var(--color-text-tertiary);">−${op.wallet_fee}% fee</span>` : ''}
-        <span class="op-settle-amt" style="color:#5a9e3f;">${fmtUEC(p.net)}</span>
-        ${canEdit&&!settled ? `<button class="op-paid-btn" onclick="markPaid(this)">Paid</button>` : ''}
-      </div>
-    </div>`).join('');
-
   const guildBanner = guildTake>0 ? `
-    <div class="op-guild-banner" style="margin-top:0.5rem;">
+    <div class="op-guild-banner" style="margin-top:0.25rem;">
       <span class="op-guild-label">Guild Bank</span>
       <span class="op-guild-amount">${fmtUEC(guildTake)}</span>
     </div>` : '';
 
-  const settleBtn = !settled && canEdit && gross>0 ? `
+  const distributeBtn = canEdit && !alreadyDist && gross>0 && crew.length>0 ? `
     <div style="margin-top:0.75rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-      <button class="op-small-btn op-small-btn-primary" onclick="settleAndClose('${esc(op.id)}')">Settle & Close</button>
-      <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Locks the operation, records guild bank contribution, and marks it settled.</span>
+      <button class="op-small-btn op-small-btn-primary" onclick="confirmDistribute('${esc(op.id)}')">Confirm & Distribute</button>
+      <span style="font-size:0.69rem;color:var(--color-text-tertiary);">Stamps each crew member's payout and records the guild bank contribution.</span>
     </div>` : '';
 
-  const settledNote = settled ? `<div style="font-size:0.72rem;color:#a89cf7;margin-top:0.5rem;">✓ Settled on ${op.settled_at ? new Date(op.settled_at).toLocaleDateString() : '—'}</div>` : '';
+  const distNote = alreadyDist ? `<div style="font-size:0.72rem;color:#a89cf7;margin-top:0.5rem;">
+    ✓ Distributed — payouts visible in the panel on the right.
+  </div>` : '';
 
-  return rows + payoutRows + guildBanner + settleBtn + settledNote;
+  return grossInput + breakdown + guildBanner + distributeBtn + distNote;
 }
 
-// ── Settlement math ───────────────────────────────────────────────────────────
-function calcSettlement(op, crew, jobs, items) {
-  const soldItems  = items.filter(i=>i.status==='sold');
-  const gross      = soldItems.reduce((s,i)=>s+Number(i.sell_price||0), 0);
-  const refinery   = jobs.reduce((s,j)=>s+Number(j.refinery_cost||0), 0);
-  const net        = gross - refinery;
-  const guildTake  = Math.floor(net * (Number(op.guild_bank_pct||0)/100));
-  const afterGuild = net - guildTake;
-
-  const hourlyTotal = crew
-    .filter(c=>c.crew_type==='hourly')
-    .reduce((s,c)=>s + (Number(c.hourly_rate||0)*(Number(c.elapsed_ms||0)/3600000)), 0);
-
-  const distributable = afterGuild;   // shown to player
-  const remaining     = Math.max(0, afterGuild - hourlyTotal);
-  const shareCrew     = crew.filter(c=>c.crew_type==='share');
-  const shares        = shareCrew.length;
-  const perShare      = shares > 0 ? remaining / shares : 0;
-  const walletMult    = 1 - (Number(op.wallet_fee||0)/100);
-
-  const crewPayouts = crew.map(c => {
-    const raw = c.crew_type==='hourly'
-      ? Number(c.hourly_rate||0)*(Number(c.elapsed_ms||0)/3600000)
-      : perShare;
-    return { id: c.id, name: c.display_name, gross: raw, net: raw*walletMult };
-  }).filter(p=>p.gross>0);
-
-  return { gross, refinery, net, guildTake, distributable, hourlyTotal, remaining, shares, perShare, crewPayouts };
-}
-
-// ── CRUD — Jobs ──────────────────────────────────────────────────────────────
-async function addJob(opId) {
+// ── Save gross payout (inline input) ─────────────────────────────────────────
+async function saveGrossPayout(opId, value) {
+  const gross = Number(value)||0;
   if (!sb) return;
-  const loc = prompt('Location / refinery (e.g. "Lyria — Shubin"):', '');
-  if (loc === null) return;
-  const costStr = prompt('Refinery cost in aUEC (0 if none):', '0');
-  if (costStr === null) return;
-  const cost  = Number(costStr)||0;
-  const payer = cost > 0 ? (prompt('Who paid the refinery fee?', '')||null) : null;
-  const { data, error } = await sb.from('operation_jobs').insert({
-    operation_id: opId, location: loc||null, refinery_cost: cost, payer_name: payer,
-    display_order: orgOpJobs.filter(j=>j.operation_id===opId).length,
-  }).select().single();
+  const { error } = await sb.from('operations').update({ gross_payout: gross }).eq('id', opId);
   if (error) { showError(error.message); return; }
-  orgOpJobs.push(data);
-  renderOrg();
+  const idx = orgOperations.findIndex(o=>o.id===opId);
+  if (idx !== -1) orgOperations[idx].gross_payout = gross;
+  // Soft re-render just the settlement panel to show updated math without losing focus
+  const op   = orgOperations[idx];
+  const crew = orgOpCrew.filter(c=>c.operation_id===opId);
+  const s    = calcSettlement(op, crew);
+  const canEdit = (isOfficer || isAdmin) && op.status==='active';
+  const panel = document.querySelector('.op-section:last-child .op-section-body');
+  if (panel) panel.innerHTML = renderSettlementPanel(op, s, crew, canEdit);
 }
 
-async function removeJob(jobId) {
-  if (!confirm('Remove this job and all its items?')) return;
-  const { error } = await sb.from('operation_jobs').delete().eq('id', jobId);
-  if (error) { showError(error.message); return; }
-  orgOpJobs  = orgOpJobs.filter(j=>j.id!==jobId);
-  orgOpItems = orgOpItems.filter(i=>i.job_id!==jobId);
-  renderOrg();
-}
-
-// ── CRUD — Items ─────────────────────────────────────────────────────────────
-async function addItem(jobId) {
+// ── Confirm & Distribute ──────────────────────────────────────────────────────
+async function confirmDistribute(opId) {
   if (!sb) return;
-  const name = prompt('Item / ore name:', '');
-  if (!name?.trim()) return;
-  const qtyStr   = prompt('Quantity in SCU (e.g. 2.5, or 0):', '0');
-  const qty      = Math.round((Number(qtyStr)||0)*100);  // cSCU
-  const scoreStr = prompt('Purity score /999 (blank = unknown):', '');
-  const score    = scoreStr?.trim() ? (Number(scoreStr)||null) : null;
-  const { data, error } = await sb.from('operation_items').insert({
-    job_id: jobId, name: name.trim(), qty_cscu: qty, value_score: score,
-    status: 'pending', display_order: orgOpItems.filter(i=>i.job_id===jobId).length,
-  }).select().single();
-  if (error) { showError(error.message); return; }
-  orgOpItems.push(data);
-  renderOrg();
-}
+  const op   = orgOperations.find(o=>o.id===opId);
+  const crew = orgOpCrew.filter(c=>c.operation_id===opId);
+  if (!op || !crew.length) return;
 
-async function removeItem(itemId) {
-  if (!confirm('Remove this item?')) return;
-  const { error } = await sb.from('operation_items').delete().eq('id', itemId);
-  if (error) { showError(error.message); return; }
-  orgOpItems = orgOpItems.filter(i=>i.id!==itemId);
-  renderOrg();
-}
+  const { netPer, guildTake } = calcSettlement(op, crew);
+  if (!confirm(`Distribute payouts for "${op.name}"?\n\n${crew.length} crew member${crew.length!==1?'s':''} × ${fmtUEC(netPer)} each\n${guildTake>0?`Guild bank receives ${fmtUEC(guildTake)}\n`:''}\nThis cannot be undone.`)) return;
 
-// ── Sell modal ────────────────────────────────────────────────────────────────
-let _sellItemId = null;
-
-function openSellModal(itemId) {
-  _sellItemId = itemId;
-  const item = orgOpItems.find(i=>i.id===itemId);
-  if (!item) return;
-  document.getElementById('op-sell-item-name').textContent = item.name;
-  document.getElementById('op-sell-price').value           = item.sell_price > 0 ? item.sell_price : '';
-  document.getElementById('op-sell-status').value          = 'sold';
-  document.getElementById('op-sell-error').textContent     = '';
-  document.getElementById('op-sell-modal').style.display   = 'flex';
-  setTimeout(()=>document.getElementById('op-sell-price').focus(), 50);
-}
-
-function closeSellModal() {
-  _sellItemId = null;
-  document.getElementById('op-sell-modal').style.display = 'none';
-}
-
-async function confirmSell() {
-  if (!_sellItemId || !sb) return;
-  const price  = Number(document.getElementById('op-sell-price').value);
-  const status = document.getElementById('op-sell-status').value;
-  if (isNaN(price)||price<0) { document.getElementById('op-sell-error').textContent='Enter a valid price.'; return; }
-  const { error } = await sb.from('operation_items').update({ sell_price: price, status }).eq('id', _sellItemId);
-  if (error) { document.getElementById('op-sell-error').textContent=error.message; return; }
-  const idx = orgOpItems.findIndex(i=>i.id===_sellItemId);
-  if (idx!==-1) { orgOpItems[idx].sell_price=price; orgOpItems[idx].status=status; }
-  closeSellModal();
-  renderOrg();
-}
-
-// ── Refinery timer modal ──────────────────────────────────────────────────────
-let _timerJobId = null;
-
-function openRefineryModal(jobId) {
-  _timerJobId = jobId;
-  const job = orgOpJobs.find(j=>j.id===jobId);
-  document.getElementById('op-ref-error').textContent = '';
-  if (job?.timer_end && !job.timer_done) {
-    const rem = new Date(job.timer_end)-Date.now();
-    document.getElementById('op-ref-hours').value   = rem>0 ? Math.floor(rem/3600000) : '';
-    document.getElementById('op-ref-minutes').value = rem>0 ? Math.floor((rem%3600000)/60000) : '';
-  } else {
-    document.getElementById('op-ref-hours').value   = '';
-    document.getElementById('op-ref-minutes').value = '';
+  const updates = crew.map(c =>
+    sb.from('operation_crew').update({ payout_amount: netPer, payout_claimed: false }).eq('id', c.id)
+  );
+  if (guildTake > 0) {
+    updates.push(sb.from('guild_bank_ledger').insert({
+      operation_id: opId, amount: guildTake, pct_used: op.guild_bank_pct,
+      recorded_by: authMember?.id||null, notes: `Distributed: ${op.name}`,
+    }));
   }
-  document.getElementById('op-ref-modal').style.display = 'flex';
-  setTimeout(()=>document.getElementById('op-ref-hours').focus(), 50);
+
+  const results = await Promise.all(updates);
+  const err = results.find(r=>r.error)?.error;
+  if (err) { showError(err.message); return; }
+
+  crew.forEach(c => {
+    const idx = orgOpCrew.findIndex(x=>x.id===c.id);
+    if (idx !== -1) { orgOpCrew[idx].payout_amount = netPer; orgOpCrew[idx].payout_claimed = false; }
+  });
+  if (guildTake > 0) guildBankBalance += guildTake;
+  updateOrgStats();
+  renderOrg();
 }
 
-function closeRefModal() {
-  _timerJobId = null;
-  document.getElementById('op-ref-modal').style.display = 'none';
+// ── Payout panel ──────────────────────────────────────────────────────────────
+function renderOpPayoutPanel() {
+  const panel = document.getElementById('op-payout-panel');
+  if (!panel) return;
+
+  const pending = orgOpCrew.filter(c => c.payout_amount > 0 && !c.payout_claimed);
+  if (!pending.length) {
+    panel.innerHTML = `<div class="lp-panel-box"><div class="lp-panel-hdr">Pending Payouts</div><div class="lp-empty">No pending payouts.</div></div>`;
+    return;
+  }
+
+  const cards = pending.map(c => {
+    const op = orgOperations.find(o=>o.id===c.operation_id);
+    return `<div class="lp-card">
+      <div style="font-size:0.625rem;color:var(--color-text-tertiary);margin-bottom:0.25rem;text-transform:uppercase;letter-spacing:0.08em;">${esc(op?.name||'Unknown')}</div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span style="font-size:0.81rem;font-weight:500;flex:1;">${esc(c.display_name)}</span>
+        <span style="font-size:0.81rem;color:#5a9e3f;font-weight:600;">${fmtUEC(c.payout_amount)}</span>
+      </div>
+      <div style="margin-top:0.5rem;">
+        <button class="lp-approve" onclick="markPayoutClaimed('${esc(c.id)}', this)">✓ Collected</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `<div class="lp-panel-box"><div class="lp-panel-hdr">Pending Payouts</div>${cards}</div>`;
 }
 
-async function confirmRefineryTimer() {
-  if (!_timerJobId||!sb) return;
-  const h = Number(document.getElementById('op-ref-hours').value)||0;
-  const m = Number(document.getElementById('op-ref-minutes').value)||0;
-  const totalMs = (h*3600+m*60)*1000;
-  if (totalMs<=0) { document.getElementById('op-ref-error').textContent='Enter a duration greater than 0.'; return; }
-  const timerEnd = new Date(Date.now()+totalMs).toISOString();
-  const { error } = await sb.from('operation_jobs')
-    .update({ timer_end: timerEnd, timer_total_ms: totalMs, timer_done: false }).eq('id', _timerJobId);
-  if (error) { document.getElementById('op-ref-error').textContent=error.message; return; }
-  const idx = orgOpJobs.findIndex(j=>j.id===_timerJobId);
-  if (idx!==-1) Object.assign(orgOpJobs[idx], { timer_end: timerEnd, timer_total_ms: totalMs, timer_done: false });
-  closeRefModal();
+// ── Mark payout collected ─────────────────────────────────────────────────────
+async function markPayoutClaimed(crewId, btn) {
+  btn.disabled = true;
+  const { error } = await sb.from('operation_crew').update({ payout_claimed: true }).eq('id', crewId);
+  if (error) { showError(error.message); btn.disabled = false; return; }
+  const idx = orgOpCrew.findIndex(c=>c.id===crewId);
+  if (idx !== -1) orgOpCrew[idx].payout_claimed = true;
   renderOrg();
 }
 
@@ -4816,13 +4673,10 @@ let _addCrewOpId = null;
 
 function openAddCrewModal(opId) {
   _addCrewOpId = opId;
-  document.getElementById('op-crew-name').value            = '';
-  document.getElementById('op-crew-type').value            = 'share';
-  document.getElementById('op-crew-rate').value            = '';
-  document.getElementById('op-crew-error').textContent     = '';
+  document.getElementById('op-crew-name').value        = '';
+  document.getElementById('op-crew-error').textContent = '';
   const dl = document.getElementById('op-crew-members-list');
   if (dl) dl.innerHTML = orgMembers.map(m=>`<option value="${esc(m.display_name||m.username)}">`).join('');
-  toggleCrewTypeFields();
   document.getElementById('op-crew-modal').style.display = 'flex';
   setTimeout(()=>document.getElementById('op-crew-name').focus(), 50);
 }
@@ -4832,22 +4686,14 @@ function closeCrewModal() {
   document.getElementById('op-crew-modal').style.display = 'none';
 }
 
-function toggleCrewTypeFields() {
-  const isHourly = document.getElementById('op-crew-type')?.value==='hourly';
-  const row = document.getElementById('op-crew-rate-row');
-  if (row) row.style.display = isHourly ? '' : 'none';
-}
-
 async function confirmAddCrew() {
   if (!_addCrewOpId||!sb) return;
   const name = document.getElementById('op-crew-name').value.trim();
-  const type = document.getElementById('op-crew-type').value;
-  const rate = Number(document.getElementById('op-crew-rate').value)||0;
   if (!name) { document.getElementById('op-crew-error').textContent='Enter a name.'; return; }
   const member = orgMembers.find(m=>(m.display_name||m.username)===name);
   const { data, error } = await sb.from('operation_crew').insert({
     operation_id: _addCrewOpId, member_id: member?.id||null, display_name: name,
-    crew_type: type, hourly_rate: rate, elapsed_ms: 0, is_owner: false,
+    crew_type: 'share', elapsed_ms: 0, is_owner: false,
     display_order: orgOpCrew.filter(c=>c.operation_id===_addCrewOpId).length,
   }).select().single();
   if (error) { document.getElementById('op-crew-error').textContent=error.message; return; }
@@ -4866,11 +4712,10 @@ async function removeCrew(crewId) {
 
 // ── New operation modal ───────────────────────────────────────────────────────
 function openNewOpModal() {
-  document.getElementById('op-new-name').value   = '';
-  document.getElementById('op-new-type').value   = 'mining';
-  document.getElementById('op-new-fee').value    = '5';
-  document.getElementById('op-new-guild').value  = '0';
-  document.getElementById('op-new-notes').value  = '';
+  document.getElementById('op-new-name').value        = '';
+  document.getElementById('op-new-type').value        = 'mining';
+  document.getElementById('op-new-guild').value       = '0';
+  document.getElementById('op-new-notes').value       = '';
   document.getElementById('op-new-error').textContent = '';
   document.getElementById('op-new-modal').style.display = 'flex';
   setTimeout(()=>document.getElementById('op-new-name').focus(), 50);
@@ -4884,14 +4729,13 @@ async function confirmNewOp() {
   if (!sb) return;
   const name  = document.getElementById('op-new-name').value.trim();
   const type  = document.getElementById('op-new-type').value;
-  const fee   = Number(document.getElementById('op-new-fee').value)||0;
   const guild = Number(document.getElementById('op-new-guild').value)||0;
   const notes = document.getElementById('op-new-notes').value.trim()||null;
-  if (!name)                          { document.getElementById('op-new-error').textContent='Operation name is required.'; return; }
-  if (fee<0||fee>100||guild<0||guild>100) { document.getElementById('op-new-error').textContent='Percentages must be 0–100.'; return; }
+  if (!name)            { document.getElementById('op-new-error').textContent='Operation name is required.'; return; }
+  if (guild<0||guild>100) { document.getElementById('op-new-error').textContent='Guild % must be 0–100.'; return; }
   const { data, error } = await sb.from('operations').insert({
-    name, type, wallet_fee: fee, guild_bank_pct: guild, notes,
-    owner_id: authMember?.id||null, status: 'active',
+    name, type, wallet_fee: WALLET_FEE_PCT, guild_bank_pct: guild, notes,
+    owner_id: authMember?.id||null, status: 'active', gross_payout: 0,
   }).select().single();
   if (error) { document.getElementById('op-new-error').textContent=error.message; return; }
   orgOperations.unshift(data);
@@ -4901,104 +4745,23 @@ async function confirmNewOp() {
   renderOrg();
 }
 
-// ── Archive / Settle ──────────────────────────────────────────────────────────
+// ── Archive ───────────────────────────────────────────────────────────────────
 async function archiveOp(opId) {
+  const crew = orgOpCrew.filter(c=>c.operation_id===opId && c.payout_amount>0);
+  if (crew.length > 0 && !crew.every(c=>c.payout_claimed)) {
+    showError('All payouts must be confirmed collected before archiving.'); return;
+  }
   if (!confirm('Archive this operation? It will be hidden from the default view.')) return;
   const { error } = await sb.from('operations').update({ status: 'archived' }).eq('id', opId);
   if (error) { showError(error.message); return; }
   const idx = orgOperations.findIndex(o=>o.id===opId);
-  if (idx!==-1) orgOperations[idx].status='archived';
-  closeOpDetail();
-}
-
-async function settleAndClose(opId) {
-  const op = orgOperations.find(o=>o.id===opId);
-  if (!op) return;
-  const crew  = orgOpCrew.filter(c=>c.operation_id===opId);
-  const jobs  = orgOpJobs.filter(j=>j.operation_id===opId);
-  const items = orgOpItems.filter(i=>jobs.some(j=>j.id===i.job_id));
-  const { guildTake } = calcSettlement(op, crew, jobs, items);
-
-  const msg = guildTake>0
-    ? `Settle "${op.name}"?\n\nThis will record ${fmtUEC(guildTake)} to the guild bank and lock the operation.`
-    : `Settle "${op.name}"?\n\nNo guild bank contribution (${op.guild_bank_pct}% of ${fmtUEC(0)} = ${fmtUEC(0)}). Operation will be locked.`;
-  if (!confirm(msg)) return;
-
-  const now = new Date().toISOString();
-  const ops = [sb.from('operations').update({ status:'settled', settled_at: now }).eq('id', opId)];
-  if (guildTake>0) {
-    ops.push(sb.from('guild_bank_ledger').insert({
-      operation_id: opId, amount: guildTake, pct_used: op.guild_bank_pct,
-      recorded_by: authMember?.id||null, notes: `Settled: ${op.name}`,
-    }));
-  }
-  const results = await Promise.all(ops);
-  const err = results.find(r=>r.error)?.error;
-  if (err) { showError(err.message); return; }
-
-  const idx = orgOperations.findIndex(o=>o.id===opId);
-  if (idx!==-1) Object.assign(orgOperations[idx], { status:'settled', settled_at: now });
-  guildBankBalance += guildTake;
+  if (idx !== -1) orgOperations[idx].status = 'archived';
   updateOrgStats();
-  renderOrg();
-}
-
-function markPaid(btn) {
-  btn.textContent = '✓ Paid';
-  btn.style.cssText += ';background:#0f2a1a;color:#5a9e3f;cursor:default;';
-  btn.disabled = true;
+  closeOpDetail();
 }
 </script>
 
 <!-- ── Operations modals ── -->
-
-<!-- Sell item -->
-<div id="op-sell-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeSellModal()">
-  <div class="op-sell-modal-inner">
-    <div class="op-modal-title">Record Sale — <span id="op-sell-item-name" style="color:#7eb8f7;"></span></div>
-    <div class="op-field-row">
-      <div class="op-field" style="flex:1;">
-        <label>Sell price (aUEC)</label>
-        <input id="op-sell-price" type="number" min="0" step="1" placeholder="0" onkeydown="if(event.key==='Enter')confirmSell()">
-      </div>
-      <div class="op-field" style="min-width:9rem;">
-        <label>Status</label>
-        <select id="op-sell-status">
-          <option value="sold">sold</option>
-          <option value="refining">refining</option>
-          <option value="pending">pending</option>
-        </select>
-      </div>
-    </div>
-    <div id="op-sell-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
-    <div class="op-modal-actions">
-      <button class="op-small-btn" onclick="closeSellModal()">Cancel</button>
-      <button class="op-small-btn op-small-btn-primary" onclick="confirmSell()">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- Refinery timer -->
-<div id="op-ref-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeRefModal()">
-  <div class="op-sell-modal-inner">
-    <div class="op-modal-title">Set Refinery Timer</div>
-    <div class="op-field-row">
-      <div class="op-field">
-        <label>Hours</label>
-        <input id="op-ref-hours" type="number" min="0" max="72" step="1" placeholder="0">
-      </div>
-      <div class="op-field">
-        <label>Minutes</label>
-        <input id="op-ref-minutes" type="number" min="0" max="59" step="1" placeholder="0">
-      </div>
-    </div>
-    <div id="op-ref-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
-    <div class="op-modal-actions">
-      <button class="op-small-btn" onclick="closeRefModal()">Cancel</button>
-      <button class="op-small-btn op-small-btn-primary" onclick="confirmRefineryTimer()">Start Timer</button>
-    </div>
-  </div>
-</div>
 
 <!-- Add crew -->
 <div id="op-crew-modal" class="op-sell-modal" style="display:none;" onclick="if(event.target===this)closeCrewModal()">
@@ -5006,19 +4769,8 @@ function markPaid(btn) {
     <div class="op-modal-title">Add Crew Member</div>
     <div class="op-field">
       <label>Display name</label>
-      <input id="op-crew-name" type="text" list="op-crew-members-list" placeholder="Member name or guest" autocomplete="off">
+      <input id="op-crew-name" type="text" list="op-crew-members-list" placeholder="Member name or guest" autocomplete="off" onkeydown="if(event.key==='Enter')confirmAddCrew()">
       <datalist id="op-crew-members-list"></datalist>
-    </div>
-    <div class="op-field">
-      <label>Crew type</label>
-      <select id="op-crew-type" onchange="toggleCrewTypeFields()">
-        <option value="share">Share — equal split of remaining pool</option>
-        <option value="hourly">Hourly — fixed aUEC/hr rate</option>
-      </select>
-    </div>
-    <div class="op-field" id="op-crew-rate-row" style="display:none;">
-      <label>Rate (aUEC / hour)</label>
-      <input id="op-crew-rate" type="number" min="0" step="100" placeholder="e.g. 50000">
     </div>
     <div id="op-crew-error" style="font-size:0.75rem;color:#e05a5a;min-height:1.2em;"></div>
     <div class="op-modal-actions">
@@ -5046,12 +4798,8 @@ function markPaid(btn) {
           <option value="other">🎯 Other</option>
         </select>
       </div>
-      <div class="op-field" style="min-width:8rem;">
-        <label>Wallet fee %</label>
-        <input id="op-new-fee" type="number" min="0" max="100" step="0.5" value="5">
-      </div>
-      <div class="op-field" style="min-width:8rem;">
-        <label>Guild bank %</label>
+      <div class="op-field" style="min-width:10rem;">
+        <label>Guild bank % (optional)</label>
         <input id="op-new-guild" type="number" min="0" max="100" step="1" value="0">
       </div>
     </div>
