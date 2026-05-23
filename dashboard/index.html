@@ -4604,19 +4604,20 @@ function op_togglePaid(jid,name){
 function op_isPaid(jid,name){return !!op_paidStatus[String(jid)+'_'+String(name)];}
 
 // ── Settlement math ───────────────────────────────────────────────────────────
-function op_settleJob(jobCrew,gross,refCost,guildPct,fee,getHrsFn,payerName){
+function op_settleJob(jobCrew,gross,refCost,guildPct,fee,getHrsFn,payerName,extraCosts){
   var guildTake=Math.floor(gross*(guildPct||0)/100);
+  var extra=extraCosts||0;
   var sc=jobCrew.filter(function(c){return c.pt==='share';});
   var hc=jobCrew.filter(function(c){return c.pt==='hourly';});
   var ts=sc.reduce(function(s,c){return s+c.share;},0);
-  var net=Math.max(0,gross-refCost-guildTake);
+  var net=Math.max(0,gross-refCost-guildTake-extra);
   var sr=sc.map(function(c){var gc=ts>0?Math.round(net*(c.share/ts)):0;var ip=c.name===payerName;var fee2=ip?0:Math.round(gc*fee/100);return {name:c.name,pt:'share',ip:ip,gc:gc,fee:fee2,recv:gc-fee2};});
   var hr=hc.map(function(c){var gc=Math.round(getHrsFn(c.id)*c.rate);var fee2=Math.round(gc*fee/100);return {name:c.name,pt:'hourly',ip:false,gc:gc,fee:fee2,recv:gc-fee2,detail:op_hms(Math.round(getHrsFn(c.id)*3600000))+' @ '+op_fmt(c.rate)+'/hr'};});
   var sent=0,fees=0;
   sr.forEach(function(r){if(!r.ip){sent+=r.gc;fees+=r.fee;}});
   hr.forEach(function(r){sent+=r.gc;fees+=r.fee;});
   var pk=sr.reduce(function(s,r){return r.ip?s+r.gc:s;},0);
-  return {sr:sr,hr:hr,gross:gross,guildTake:guildTake,refCost:refCost,net:net,sent:sent,fees:fees,pk:pk,payer:payerName};
+  return {sr:sr,hr:hr,gross:gross,guildTake:guildTake,refCost:refCost,extra:extra,net:net,sent:sent,fees:fees,pk:pk,payer:payerName};
 }
 
 // ── Tab switcher ──────────────────────────────────────────────────────────────
@@ -4787,7 +4788,7 @@ function op_addJob(){
   var jid=op_jobIdCtr++;
   var allIds=op_sessionCrew.map(function(c){return c.id;});
   var snap=op_sessionCrew.map(function(c){return {id:c.id,name:c.name,share:c.share,pt:c.pt,rate:c.rate,isOwner:c.isOwner||false};});
-  op_sessionJobs.push({id:jid,loc:'',cost:0,payer:owner?owner.name:'',crewIds:allIds,crewSnapshot:snap,items:[],timerEnd:0,timerTotal:0,timerDone:false});
+  op_sessionJobs.push({id:jid,loc:'',cost:0,additionalCosts:[],payer:owner?owner.name:'',crewIds:allIds,crewSnapshot:snap,items:[],timerEnd:0,timerTotal:0,timerDone:false});
   op_renderAllJobs();op_renderSessionSummary();
 }
 function op_removeJob(jid){
@@ -4882,6 +4883,29 @@ function op_renderJob(jid){
     +'<input type="number" id="op-cost-'+jid+'" placeholder="0" style="width:100%;" min="0" value="'+job.cost+'" oninput="op_updateJobCost('+jid+')"></div>'
     +'<div class="op-field"><label>Payer (holds all funds)</label>'
     +'<select id="op-payer-'+jid+'" style="width:100%;" onchange="op_updateJobPayer('+jid+')">'+payerOpts+'</select></div></div>'
+    +(function(job,jid){
+      var ac=job.additionalCosts||[];
+      var total=ac.reduce(function(s,c){return s+c.amt;},0);
+      var rows=ac.map(function(c){
+        return '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.25rem 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:0.72rem;">'
+          +'<span style="flex:1;color:var(--color-text-secondary);">'+esc(c.desc)+'</span>'
+          +'<span style="font-weight:600;color:#c47a2a;">−'+op_fa(c.amt)+'</span>'
+          +'<button onclick="op_removeAdditionalCost('+jid+','+c.id+')" style="font-size:0.6rem;padding:0.1rem 0.375rem;border-radius:var(--border-radius-md);border:0.5px solid #e05a5a;color:#e05a5a;background:transparent;cursor:pointer;">✕</button>'
+          +'</div>';
+      }).join('');
+      return '<div style="margin-bottom:0.625rem;">'
+        +'<div class="op-section-title" style="margin-bottom:0.375rem;">Additional payer costs'
+        +' <span style="font-size:0.59rem;font-weight:400;text-transform:none;color:var(--color-text-tertiary);">(reimbursed before split)</span></div>'
+        +(rows?'<div style="background:rgba(196,122,42,0.08);border:0.5px solid rgba(196,122,42,0.3);border-radius:var(--border-radius-md);padding:0.375rem 0.625rem;margin-bottom:0.5rem;">'+rows
+          +'<div style="font-size:0.69rem;color:#c47a2a;font-weight:600;padding-top:0.3rem;margin-top:0.2rem;border-top:0.5px solid rgba(196,122,42,0.3);">Total extra: −'+op_fa(total)+'</div></div>':'')
+        +'<div style="display:flex;gap:0.375rem;flex-wrap:wrap;align-items:center;">'
+        +'<input type="text" id="op-acd-'+jid+'" placeholder="e.g. Mission fee, commodity purchase…" style="flex:2;min-width:9rem;" onkeydown="if(event.keyCode===13)op_addAdditionalCost('+jid+')">'
+        +'<div style="display:flex;align-items:center;gap:0.25rem;"><input type="number" id="op-aca-'+jid+'" placeholder="0" style="width:6rem;" min="0" onkeydown="if(event.keyCode===13)op_addAdditionalCost('+jid+')"><span style="font-size:0.6rem;color:var(--color-text-tertiary);">aUEC</span></div>'
+        +'<button class="op-small-btn" onclick="op_addAdditionalCost('+jid+')" style="font-size:0.6rem;">+ Add</button>'
+        +'</div>'
+        +'<div style="font-size:0.6rem;color:var(--color-text-tertiary);margin-top:0.25rem;">Payer is fully reimbursed for these before shares are calculated.</div>'
+        +'</div>';
+    })(job,jid)
     +'<div><div class="op-section-title" style="margin-bottom:0.375rem;">Refining timer</div>'+timerHtml+'</div>'
     +'<div><div class="op-item-row op-item-hdr" style="padding-bottom:0.25rem;"><span>Item</span><span>SCU</span><span>cSCU</span><span>Val</span><span>Status</span><span>Sell (aUEC)</span><span></span></div>'
     +itemsHtml
@@ -4911,7 +4935,7 @@ function op_renderJobSettlement(jid){
   var guildPct=0;var sf=op_gV('op-sessionForm');if(sf){var gi=sf.querySelector('#op-sGuild');if(gi)guildPct=parseFloat(gi.value)||0;}
   var gross=job.items.filter(function(i){return i.status==='sold';}).reduce(function(s,i){return s+i.price;},0);
   var pending=job.items.filter(function(i){return i.status!=='sold';}).length;
-  var s=op_settleJob(jc,gross,job.cost,guildPct,op_walletFee,op_getHrs,job.payer);
+  var s=op_settleJob(jc,gross,job.cost,guildPct,op_walletFee,op_getHrs,job.payer,op_totalAdditionalCosts(job));
   var jobIdx=0;for(var i=0;i<op_sessionJobs.length;i++){if(op_sessionJobs[i].id===jid){jobIdx=i;break;}}
 
   function op_paidBtn(name,jid){var pd=op_isPaid(jid,name);return '<button class="op-paid-btn'+(pd?' paid':'')+'" onclick="op_togglePaid('+jid+',this.dataset.name)" data-name="'+esc(name)+'">'+(pd?'✓ Paid':'Mark paid')+'</button>';}
@@ -4924,6 +4948,7 @@ function op_renderJobSettlement(jid){
     +'<div class="op-totals-line"><span>Gross received from sale</span><span>'+op_fa(gross)+'</span></div>'
     +(s.guildTake>0?'<div class="op-totals-line"><span>Guild bank ('+(guildPct)+'%)</span><span style="color:#c47a2a;">−'+op_fa(s.guildTake)+'</span></div>':'')
     +'<div class="op-totals-line"><span>Refining cost paid</span><span style="color:#e05a5a;">−'+op_fa(job.cost)+'</span></div>'
+    +(s.extra>0?'<div class="op-totals-line"><span>Additional costs reimbursed</span><span style="color:#e05a5a;">−'+op_fa(s.extra)+'</span></div>':'')
     +'<div class="op-totals-line"><span>Sent to others</span><span style="color:#e05a5a;">−'+op_fa(s.sent)+'</span></div>'
     +'<div class="op-totals-line"><span>Transfer fees paid ('+op_walletFee+'%)</span><span style="color:#e05a5a;">−'+op_fa(s.fees)+'</span></div>'
     +'<div class="op-totals-line final"><span>Payer keeps</span><span style="color:#5a9e3f;">'+op_fa(s.pk)+'</span></div>'
@@ -4947,14 +4972,35 @@ function op_renderJobSettlement(jid){
   el.innerHTML='<div style="border-top:0.5px solid var(--color-border-tertiary);padding-top:0.75rem;margin-top:0.875rem;">'
     +'<div class="op-section-title" style="margin-bottom:0.625rem;">Settlement — Job '+(jobIdx+1)+'</div>'
     +(pending>0?'<div style="font-size:0.72rem;color:#c47a2a;margin-bottom:0.5rem;padding:0.375rem 0.625rem;background:#1e1408;border-radius:var(--border-radius-md);">⚠ '+pending+' item'+(pending>1?'s':'')+' still pending/refining</div>':'')
-    +(s.guildTake>0?'<div style="font-size:0.72rem;color:var(--color-text-secondary);margin-bottom:0.5rem;">Net after costs: <strong style="color:var(--color-text-primary);">'+op_fa(s.net)+'</strong> &nbsp;·&nbsp; Guild bank: <strong style="color:#c47a2a;">'+op_fa(s.guildTake)+'</strong></div>'
-      :'<div style="font-size:0.72rem;color:var(--color-text-secondary);margin-bottom:0.5rem;">Net after costs: <strong style="color:var(--color-text-primary);">'+op_fa(s.net)+'</strong></div>')
+    +(function(s,guildPct){
+        var parts='Net after costs: <strong style="color:var(--color-text-primary);">'+op_fa(s.net)+'</strong>';
+        if(s.guildTake>0) parts+=' &nbsp;·&nbsp; Guild bank: <strong style="color:#c47a2a;">'+op_fa(s.guildTake)+'</strong>';
+        if(s.extra>0) parts+=' &nbsp;·&nbsp; Extra costs: <strong style="color:#c47a2a;">'+op_fa(s.extra)+'</strong>';
+        return '<div style="font-size:0.72rem;color:var(--color-text-secondary);margin-bottom:0.5rem;">'+parts+'</div>';
+      })(s,guildPct)
     +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(12rem,1fr));gap:0.5rem;">'+payerCard+otherCards+'</div></div>';
 }
 
 // ── Job cost & payer ──────────────────────────────────────────────────────────
 function op_updateJobCost(jid){var job=op_getJob(jid);if(!job)return;job.cost=parseFloat((op_gV('op-cost-'+jid)||{}).value)||0;op_renderJobSettlement(jid);op_renderSessionSummary();}
 function op_updateJobPayer(jid){var job=op_getJob(jid);if(!job)return;job.payer=(op_gV('op-payer-'+jid)||{}).value||'';op_renderJobSettlement(jid);op_renderSessionSummary();}
+function op_totalAdditionalCosts(job){return (job.additionalCosts||[]).reduce(function(s,c){return s+c.amt;},0);}
+function op_addAdditionalCost(jid){
+  var job=op_getJob(jid);if(!job)return;
+  var desc=((op_gV('op-acd-'+jid)||{}).value||'').trim();
+  var amt=parseFloat((op_gV('op-aca-'+jid)||{}).value)||0;
+  if(!desc&&amt===0)return;
+  if(!job.additionalCosts)job.additionalCosts=[];
+  job.additionalCosts.push({id:Date.now(),desc:desc||'Additional cost',amt:amt});
+  var da=op_gV('op-acd-'+jid);if(da)da.value='';
+  var aa=op_gV('op-aca-'+jid);if(aa)aa.value='';
+  op_renderJob(jid);op_renderSessionSummary();
+}
+function op_removeAdditionalCost(jid,cid){
+  var job=op_getJob(jid);if(!job)return;
+  job.additionalCosts=(job.additionalCosts||[]).filter(function(c){return c.id!==cid;});
+  op_renderJob(jid);op_renderSessionSummary();
+}
 
 // ── Refining timer ────────────────────────────────────────────────────────────
 function op_startJobTimer(jid){
@@ -5064,7 +5110,7 @@ function op_renderSessionSummary(){
     tGross+=gross;tCSCU+=job.items.reduce(function(s,i){return s+i.qty;},0);
     tPending+=job.items.filter(function(i){return i.status!=='sold';}).length;
     if(job.payer){
-      var s=op_settleJob(jc,gross,job.cost,guildPct,op_walletFee,op_getHrs,job.payer);
+      var s=op_settleJob(jc,gross,job.cost,guildPct,op_walletFee,op_getHrs,job.payer,op_totalAdditionalCosts(job));
       tNet+=s.net;
       s.sr.forEach(function(r){if(!crewTotals[r.name])crewTotals[r.name]={name:r.name,pt:'share',total:0};crewTotals[r.name].total+=r.ip?r.gc:r.recv;});
       s.hr.forEach(function(r){if(!crewTotals[r.name])crewTotals[r.name]={name:r.name,pt:'hourly',total:0};crewTotals[r.name].total+=r.recv;});
@@ -5148,7 +5194,7 @@ function op_buildSessionFormHTML(title){
 }
 function op_saveSession(){
   var snap=op_sessionCrew.map(function(c){var t=op_crewTimers[c.id]||{acc:0,on:false,st:0};return {id:c.id,name:c.name,share:c.share,pt:c.pt,rate:c.rate,isOwner:c.isOwner||false,elapsedMs:t.acc+(t.on?Date.now()-t.st:0)};});
-  var jobSnap=op_sessionJobs.map(function(j){return {id:j.id,loc:j.loc,cost:j.cost,payer:j.payer,crewIds:j.crewIds.slice(),crewSnapshot:j.crewSnapshot?j.crewSnapshot.slice():[],items:j.items.slice(),timerEnd:j.timerEnd,timerTotal:j.timerTotal,timerDone:j.timerDone||false};});
+  var jobSnap=op_sessionJobs.map(function(j){return {id:j.id,loc:j.loc,cost:j.cost,additionalCosts:j.additionalCosts?j.additionalCosts.slice():[],payer:j.payer,crewIds:j.crewIds.slice(),crewSnapshot:j.crewSnapshot?j.crewSnapshot.slice():[],items:j.items.slice(),timerEnd:j.timerEnd,timerTotal:j.timerTotal,timerDone:j.timerDone||false};});
   var guildPct=parseFloat((op_gV('op-sGuild')||{}).value)||0;
   var s={id:op_editingSession||op_sessionIdCtr++,name:((op_gV('op-sName')||{}).value||'').trim()||'Unnamed session',owner:((op_gV('op-sOwner')||{}).value||'').trim(),crew:snap,jobs:jobSnap,date:new Date().toLocaleDateString(),fee:op_walletFee,guildPct:guildPct};
   if(op_editingSession){for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===op_editingSession){op_sessions[i]=s;break;}}}
@@ -5160,7 +5206,7 @@ function op_editSession(id){
   op_clearState();op_editingSession=id;
   op_sessionCrew=s.crew.map(function(c){return {id:c.id,name:c.name,share:c.share,pt:c.pt||'share',rate:c.rate||0,isOwner:c.isOwner||false};});
   op_sessionCrew.forEach(function(c){var sv=null;for(var i=0;i<s.crew.length;i++){if(s.crew[i].id===c.id){sv=s.crew[i];break;}}op_crewTimers[c.id]={on:false,st:0,acc:sv&&sv.elapsedMs?sv.elapsedMs:0};});
-  op_sessionJobs=s.jobs.map(function(j){return {id:j.id,loc:j.loc||'',cost:j.cost||0,payer:j.payer||'',crewIds:j.crewIds?j.crewIds.slice():[],crewSnapshot:j.crewSnapshot?j.crewSnapshot.slice():[],items:j.items.slice(),timerEnd:j.timerEnd||0,timerTotal:j.timerTotal||0,timerDone:j.timerDone||false};});
+  op_sessionJobs=s.jobs.map(function(j){return {id:j.id,loc:j.loc||'',cost:j.cost||0,additionalCosts:j.additionalCosts?j.additionalCosts.slice():[],payer:j.payer||'',crewIds:j.crewIds?j.crewIds.slice():[],crewSnapshot:j.crewSnapshot?j.crewSnapshot.slice():[],items:j.items.slice(),timerEnd:j.timerEnd||0,timerTotal:j.timerTotal||0,timerDone:j.timerDone||false};});
   var sf=op_gV('op-sessionForm');if(!sf)return;
   sf.innerHTML=op_buildSessionFormHTML('Edit session');
   var sn=op_gV('op-sName');if(sn)sn.value=s.name;
@@ -5195,7 +5241,7 @@ function op_renderSessionList(){
         var c=null;var allc=s.crew.concat(j.crewSnapshot||[]);
         for(var i=0;i<allc.length;i++){if(allc[i].id===cid){c=allc[i];break;}}
         return c&&c.elapsedMs?c.elapsedMs/3600000:0;
-      },j.payer);tNet+=sv.net;}
+      },j.payer,(j.additionalCosts||[]).reduce(function(s,c){return s+c.amt;},0));tNet+=sv.net;}
     });
     var scu=Math.floor(tCSCU/100),cscu=tCSCU%100;
     return '<div class="op-session-card">'
@@ -5239,7 +5285,7 @@ function op_renderSummary(){
           var c=null;var allc=s.crew.concat(j.crewSnapshot||[]);
           for(var i=0;i<allc.length;i++){if(allc[i].id===cid){c=allc[i];break;}}
           return c&&c.elapsedMs?c.elapsedMs/3600000:0;
-        },j.payer);
+        },j.payer,(j.additionalCosts||[]).reduce(function(s,c){return s+c.amt;},0));
         tNet+=sv.net;
         sv.sr.forEach(function(r){if(!allCrew[r.name])allCrew[r.name]={name:r.name,pt:'share',total:0};allCrew[r.name].total+=r.ip?r.gc:r.recv;});
         sv.hr.forEach(function(r){if(!allCrew[r.name])allCrew[r.name]={name:r.name,pt:'hourly',total:0};allCrew[r.name].total+=r.recv;});
