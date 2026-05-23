@@ -180,6 +180,21 @@
   .cat-blueprint .card-cat { color: #8b72e8; }
   .cat-wikelo    .card-cat { color: #2dbd8f; }
 
+  /* ── UEX price badge on inventory cards ── */
+  .inv-price-badge { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; background:rgba(196,122,42,0.13); color:#c47a2a; margin-top:0.35rem; white-space:nowrap; }
+
+  /* ── UEX market panel in item detail modal ── */
+  .d-uex-panel { margin-top:0.875rem; padding:0.625rem 0.75rem; background:rgba(126,184,247,0.05); border:0.5px solid rgba(126,184,247,0.18); border-radius:var(--border-radius-md); }
+  .d-uex-title { font-size:0.59rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--color-text-tertiary); margin-bottom:0.5rem; font-weight:600; }
+  .d-uex-best  { font-size:0.94rem; font-weight:700; color:#5a9e3f; margin-bottom:0.2rem; }
+  .d-uex-total { font-size:0.72rem; color:var(--color-text-secondary); margin-bottom:0.5rem; }
+  .d-uex-row   { display:flex; align-items:center; padding:0.2rem 0; border-bottom:0.5px solid var(--color-border-tertiary); font-size:0.72rem; gap:0.25rem; }
+  .d-uex-row:last-child { border-bottom:none; }
+  .d-uex-row .term { flex:1; color:var(--color-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .d-uex-row .sys  { font-size:0.59rem; color:var(--color-text-tertiary); margin-left:0.2rem; }
+  .d-uex-row .price { font-weight:600; color:var(--color-text-primary); white-space:nowrap; }
+  .d-uex-row .stock { font-size:0.59rem; color:var(--color-text-tertiary); white-space:nowrap; }
+
   /* ── Grade/class badges ── */
   .grade-A { background: #1e2e14; color: #5a9e3f; }
   .grade-B { background: #142236; color: #4a8fd4; }
@@ -1505,6 +1520,7 @@
     <div id="d-badge"></div>
     <div class="info-grid" id="d-grid"></div>
     <div class="notes-text" id="d-notes"></div>
+    <div id="d-uex-prices" style="display:none;"></div>
     <div class="action-row">
       <button class="edit-btn" id="d-edit">Edit</button>
       <button class="delete-btn" id="d-delete">Remove</button>
@@ -2132,6 +2148,70 @@ function calcRecipeDKP(idx){
 }
 
 // ============================================================
+// ============================================================
+// UEX INVENTORY PRICE LOOKUPS
+// Reuses the op_ UEX commodity cache — both tabs share the same fetched data.
+// ============================================================
+var inv_priceCache   = {};  // { lower_name: [{terminal,price,system,stock}] }
+var inv_pricePending = {};  // { lower_name: [callbacks] } — deduplicates in-flight requests
+
+function inv_fetchPrices(name, cb) {
+  var key = (name || '').toLowerCase().trim();
+  if (Object.prototype.hasOwnProperty.call(inv_priceCache, key)) { cb(inv_priceCache[key]); return; }
+  if (inv_pricePending[key]) { inv_pricePending[key].push(cb); return; }
+  inv_pricePending[key] = [cb];
+  op_fetchCommodities(function() {
+    op_fetchPrices(name, function(rows) {
+      inv_priceCache[key] = rows;
+      var cbs = inv_pricePending[key] || [];
+      delete inv_pricePending[key];
+      cbs.forEach(function(fn) { fn(rows); });
+    });
+  });
+}
+
+// Apply fetched price rows to a card's badge element
+function inv_applyCardPrice(id, rows, qty, isCscu) {
+  var el = document.getElementById('inv-price-' + id);
+  if (!el) return;
+  if (!rows || !rows.length) { el.style.display = 'none'; return; }
+  var best = rows[0];
+  var scu  = isCscu ? qty / 100 : qty;
+  var total = Math.round(best.price * scu);
+  var pf = best.price >= 1000 ? (best.price / 1000).toFixed(1) + 'k' : Math.round(best.price) + '';
+  var tf = total >= 1000000 ? (total / 1000000).toFixed(2) + 'M'
+         : total >= 1000    ? (total / 1000).toFixed(1) + 'k'
+         : total + '';
+  el.textContent = pf + ' aUEC/SCU' + (scu > 0 ? ' · ~' + tf + ' aUEC' : '');
+  el.style.display = '';
+}
+
+// Background price fetch for all visible cards on the active tab.
+// Staggered 150 ms between requests to be polite to the UEX API.
+function inv_prefetchTabPrices() {
+  if (activeTab !== 'material' && activeTab !== 'wikelo') return;
+  var tabItems = items.filter(function(it) { return it.cat === activeTab; });
+  var delay = 0;
+  tabItems.forEach(function(it) {
+    var qty    = it.cat === 'material' ? it.qty : (it.wkQty || 1);
+    var isCscu = it.cat === 'material';
+    var key    = (it.name || '').toLowerCase().trim();
+    if (Object.prototype.hasOwnProperty.call(inv_priceCache, key)) {
+      inv_applyCardPrice(it.id, inv_priceCache[key], qty, isCscu);
+      return;
+    }
+    (function(item, q, cscu) {
+      setTimeout(function() {
+        inv_fetchPrices(item.name, function(rows) {
+          inv_applyCardPrice(item.id, rows, q, cscu);
+        });
+      }, delay);
+    })(it, qty, isCscu);
+    delay += 150;
+  });
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 function render(){
@@ -2185,7 +2265,7 @@ function render(){
     }
     if(it.cat==='material'){
       const qual=it.quality||0,pct=Math.round((qual/1000)*100),col=qualityColor(qual);
-      return`<div class="card cat-material" onclick="openDetail('${it.id}')"><div class="card-cat">Material</div><div class="card-name">${it.name}</div><div class="quality-bar"><div class="quality-bar-track"><div class="quality-bar-fill" style="width:${pct}%;background:${col};"></div></div><div class="quality-label">Quality ${qual} / 1000</div></div><div class="card-footer" style="margin-top:8px;"><span class="qty-badge">${fmtQty(it.qty)}</span><span class="owner">${it.owner||''}</span></div></div>`;
+      return`<div class="card cat-material" onclick="openDetail('${it.id}')"><div class="card-cat">Material</div><div class="card-name">${it.name}</div><div class="quality-bar"><div class="quality-bar-track"><div class="quality-bar-fill" style="width:${pct}%;background:${col};"></div></div><div class="quality-label">Quality ${qual} / 1000</div></div><div class="card-footer" style="margin-top:8px;"><span class="qty-badge">${fmtQty(it.qty)}</span><span class="owner">${it.owner||''}</span></div><div id="inv-price-${it.id}" class="inv-price-badge" style="display:none;"></div></div>`;
     }
     if(it.cat==='blueprint'){
       return`<div class="card cat-blueprint" onclick="openDetail('${it.id}')"><div class="card-cat">Blueprint</div><div class="card-name">${it.name}</div><div class="card-sub">${it.bpOutput||'—'}</div><div class="card-footer"><span class="bp-status ${BP_CLASS[it.bpStatus]}">${BP_STATUS[it.bpStatus]}</span><span class="owner">${it.bpHolder||''}</span></div></div>`;
@@ -2226,6 +2306,7 @@ function render(){
         <div class="card-sub" style="display:flex;align-items:center;gap:6px;">${dkpEl}</div>
         <div style="font-size:11px;color:#9e9b96;margin-top:6px;">×${it.wkQty} held</div>
         ${totDkp>0?`<div style="margin-top:6px;"><span class="dkp-total-badge">${totDkp} DKP held</span></div>`:''}
+        <div id="inv-price-${it.id}" class="inv-price-badge" style="display:none;"></div>
         ${listingHTML}
       </div>`;
     }
@@ -2241,6 +2322,9 @@ function render(){
   }
 
   updateStats();
+
+  // Kick off background UEX price fetches for visible material / loot cards
+  inv_prefetchTabPrices();
 }
 
 function updateStats(){
@@ -2343,6 +2427,55 @@ function openDetail(id){
   else if(it.cat==='wikelo'){const totDkp=(it.wkDkp||0)*(it.wkQty||0);info=`<div class="info-item"><div class="label">Quantity Held</div><div class="value">${it.wkQty}</div></div><div class="info-item"><div class="label">DKP / unit</div><div class="value">${it.wkDkp||0}</div></div><div class="info-item"><div class="label">Total DKP held</div><div class="value" style="color:#a89cf7;">${totDkp}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.wkHolder||'—'}</div></div>`;}
   document.getElementById('d-grid').innerHTML=info;
   const notes=document.getElementById('d-notes');notes.textContent=it.notes||'';notes.style.display=it.notes?'block':'none';
+
+  // UEX market prices panel — material, loot, component
+  const priceEl = document.getElementById('d-uex-prices');
+  if (priceEl) {
+    const wantsUex = it.cat === 'material' || it.cat === 'wikelo' || it.cat === 'component';
+    if (wantsUex) {
+      priceEl.style.display = 'block';
+      priceEl.innerHTML = '<div class="d-uex-panel"><div class="d-uex-title">UEX Market</div>'
+        + '<div style="font-size:0.72rem;color:var(--color-text-tertiary);">Fetching live prices…</div></div>';
+      const _iname = it.name;
+      const _iqty  = it.cat === 'material' ? it.qty : (it.wkQty || it.qty || 1);
+      const _imat  = it.cat === 'material';
+      inv_fetchPrices(_iname, function(rows) {
+        const el2 = document.getElementById('d-uex-prices'); if (!el2) return;
+        if (!rows.length) {
+          el2.innerHTML = '<div class="d-uex-panel"><div class="d-uex-title">UEX Market</div>'
+            + '<div style="font-size:0.72rem;color:var(--color-text-tertiary);">No commodity market data found for "'+esc(_iname)+'".</div></div>';
+          return;
+        }
+        const scu   = _imat ? _iqty / 100 : _iqty;
+        const best  = rows[0];
+        const total = Math.round(best.price * scu);
+        const pf    = p => p >= 1000 ? (p/1000).toFixed(2)+'k' : Math.round(p)+'';
+        const tf    = n => n >= 1000000 ? (n/1000000).toFixed(2)+'M aUEC'
+                         : n >= 1000    ? (n/1000).toFixed(1)+'k aUEC'
+                         : n+' aUEC';
+        const rowsHtml = rows.slice(0, 7).map(function(r, i) {
+          return '<div class="d-uex-row">'
+            + '<span class="term">'+(i===0?'★ ':'')+esc(r.terminal)+'<span class="sys">'+esc(r.system)+'</span></span>'
+            + '<span class="price">'+pf(r.price)+' /SCU</span>'
+            + (r.stock > 0 ? '<span class="stock">'+r.stock+' SCU stk</span>' : '')
+            + '</div>';
+        }).join('');
+        el2.innerHTML = '<div class="d-uex-panel">'
+          + '<div class="d-uex-title">UEX Market Prices</div>'
+          + '<div class="d-uex-best">'+pf(best.price)+' aUEC / SCU'
+          +   '<span style="font-size:0.59rem;font-weight:400;color:var(--color-text-secondary);margin-left:0.4rem;">best sell</span></div>'
+          + (scu > 0 ? '<div class="d-uex-total">Est. org value ('
+              +(_imat?fmtQty(_iqty):_iqty+' units')+'):'
+              +' <strong style="color:#5a9e3f;">~'+tf(total)+'</strong></div>' : '')
+          + rowsHtml
+          + '<div style="font-size:0.59rem;color:var(--color-text-tertiary);margin-top:0.5rem;">via UEX Corp · may be slightly stale</div>'
+          + '</div>';
+      });
+    } else {
+      priceEl.style.display = 'none';
+    }
+  }
+
   const canManage = isAdmin || isOfficer;
   document.getElementById('d-edit').style.display   = canManage ? '' : 'none';
   document.getElementById('d-delete').style.display = canManage ? '' : 'none';
