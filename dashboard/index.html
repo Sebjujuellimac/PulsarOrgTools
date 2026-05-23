@@ -195,6 +195,21 @@
   .d-uex-row .price { font-weight:600; color:var(--color-text-primary); white-space:nowrap; }
   .d-uex-row .stock { font-size:0.59rem; color:var(--color-text-tertiary); white-space:nowrap; }
 
+  /* ── Component catalog typeahead ── */
+  .comp-search-wrap { position:relative; }
+  .comp-results { position:absolute; top:calc(100% + 2px); left:0; right:0; z-index:50; background:var(--color-background-secondary); border:1px solid var(--color-border-secondary); border-radius:var(--border-radius-sm); max-height:210px; overflow-y:auto; box-shadow:0 4px 16px rgba(0,0,0,.5); }
+  .comp-result-row { display:flex; align-items:center; gap:0.35rem; padding:0.38rem 0.6rem; cursor:pointer; border-bottom:0.5px solid var(--color-border-tertiary); font-size:0.78rem; }
+  .comp-result-row:last-child { border-bottom:none; }
+  .comp-result-row:hover,.comp-result-row:focus { background:rgba(126,184,247,0.08); outline:none; }
+  .comp-result-name { flex:1; color:var(--color-text-primary); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .comp-result-mfr { font-size:0.63rem; color:var(--color-text-tertiary); white-space:nowrap; }
+  .comp-selected { display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; padding:0.38rem 0.6rem; background:rgba(90,158,63,0.07); border:0.5px solid rgba(90,158,63,0.3); border-radius:var(--border-radius-sm); margin-top:0.25rem; font-size:0.78rem; }
+  .comp-selected-name { font-weight:600; color:var(--color-text-primary); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .comp-selected-mfr { font-size:0.63rem; color:var(--color-text-tertiary); }
+  .comp-clear { margin-left:auto; font-size:0.63rem; color:var(--color-text-tertiary); cursor:pointer; padding:0.1rem 0.35rem; border-radius:2px; flex-shrink:0; }
+  .comp-clear:hover { color:#e05a5a; background:rgba(224,90,90,0.12); }
+  .comp-catalog-hint { font-size:0.59rem; color:var(--color-text-tertiary); margin-top:0.2rem; }
+
   /* ── Grade/class badges ── */
   .grade-A { background: #1e2e14; color: #5a9e3f; }
   .grade-B { background: #142236; color: #4a8fd4; }
@@ -743,9 +758,21 @@
         <label class="filter-label" for="ff-function">Type</label>
         <select class="filter-select" id="ff-function" onchange="render()">
           <option value="">All types</option>
-          <option>Power Plant</option><option>Cooler</option><option>Shield Generator</option>
-          <option>Quantum Drive</option><option>Thruster</option><option>Radar / Sensor</option>
-          <option>Weapon Mount</option><option>Fuel Intake / Tank</option>
+          <option value="Shield">Shield Generator</option>
+          <option value="PowerPlant">Power Plant</option>
+          <option value="Cooler">Cooler</option>
+          <option value="QuantumDrive">Quantum Drive</option>
+          <option value="WeaponGun">Weapon — Gun</option>
+          <option value="MissileLauncher">Missile Launcher</option>
+          <option value="Missile">Missile</option>
+          <option value="Radar">Radar / Sensor</option>
+          <option value="EMP">EMP</option>
+          <option value="QuantumInterdictionGenerator">Q-Interdictor</option>
+          <option value="JumpDrive">Jump Drive</option>
+          <option value="TractorBeam">Tractor Beam</option>
+          <option value="WeaponMining">Mining Laser</option>
+          <option value="SalvageHead">Salvage Head</option>
+          <option value="SalvageModifier">Salvage Modifier</option>
         </select>
       </div>
       <div class="filter-group">
@@ -761,16 +788,16 @@
         <select class="filter-select" id="ff-grade" onchange="render()">
           <option value="">All grades</option>
           <option value="A">Grade A</option><option value="B">Grade B</option>
-          <option value="C">Grade C</option><option value="D">Grade D</option>
+          <option value="C">Grade C</option><option value="D">Grade D</option><option value="E">Grade E</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label" for="ff-size">Size</label>
         <select class="filter-select" id="ff-size" onchange="render()">
           <option value="">All sizes</option>
-          <option value="S0">Size 0</option><option value="S1">Size 1</option><option value="S2">Size 2</option>
-          <option value="S3">Size 3</option><option value="S4">Size 4</option><option value="S5">Size 5</option>
-          <option value="S6">Size 6</option><option value="S7">Size 7</option>
+          <option value="0">Size 0</option><option value="1">Size 1</option><option value="2">Size 2</option>
+          <option value="3">Size 3</option><option value="4">Size 4</option><option value="5">Size 5</option>
+          <option value="6">Size 6</option><option value="7">Size 7</option><option value="8">Size 8</option>
         </select>
       </div>
       <button class="filter-reset" onclick="resetFilters('component')">Reset</button>
@@ -974,45 +1001,48 @@
       </select>
     </div>
     <div class="form-group" id="nameGroup">
-      <label class="form-label">Name</label>
+      <label class="form-label" id="nameGroup-label">Name</label>
       <input class="form-input" id="f-name" type="text" placeholder="">
     </div>
     <div id="fields-std">
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Type</label>
-          <select class="form-select" id="f-function">
-            <option value="">— Select —</option>
-            <option>Power Plant</option><option>Cooler</option><option>Shield Generator</option>
-            <option>Quantum Drive</option><option>Thruster</option><option>Radar / Sensor</option>
-            <option>Weapon Mount</option><option>Fuel Intake / Tank</option><option value="Other">Other</option>
+      <!-- Catalog typeahead (component mode) -->
+      <div id="comp-search-wrap" class="comp-search-wrap" style="display:none;margin-bottom:0.75rem;">
+        <div style="display:flex;gap:0.4rem;margin-bottom:0.3rem;">
+          <select class="form-select" id="f-comp-type-filter" style="flex:0 0 auto;" onchange="compSearch()">
+            <option value="">All types</option>
+            <option value="Shield">Shield Generator</option>
+            <option value="PowerPlant">Power Plant</option>
+            <option value="Cooler">Cooler</option>
+            <option value="QuantumDrive">Quantum Drive</option>
+            <option value="WeaponGun">Weapon — Gun</option>
+            <option value="MissileLauncher">Missile Launcher</option>
+            <option value="Missile">Missile</option>
+            <option value="Radar">Radar / Sensor</option>
+            <option value="EMP">EMP</option>
+            <option value="QuantumInterdictionGenerator">Q-Interdictor</option>
+            <option value="JumpDrive">Jump Drive</option>
+            <option value="TractorBeam">Tractor Beam</option>
+            <option value="WeaponMining">Mining Laser</option>
+            <option value="SalvageHead">Salvage Head</option>
+            <option value="SalvageModifier">Salvage Modifier</option>
           </select>
+          <div style="flex:1;position:relative;">
+            <input class="form-input" id="f-comp-search" type="text" placeholder="Search by name or manufacturer…" oninput="compSearch()" autocomplete="off">
+            <div id="comp-results" class="comp-results" style="display:none;"></div>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Class</label>
-          <select class="form-select" id="f-class">
-            <option value="">— Select —</option>
-            <option>Stealth</option><option>Military</option><option>Competition</option>
-            <option>Civilian</option><option>Industrial</option>
-          </select>
-        </div>
+        <div id="comp-selected" class="comp-selected" style="display:none;"></div>
+        <div class="comp-catalog-hint" id="comp-catalog-hint">Loading catalog…</div>
       </div>
-      <div class="form-row-4">
-        <div class="form-group">
-          <label class="form-label">Grade</label>
-          <select class="form-select" id="f-grade">
-            <option value="">—</option><option value="A">A</option><option value="B">B</option>
-            <option value="C">C</option><option value="D">D</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Size</label>
-          <select class="form-select" id="f-size">
-            <option value="">—</option><option value="S0">0</option>
-            <option value="S1">1</option><option value="S2">2</option><option value="S3">3</option>
-            <option value="S4">4</option><option value="S5">5</option><option value="S6">6</option><option value="S7">7</option>
-          </select>
-        </div>
+      <!-- Hidden fields populated by catalog selection (also used for legacy edit) -->
+      <input type="hidden" id="f-name-hidden">
+      <input type="hidden" id="f-function">
+      <input type="hidden" id="f-class">
+      <input type="hidden" id="f-grade">
+      <input type="hidden" id="f-size">
+      <input type="hidden" id="f-comp-mfr">
+      <!-- Quantity + Owner -->
+      <div class="form-row" style="margin-top:0;">
         <div class="form-group">
           <label class="form-label">Quantity</label>
           <input class="form-input" id="f-qty" type="number" min="1" value="1">
@@ -1781,12 +1811,13 @@ function tableFor(cat) {
 function fromDB(row, cat) {
   const it = { id: row.id, cat, name: row.name, notes: row.notes || '' };
   if (cat === 'component') {
-    it.function  = row.function   || '';
-    it.compClass = row.comp_class || '';
-    it.grade     = row.grade      || '';
-    it.size      = row.size       || '';
-    it.qty       = row.qty        || 1;
-    it.owner     = row.owner      || '';
+    it.function  = row.function      || '';
+    it.compClass = row.comp_class    || '';
+    it.grade     = row.grade         || '';
+    it.size      = sc_normaliseSize(row.size);
+    it.mfr       = row.manufacturer  || '';
+    it.qty       = row.qty           || 1;
+    it.owner     = row.owner         || '';
   } else if (cat === 'material') {
     it.oreType   = row.ore_type   || '';
     it.quality   = row.quality    || 0;
@@ -1815,12 +1846,13 @@ function fromDB(row, cat) {
 function toDB(item) {
   const row = { name: item.name, notes: item.notes || null };
   if (item.cat === 'component') {
-    row.function   = item.function  || null;
-    row.comp_class = item.compClass || null;
-    row.grade      = item.grade     || null;
-    row.size       = item.size      || null;
-    row.qty        = item.qty       || 1;
-    row.owner      = item.owner     || null;
+    row.function     = item.function  || null;
+    row.comp_class   = item.compClass || null;
+    row.grade        = item.grade     || null;
+    row.size         = item.size      || null;
+    row.manufacturer = item.mfr       || null;
+    row.qty          = item.qty       || 1;
+    row.owner        = item.owner     || null;
   } else if (item.cat === 'material') {
     row.ore_type   = item.oreType   || null;
     row.quality    = item.quality   || 0;
@@ -2148,6 +2180,172 @@ function calcRecipeDKP(idx){
 }
 
 // ============================================================
+// SC COMPONENT CATALOG
+// Source: StarCitizenWiki/scunpacked-data (auto-updated each patch)
+// Fetched as ./sc-components.json from the same GitHub Pages origin.
+// ============================================================
+var sc_catalog       = null;   // null = not yet fetched, [] = failed/empty, [...] = ready
+var sc_catalogLoading= false;
+var sc_catalogCbs    = [];
+var sc_currentResult = [];     // last search results (for index-based selection)
+
+// Catalog type code → display string
+var SC_TYPE_DISPLAY = {
+  Shield:'Shield Generator', PowerPlant:'Power Plant', Cooler:'Cooler',
+  QuantumDrive:'Quantum Drive', WeaponGun:'Weapon — Gun',
+  MissileLauncher:'Missile Launcher', Missile:'Missile',
+  Radar:'Radar / Sensor', EMP:'EMP',
+  QuantumInterdictionGenerator:'Q-Interdictor',
+  JumpDrive:'Jump Drive', TractorBeam:'Tractor Beam',
+  WeaponMining:'Mining Laser', SalvageHead:'Salvage Head',
+  SalvageModifier:'Salvage Modifier',
+};
+
+function sc_typeDisplay(t) { return SC_TYPE_DISPLAY[t] || t || '—'; }
+
+function sc_normaliseSize(s) {
+  // Accept "S2", "2", 2 → return "2"
+  if (s === null || s === undefined || s === '') return '';
+  var str = String(s);
+  return str.replace(/^S/i, '');
+}
+
+function sc_fetchCatalog(cb) {
+  if (sc_catalog) { cb(sc_catalog); return; }
+  if (sc_catalogLoading) { sc_catalogCbs.push(cb); return; }
+  sc_catalogLoading = true;
+  sc_catalogCbs.push(cb);
+
+  function done(data) {
+    sc_catalog = data || [];
+    sc_catalogLoading = false;
+    var hint = document.getElementById('comp-catalog-hint');
+    if (hint) hint.textContent = sc_catalog.length
+      ? sc_catalog.length + ' components loaded (patch 4.x)'
+      : 'Catalog unavailable — enter details manually.';
+    var cbs = sc_catalogCbs; sc_catalogCbs = [];
+    cbs.forEach(function(fn) { fn(sc_catalog); });
+  }
+
+  // Try same-origin first (GitHub Pages), then allorigins proxy for file:// dev
+  var base = window.location.href.replace(/[^/]*$/, '');
+  fetch(base + 'sc-components.json')
+    .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .catch(function() {
+      var proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(base + 'sc-components.json');
+      return fetch(proxy).then(function(r) { return r.json(); }).then(function(d) { return JSON.parse(d.contents); });
+    })
+    .then(function(data) { done(Array.isArray(data) ? data : []); })
+    .catch(function() { done([]); });
+}
+
+// ── Typeahead search ──────────────────────────────────────────────────────────
+function compSearch() {
+  if (!sc_catalog || !sc_catalog.length) return;
+  var q    = (document.getElementById('f-comp-search').value || '').toLowerCase().trim();
+  var type = (document.getElementById('f-comp-type-filter').value || '');
+  var resEl = document.getElementById('comp-results');
+  if (!resEl) return;
+
+  if (!q && !type) { resEl.style.display = 'none'; return; }
+
+  var results = sc_catalog.filter(function(c) {
+    if (type && c.t !== type) return false;
+    if (q && !c.n.toLowerCase().includes(q) && !(c.mfr||'').toLowerCase().includes(q)) return false;
+    return true;
+  }).slice(0, 18);
+
+  sc_currentResult = results;
+
+  if (!results.length) {
+    resEl.innerHTML = '<div style="padding:0.5rem 0.6rem;font-size:0.75rem;color:var(--color-text-tertiary);">No matches</div>';
+    resEl.style.display = 'block';
+    return;
+  }
+
+  resEl.innerHTML = results.map(function(c, i) {
+    var badges = '';
+    if (c.sz) badges += '<span class="size-badge" style="font-size:0.59rem;">'+c.sz+'</span>';
+    if (c.g)  badges += '<span class="grade-badge grade-'+c.g+'" style="font-size:0.59rem;">'+c.g+'</span>';
+    if (c.cls)badges += '<span class="class-badge class-'+c.cls+'" style="font-size:0.59rem;">'+c.cls+'</span>';
+    return '<div class="comp-result-row" tabindex="0" onmousedown="compSelect('+i+');event.preventDefault()">'
+      +'<span class="comp-result-name">'+esc(c.n)+'</span>'
+      +(c.mfr?'<span class="comp-result-mfr">'+esc(c.mfr)+'</span>':'')
+      +badges+'</div>';
+  }).join('');
+  resEl.style.display = 'block';
+}
+
+function compSelect(i) {
+  var c = sc_currentResult[i];
+  if (!c) return;
+  // Populate hidden fields
+  document.getElementById('f-name-hidden').value = c.n;
+  document.getElementById('f-function').value    = c.t;
+  document.getElementById('f-class').value       = c.cls || '';
+  document.getElementById('f-grade').value       = c.g   || '';
+  document.getElementById('f-size').value        = c.sz !== undefined ? String(c.sz) : '';
+  document.getElementById('f-comp-mfr').value    = c.mfr || '';
+  // Show selected summary
+  var badges = '';
+  if (c.sz)  badges += '<span class="size-badge">'+c.sz+'</span>';
+  if (c.g)   badges += '<span class="grade-badge grade-'+c.g+'">'+c.g+'</span>';
+  if (c.cls) badges += '<span class="class-badge class-'+c.cls+'">'+c.cls+'</span>';
+  var selEl = document.getElementById('comp-selected');
+  selEl.innerHTML = '<span class="comp-selected-name">'+esc(c.n)+'</span>'
+    +(c.mfr?'<span class="comp-selected-mfr">'+esc(c.mfr)+'</span>':'')
+    +badges
+    +'<span class="class-badge" style="background:rgba(126,184,247,0.10);color:#7eb8f7;font-size:0.59rem;">'+esc(sc_typeDisplay(c.t))+'</span>'
+    +'<span class="comp-clear" onclick="compClear()" title="Change component">✕ change</span>';
+  selEl.style.display = 'flex';
+  // Clear + hide the search
+  document.getElementById('f-comp-search').value = '';
+  document.getElementById('comp-results').style.display = 'none';
+  document.getElementById('comp-catalog-hint').style.display = 'none';
+  document.getElementById('f-comp-type-filter').style.display = 'none';
+  document.getElementById('f-comp-search').style.display = 'none';
+}
+
+function compClear() {
+  ['f-name-hidden','f-function','f-class','f-grade','f-size','f-comp-mfr'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('comp-selected').style.display   = 'none';
+  document.getElementById('f-comp-search').style.display   = '';
+  document.getElementById('f-comp-search').value           = '';
+  document.getElementById('comp-results').style.display    = 'none';
+  document.getElementById('f-comp-type-filter').style.display = '';
+  document.getElementById('comp-catalog-hint').style.display  = '';
+  document.getElementById('f-comp-search').focus();
+}
+
+function compShowPreselected(name, type, grade, size, cls, mfr) {
+  // Show an already-known component as selected (used when editing an existing entry)
+  document.getElementById('f-name-hidden').value = name;
+  document.getElementById('f-function').value    = type  || '';
+  document.getElementById('f-class').value       = cls   || '';
+  document.getElementById('f-grade').value       = grade || '';
+  document.getElementById('f-size').value        = size  || '';
+  document.getElementById('f-comp-mfr').value    = mfr   || '';
+  var badges = '';
+  var sz = sc_normaliseSize(size);
+  if (sz)   badges += '<span class="size-badge">'+sz+'</span>';
+  if (grade)badges += '<span class="grade-badge grade-'+grade+'">'+grade+'</span>';
+  if (cls)  badges += '<span class="class-badge class-'+cls+'">'+cls+'</span>';
+  var typeLabel = sc_typeDisplay(type);
+  var selEl = document.getElementById('comp-selected');
+  selEl.innerHTML = '<span class="comp-selected-name">'+esc(name)+'</span>'
+    +(mfr?'<span class="comp-selected-mfr">'+esc(mfr)+'</span>':'')
+    +badges
+    +'<span class="class-badge" style="background:rgba(126,184,247,0.10);color:#7eb8f7;font-size:0.59rem;">'+esc(typeLabel)+'</span>'
+    +'<span class="comp-clear" onclick="compClear()" title="Change component">✕ change</span>';
+  selEl.style.display = 'flex';
+  document.getElementById('f-comp-search').style.display      = 'none';
+  document.getElementById('f-comp-type-filter').style.display = 'none';
+  document.getElementById('comp-catalog-hint').style.display  = 'none';
+}
+
+// ============================================================
 // ============================================================
 // UEX INVENTORY PRICE LOOKUPS
 // Reuses the op_ UEX commodity cache — both tabs share the same fetched data.
@@ -2240,7 +2438,7 @@ function render(){
     if(it.cat!==activeTab)return false;
     const mQ=!q||[it.name,it.owner,it.oreType,it.function,it.compClass,it.bpHolder,it.bpOutput,it.wkHolder].some(f=>(f||'').toLowerCase().includes(q));
     if(!mQ)return false;
-    if(it.cat==='component'){if(cf.fn&&it.function!==cf.fn)return false;if(cf.cls&&it.compClass!==cf.cls)return false;if(cf.grade&&it.grade!==cf.grade)return false;if(cf.size&&it.size!==cf.size)return false;}
+    if(it.cat==='component'){if(cf.fn&&it.function!==cf.fn)return false;if(cf.cls&&it.compClass!==cf.cls)return false;if(cf.grade&&it.grade!==cf.grade)return false;if(cf.size&&sc_normaliseSize(it.size)!==cf.size)return false;}
     if(it.cat==='material'){if((it.quality||0)<rangeMin||(it.quality||0)>rangeMax)return false;const a=[mf.t1,mf.t2,mf.t3].filter(Boolean);if(a.length&&!a.includes(it.oreType))return false;}
     if(it.cat==='blueprint'){const u=it.bpStatus==='owned';if(u&&!bpU)return false;if(!u&&!bpL)return false;}
     if(it.cat==='wikelo'){if(wkT&&it.wkType!==wkT)return false;if(rSet){const nl=it.name.toLowerCase();if(!rSet.some(ri=>nl.includes(ri)||ri.includes(nl)))return false;}}
@@ -2258,10 +2456,13 @@ function render(){
   if(!filtered.length){grid.innerHTML='<div class="empty">No items match the current filters.</div>';updateStats();return;}
   grid.innerHTML=filtered.map(it=>{
     if(it.cat==='component'){
-      const g=it.grade?`<span class="grade-badge grade-${it.grade}">Grade ${it.grade}</span>`:'';
-      const s=it.size?`<span class="size-badge">${it.size}</span>`:'';
+      const sz=sc_normaliseSize(it.size);
+      const g=it.grade?`<span class="grade-badge grade-${it.grade}">${it.grade}</span>`:'';
+      const s=sz?`<span class="size-badge">${sz}</span>`:'';
       const c=it.compClass?`<span class="class-badge class-${it.compClass}">${it.compClass}</span>`:'';
-      return`<div class="card cat-component" onclick="openDetail('${it.id}')"><div class="card-cat">Component</div><div class="card-name">${it.name}</div><div class="card-sub">${it.function||'—'}</div><div class="comp-meta">${c}${g}${s}</div><div class="card-footer"><span class="qty-badge">×${it.qty}</span><span class="owner">${it.owner||''}</span></div></div>`;
+      const typeLabel=sc_typeDisplay(it.function);
+      const mfrLine=it.mfr?`<div style="font-size:0.63rem;color:var(--color-text-tertiary);margin-bottom:0.2rem;">${esc(it.mfr)}</div>`:'';
+      return`<div class="card cat-component" onclick="openDetail('${it.id}')"><div class="card-cat">Component</div><div class="card-name">${it.name}</div>${mfrLine}<div class="card-sub">${typeLabel}</div><div class="comp-meta">${c}${g}${s}</div><div class="card-footer"><span class="qty-badge">×${it.qty}</span><span class="owner">${it.owner||''}</span></div></div>`;
     }
     if(it.cat==='material'){
       const qual=it.quality||0,pct=Math.round((qual/1000)*100),col=qualityColor(qual);
@@ -2342,13 +2543,20 @@ function updateStats(){
 
 function onCatChange(){
   const cat=document.getElementById('f-cat').value;
-  document.getElementById('fields-std').style.display=cat==='component'?'block':'none';
+  const isComp = cat === 'component';
+  document.getElementById('fields-std').style.display=isComp?'block':'none';
   document.getElementById('fields-mat').style.display=cat==='material'?'block':'none';
   document.getElementById('fields-bp').style.display=cat==='blueprint'?'block':'none';
   document.getElementById('fields-wk').style.display=cat==='wikelo'?'block':'none';
-  document.getElementById('nameGroup').style.display=cat==='material'?'none':'block';
-  const ph={component:'e.g. Kroneg FL-33',blueprint:'e.g. Parallax Rifle',wikelo:'e.g. Wikelo Favor (item name)'};
-  document.getElementById('f-name').placeholder=ph[cat]||'';
+
+  // Component: hide the plain name field — the catalog typeahead replaces it
+  document.getElementById('nameGroup').style.display = (isComp || cat==='material') ? 'none' : 'block';
+  document.getElementById('comp-search-wrap').style.display = isComp ? 'block' : 'none';
+
+  if (!isComp) {
+    const ph={blueprint:'e.g. Parallax Rifle',wikelo:'e.g. Wikelo Favor (item name)'};
+    document.getElementById('f-name').placeholder=ph[cat]||'';
+  }
   if(cat==='wikelo'){
     document.getElementById('f-name').oninput=function(){const a=lookupDKP(this.value);if(a>0)document.getElementById('f-wk-dkp').value=a;};
     document.getElementById('f-listing-section').style.display = (isOfficer||isAdmin) ? 'block' : 'none';
@@ -2356,6 +2564,13 @@ function onCatChange(){
     document.getElementById('f-name').oninput=null;
     document.getElementById('f-listing-section').style.display = 'none';
   }
+
+  // Kick off catalog fetch when component tab is opened (loads in background)
+  if (isComp) sc_fetchCatalog(function(data) {
+    var hint = document.getElementById('comp-catalog-hint');
+    if (hint && hint.style.display !== 'none')
+      hint.textContent = data.length ? data.length + ' components loaded (patch 4.x)' : 'Catalog unavailable — enter details manually.';
+  });
 }
 function onListingTypeChange() {
   const t = document.getElementById('f-listing-type')?.value || 'none';
@@ -2372,7 +2587,14 @@ function openAddModal(){
   document.getElementById('f-bp-runs').value=0;document.getElementById('f-wk-qty').value=1;
   document.getElementById('f-wk-dkp').value=0;
   document.getElementById('f-cat').value=activeTab;
-  ['f-grade','f-size','f-function','f-class'].forEach(id=>document.getElementById(id).value='');
+  ['f-grade','f-size','f-function','f-class','f-name-hidden','f-comp-mfr'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  // Reset catalog search state
+  const cs=document.getElementById('f-comp-search');if(cs)cs.value='';
+  const cr=document.getElementById('comp-results');if(cr)cr.style.display='none';
+  const csel=document.getElementById('comp-selected');if(csel)csel.style.display='none';
+  const ctf=document.getElementById('f-comp-type-filter');if(ctf){ctf.value='';ctf.style.display='';}
+  if(cs)cs.style.display='';
+  const ch=document.getElementById('comp-catalog-hint');if(ch)ch.style.display='';
   document.getElementById('f-bp-status').value='owned';
   document.getElementById('f-listing-type').value='none'; onListingTypeChange();
   onCatChange();document.getElementById('addModal').classList.add('open');
@@ -2380,13 +2602,17 @@ function openAddModal(){
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 async function submitItem(){
   const cat=document.getElementById('f-cat').value;
-  const name=cat==='material'?document.getElementById('f-mat-type').value:document.getElementById('f-name').value.trim();
-  if(!name){alert(cat==='material'?'Please select an ore type.':'Please enter a name.');return;}
+  const name=cat==='component'
+    ? (document.getElementById('f-name-hidden').value||'').trim()
+    : cat==='material'
+      ? document.getElementById('f-mat-type').value
+      : document.getElementById('f-name').value.trim();
+  if(!name){alert(cat==='component'?'Please select a component from the catalog.':cat==='material'?'Please select an ore type.':'Please enter a name.');return;}
   const btn=document.getElementById('submitBtn');
   btn.disabled=true; btn.textContent=editId?'Saving…':'Adding…';
   const item={cat,name,notes:document.getElementById('f-notes').value.trim()};
   if(editId) item.id=editId;
-  if(cat==='component'){item.function=document.getElementById('f-function').value;item.compClass=document.getElementById('f-class').value;item.grade=document.getElementById('f-grade').value;item.size=document.getElementById('f-size').value;item.qty=parseInt(document.getElementById('f-qty').value)||1;item.owner=document.getElementById('f-owner').value.trim();}
+  if(cat==='component'){item.function=document.getElementById('f-function').value;item.compClass=document.getElementById('f-class').value;item.grade=document.getElementById('f-grade').value;item.size=document.getElementById('f-size').value;item.mfr=document.getElementById('f-comp-mfr').value;item.qty=parseInt(document.getElementById('f-qty').value)||1;item.owner=document.getElementById('f-owner').value.trim();}
   else if(cat==='material'){item.oreType=document.getElementById('f-mat-type').value;item.name=item.oreType;item.quality=Math.max(1,Math.min(1000,parseInt(document.getElementById('f-mat-quality').value)||1));item.qty=parseInt(document.getElementById('f-mat-qty').value)||1;item.owner=document.getElementById('f-mat-owner').value.trim();}
   else if(cat==='blueprint'){item.bpOutput=document.getElementById('f-bp-output').value.trim();item.bpStatus=document.getElementById('f-bp-status').value;item.bpRuns=parseInt(document.getElementById('f-bp-runs').value)||0;item.bpHolder=document.getElementById('f-bp-holder').value.trim();}
   else if(cat==='wikelo'){
@@ -2416,12 +2642,12 @@ function openDetail(id){
   const it=items.find(i=>i.id===id);if(!it)return;
   document.getElementById('modal-title-detail').textContent=it.name;
   let badge='';
-  if(it.cat==='component'){if(it.compClass)badge+=`<span class="class-badge class-${it.compClass}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">${it.compClass}</span>`;if(it.grade)badge+=`<span class="grade-badge grade-${it.grade}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">Grade ${it.grade}</span>`;if(it.size)badge+=`<span class="size-badge" style="display:inline-block;margin-bottom:10px;">${it.size}</span>`;}
+  if(it.cat==='component'){const _sz=sc_normaliseSize(it.size);if(it.compClass)badge+=`<span class="class-badge class-${it.compClass}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">${it.compClass}</span>`;if(it.grade)badge+=`<span class="grade-badge grade-${it.grade}" style="display:inline-block;margin-bottom:10px;margin-right:4px;">${it.grade}</span>`;if(_sz)badge+=`<span class="size-badge" style="display:inline-block;margin-bottom:10px;margin-right:4px;">Size ${_sz}</span>`;if(it.mfr)badge+=`<span style="display:inline-block;margin-bottom:10px;font-size:0.63rem;color:var(--color-text-tertiary);">${esc(it.mfr)}</span>`;}
   else if(it.cat==='blueprint'){badge=`<span class="bp-status ${BP_CLASS[it.bpStatus]}" style="display:inline-block;margin-bottom:10px;">${BP_STATUS[it.bpStatus]}</span>`;}
   else if(it.cat==='wikelo'){if(it.wkDkp)badge=`<span class="dkp-badge" style="display:inline-block;margin-bottom:10px;">${it.wkDkp} DKP / unit</span>`;}
   document.getElementById('d-badge').innerHTML=badge;
   let info='';
-  if(it.cat==='component'){info=`<div class="info-item"><div class="label">Type</div><div class="value">${it.function||'—'}</div></div><div class="info-item"><div class="label">Class</div><div class="value">${it.compClass||'—'}</div></div><div class="info-item"><div class="label">Grade</div><div class="value">${it.grade?'Grade '+it.grade:'—'}</div></div><div class="info-item"><div class="label">Size</div><div class="value">${it.size||'—'}</div></div><div class="info-item"><div class="label">Quantity</div><div class="value">${it.qty}</div></div><div class="info-item"><div class="label">Owner / Location</div><div class="value">${it.owner||'—'}</div></div>`;}
+  if(it.cat==='component'){const _dsz=sc_normaliseSize(it.size);info=`<div class="info-item"><div class="label">Type</div><div class="value">${sc_typeDisplay(it.function)}</div></div><div class="info-item"><div class="label">Manufacturer</div><div class="value">${it.mfr||'—'}</div></div><div class="info-item"><div class="label">Grade</div><div class="value">${it.grade||'—'}</div></div><div class="info-item"><div class="label">Size</div><div class="value">${_dsz||'—'}</div></div><div class="info-item"><div class="label">Quantity</div><div class="value">${it.qty}</div></div><div class="info-item"><div class="label">Owner / Location</div><div class="value">${it.owner||'—'}</div></div>`;}
   else if(it.cat==='material'){const qual=it.quality||0,col=qualityColor(qual),pct=Math.round((qual/1000)*100);info=`<div class="info-item"><div class="label">Ore Type</div><div class="value">${it.oreType||'—'}</div></div><div class="info-item"><div class="label">Quality</div><div class="value">${qual} / 1000</div></div><div class="info-item"><div class="label">Quantity</div><div class="value">${fmtQty(it.qty)}</div></div><div class="info-item"><div class="label">Owner / Location</div><div class="value">${it.owner||'—'}</div></div><div style="grid-column:1/-1;margin-top:4px;"><div style="height:5px;border-radius:2px;background:#2e2c2a;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};border-radius:2px;"></div></div></div>`;}
   else if(it.cat==='blueprint'){info=`<div class="info-item"><div class="label">Produces</div><div class="value">${it.bpOutput||'—'}</div></div><div class="info-item"><div class="label">Status</div><div class="value">${BP_STATUS[it.bpStatus]}</div></div><div class="info-item"><div class="label">Runs Remaining</div><div class="value">${it.bpRuns===0?'Unlimited':it.bpRuns}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.bpHolder||'—'}</div></div>`;}
   else if(it.cat==='wikelo'){const totDkp=(it.wkDkp||0)*(it.wkQty||0);info=`<div class="info-item"><div class="label">Quantity Held</div><div class="value">${it.wkQty}</div></div><div class="info-item"><div class="label">DKP / unit</div><div class="value">${it.wkDkp||0}</div></div><div class="info-item"><div class="label">Total DKP held</div><div class="value" style="color:#a89cf7;">${totDkp}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.wkHolder||'—'}</div></div>`;}
@@ -2492,7 +2718,14 @@ function editItem(id){
   editId=id;document.getElementById('modal-title-add').textContent='Edit Item';document.getElementById('submitBtn').textContent='Save Changes';
   document.getElementById('f-cat').value=it.cat;document.getElementById('f-name').value=it.name;document.getElementById('f-notes').value=it.notes||'';
   onCatChange();
-  if(it.cat==='component'){document.getElementById('f-function').value=it.function||'';document.getElementById('f-class').value=it.compClass||'';document.getElementById('f-grade').value=it.grade||'';document.getElementById('f-size').value=it.size||'';document.getElementById('f-qty').value=it.qty;document.getElementById('f-owner').value=it.owner||'';}
+  if(it.cat==='component'){
+    document.getElementById('f-qty').value=it.qty;document.getElementById('f-owner').value=it.owner||'';
+    // Reset search state then show the existing entry as pre-selected
+    const cs2=document.getElementById('f-comp-search');if(cs2)cs2.style.display='none';
+    const ctf2=document.getElementById('f-comp-type-filter');if(ctf2)ctf2.style.display='none';
+    const ch2=document.getElementById('comp-catalog-hint');if(ch2)ch2.style.display='none';
+    compShowPreselected(it.name,it.function,it.grade,it.size,it.compClass,it.mfr);
+  }
   else if(it.cat==='material'){document.getElementById('f-mat-type').value=it.oreType||'';document.getElementById('f-mat-quality').value=it.quality||'';document.getElementById('f-mat-qty').value=it.qty;document.getElementById('f-mat-owner').value=it.owner||'';}
   else if(it.cat==='blueprint'){document.getElementById('f-bp-output').value=it.bpOutput||'';document.getElementById('f-bp-status').value=it.bpStatus||'owned';document.getElementById('f-bp-runs').value=it.bpRuns||0;document.getElementById('f-bp-holder').value=it.bpHolder||'';}
   else if(it.cat==='wikelo'){
