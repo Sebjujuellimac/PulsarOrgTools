@@ -1008,15 +1008,7 @@
       <span class="modal-title" id="modal-title-add">Add Item</span>
       <button class="close-btn" aria-label="Close" onclick="closeModal('addModal')">×</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Category</label>
-      <select class="form-select" id="f-cat" onchange="onCatChange()">
-        <option value="component">Ship Component</option>
-        <option value="material">Material / Resource</option>
-        <option value="blueprint">Blueprint</option>
-        <option value="wikelo">Loot Item</option>
-      </select>
-    </div>
+    <input type="hidden" id="f-cat">
     <div class="form-group" id="nameGroup">
       <label class="form-label" id="nameGroup-label">Name</label>
       <input class="form-input" id="f-name" type="text" placeholder="">
@@ -2670,7 +2662,8 @@ function onListingTypeChange() {
 
 function openAddModal(){
   if (!isOfficer && !isAdmin) { showError('Only officers can add items to the inventory.'); return; }
-  editId=null;document.getElementById('modal-title-add').textContent='Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
+  const tabLabel={component:'Add Component',material:'Add Material',blueprint:'Add Blueprint',wikelo:'Add Loot Item'};
+  editId=null;document.getElementById('modal-title-add').textContent=tabLabel[activeTab]||'Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
   ['f-name','f-owner','f-notes','f-mat-owner','f-bp-output','f-bp-holder','f-wk-holder'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-qty').value=1;document.getElementById('f-mat-qty').value=1;
   document.getElementById('f-mat-quality').value='';document.getElementById('f-mat-type').value='';
