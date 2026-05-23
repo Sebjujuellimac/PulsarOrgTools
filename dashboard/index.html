@@ -196,8 +196,9 @@
   .d-uex-row .stock { font-size:0.59rem; color:var(--color-text-tertiary); white-space:nowrap; }
 
   /* ── Component catalog typeahead ── */
-  .comp-search-wrap { position:relative; }
-  .comp-results { position:absolute; top:calc(100% + 2px); left:0; right:0; z-index:50; background:var(--color-background-secondary); border:1px solid var(--color-border-secondary); border-radius:var(--border-radius-sm); max-height:210px; overflow-y:auto; box-shadow:0 4px 16px rgba(0,0,0,.5); }
+  .comp-search-wrap { }
+  /* Inline block — no absolute positioning so it's never clipped by the modal's overflow-y:auto */
+  .comp-results { display:none; background:var(--color-background-secondary); border:1px solid var(--color-border-secondary); border-radius:var(--border-radius-sm); max-height:200px; overflow-y:auto; margin-top:2px; }
   .comp-result-row { display:flex; align-items:center; gap:0.35rem; padding:0.38rem 0.6rem; cursor:pointer; border-bottom:0.5px solid var(--color-border-tertiary); font-size:0.78rem; }
   .comp-result-row:last-child { border-bottom:none; }
   .comp-result-row:hover,.comp-result-row:focus { background:rgba(126,184,247,0.08); outline:none; }
@@ -1006,9 +1007,11 @@
     </div>
     <div id="fields-std">
       <!-- Catalog typeahead (component mode) -->
-      <div id="comp-search-wrap" class="comp-search-wrap" style="display:none;margin-bottom:0.75rem;">
-        <div style="display:flex;gap:0.4rem;margin-bottom:0.3rem;">
-          <select class="form-select" id="f-comp-type-filter" style="flex:0 0 auto;" onchange="compSearch()">
+      <div id="comp-search-wrap" style="display:none;margin-bottom:0.75rem;">
+        <!-- Search fields — hidden after a component is selected -->
+        <div id="comp-search-fields">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="f-comp-type-filter" onchange="compSearch()" style="margin-bottom:0.4rem;">
             <option value="">All types</option>
             <option value="Shield">Shield Generator</option>
             <option value="PowerPlant">Power Plant</option>
@@ -1026,13 +1029,13 @@
             <option value="SalvageHead">Salvage Head</option>
             <option value="SalvageModifier">Salvage Modifier</option>
           </select>
-          <div style="flex:1;position:relative;">
-            <input class="form-input" id="f-comp-search" type="text" placeholder="Search by name or manufacturer…" oninput="compSearch()" autocomplete="off">
-            <div id="comp-results" class="comp-results" style="display:none;"></div>
-          </div>
+          <label class="form-label">Component</label>
+          <input class="form-input" id="f-comp-search" type="text" placeholder="Search by name or manufacturer…" oninput="compSearch()" autocomplete="off">
+          <div id="comp-results" class="comp-results"></div>
+          <div class="comp-catalog-hint" id="comp-catalog-hint">Loading catalog…</div>
         </div>
+        <!-- Selected summary — shown after a component is picked -->
         <div id="comp-selected" class="comp-selected" style="display:none;"></div>
-        <div class="comp-catalog-hint" id="comp-catalog-hint">Loading catalog…</div>
       </div>
       <!-- Hidden fields populated by catalog selection (also used for legacy edit) -->
       <input type="hidden" id="f-name-hidden">
@@ -2298,24 +2301,19 @@ function compSelect(i) {
     +'<span class="class-badge" style="background:rgba(126,184,247,0.10);color:#7eb8f7;font-size:0.59rem;">'+esc(sc_typeDisplay(c.t))+'</span>'
     +'<span class="comp-clear" onclick="compClear()" title="Change component">✕ change</span>';
   selEl.style.display = 'flex';
-  // Clear + hide the search
-  document.getElementById('f-comp-search').value = '';
-  document.getElementById('comp-results').style.display = 'none';
-  document.getElementById('comp-catalog-hint').style.display = 'none';
-  document.getElementById('f-comp-type-filter').style.display = 'none';
-  document.getElementById('f-comp-search').style.display = 'none';
+  // Hide the entire search section as a unit
+  document.getElementById('comp-search-fields').style.display = 'none';
 }
 
 function compClear() {
   ['f-name-hidden','f-function','f-class','f-grade','f-size','f-comp-mfr'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
-  document.getElementById('comp-selected').style.display   = 'none';
-  document.getElementById('f-comp-search').style.display   = '';
-  document.getElementById('f-comp-search').value           = '';
-  document.getElementById('comp-results').style.display    = 'none';
-  document.getElementById('f-comp-type-filter').style.display = '';
-  document.getElementById('comp-catalog-hint').style.display  = '';
+  document.getElementById('comp-selected').style.display      = 'none';
+  document.getElementById('comp-search-fields').style.display = '';
+  document.getElementById('f-comp-search').value              = '';
+  document.getElementById('comp-results').style.display       = 'none';
+  document.getElementById('f-comp-type-filter').value         = '';
   document.getElementById('f-comp-search').focus();
 }
 
@@ -2340,9 +2338,7 @@ function compShowPreselected(name, type, grade, size, cls, mfr) {
     +'<span class="class-badge" style="background:rgba(126,184,247,0.10);color:#7eb8f7;font-size:0.59rem;">'+esc(typeLabel)+'</span>'
     +'<span class="comp-clear" onclick="compClear()" title="Change component">✕ change</span>';
   selEl.style.display = 'flex';
-  document.getElementById('f-comp-search').style.display      = 'none';
-  document.getElementById('f-comp-type-filter').style.display = 'none';
-  document.getElementById('comp-catalog-hint').style.display  = 'none';
+  document.getElementById('comp-search-fields').style.display = 'none';
 }
 
 // ============================================================
@@ -2565,12 +2561,8 @@ function onCatChange(){
     document.getElementById('f-listing-section').style.display = 'none';
   }
 
-  // Kick off catalog fetch when component tab is opened (loads in background)
-  if (isComp) sc_fetchCatalog(function(data) {
-    var hint = document.getElementById('comp-catalog-hint');
-    if (hint && hint.style.display !== 'none')
-      hint.textContent = data.length ? data.length + ' components loaded (patch 4.x)' : 'Catalog unavailable — enter details manually.';
-  });
+  // Preload catalog when switching to component mode (sc_fetchCatalog updates the hint internally)
+  if (isComp) sc_fetchCatalog(function() {});
 }
 function onListingTypeChange() {
   const t = document.getElementById('f-listing-type')?.value || 'none';
@@ -2589,12 +2581,12 @@ function openAddModal(){
   document.getElementById('f-cat').value=activeTab;
   ['f-grade','f-size','f-function','f-class','f-name-hidden','f-comp-mfr'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   // Reset catalog search state
-  const cs=document.getElementById('f-comp-search');if(cs)cs.value='';
-  const cr=document.getElementById('comp-results');if(cr)cr.style.display='none';
-  const csel=document.getElementById('comp-selected');if(csel)csel.style.display='none';
-  const ctf=document.getElementById('f-comp-type-filter');if(ctf){ctf.value='';ctf.style.display='';}
-  if(cs)cs.style.display='';
-  const ch=document.getElementById('comp-catalog-hint');if(ch)ch.style.display='';
+  // Reset catalog search state
+  var _csf=document.getElementById('comp-search-fields');if(_csf)_csf.style.display='';
+  var _csel=document.getElementById('comp-selected');if(_csel)_csel.style.display='none';
+  var _cr=document.getElementById('comp-results');if(_cr)_cr.style.display='none';
+  var _cs=document.getElementById('f-comp-search');if(_cs)_cs.value='';
+  var _ctf=document.getElementById('f-comp-type-filter');if(_ctf)_ctf.value='';
   document.getElementById('f-bp-status').value='owned';
   document.getElementById('f-listing-type').value='none'; onListingTypeChange();
   onCatChange();document.getElementById('addModal').classList.add('open');
@@ -2720,10 +2712,6 @@ function editItem(id){
   onCatChange();
   if(it.cat==='component'){
     document.getElementById('f-qty').value=it.qty;document.getElementById('f-owner').value=it.owner||'';
-    // Reset search state then show the existing entry as pre-selected
-    const cs2=document.getElementById('f-comp-search');if(cs2)cs2.style.display='none';
-    const ctf2=document.getElementById('f-comp-type-filter');if(ctf2)ctf2.style.display='none';
-    const ch2=document.getElementById('comp-catalog-hint');if(ch2)ch2.style.display='none';
     compShowPreselected(it.name,it.function,it.grade,it.size,it.compClass,it.mfr);
   }
   else if(it.cat==='material'){document.getElementById('f-mat-type').value=it.oreType||'';document.getElementById('f-mat-quality').value=it.quality||'';document.getElementById('f-mat-qty').value=it.qty;document.getElementById('f-mat-owner').value=it.owner||'';}
