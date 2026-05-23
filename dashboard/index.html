@@ -210,8 +210,11 @@
   .comp-clear { margin-left:auto; font-size:0.63rem; color:var(--color-text-tertiary); cursor:pointer; padding:0.1rem 0.35rem; border-radius:2px; flex-shrink:0; }
   .comp-clear:hover { color:#e05a5a; background:rgba(224,90,90,0.12); }
   .comp-catalog-hint { font-size:0.59rem; color:var(--color-text-tertiary); margin-top:0.2rem; }
-  .ore-state-refined  { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; background:rgba(90,158,63,0.12); color:#5a9e3f; white-space:nowrap; }
-  .ore-state-raw      { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; background:rgba(196,122,42,0.12); color:#c47a2a; white-space:nowrap; }
+  .ore-state-refined { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; white-space:nowrap; background:rgba(90,158,63,0.12);  color:#5a9e3f; }
+  .ore-state-raw     { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; white-space:nowrap; background:rgba(196,122,42,0.12); color:#c47a2a; }
+  .ore-state-hand    { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; white-space:nowrap; background:rgba(139,114,232,0.12); color:#8b72e8; }
+  .ore-state-salvage { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; white-space:nowrap; background:rgba(100,160,210,0.12); color:#64a0d2; }
+  .ore-state-other   { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; white-space:nowrap; background:rgba(140,140,140,0.12); color:#888;    }
 
   /* ── Grade/class badges ── */
   .grade-A { background: #1e2e14; color: #5a9e3f; }
@@ -836,6 +839,8 @@
           <option value="refined">Refined</option>
           <option value="raw">Unrefined / Ore</option>
           <option value="hand">Hand-mined</option>
+          <option value="salvage">Salvaged</option>
+          <option value="other">Other</option>
         </select>
       </div>
       <button class="filter-reset" onclick="resetFilters('material')">Reset</button>
@@ -1076,6 +1081,8 @@
             <option value="refined">Refined</option>
             <option value="raw">Unrefined / Ore</option>
             <option value="hand">Hand-mined</option>
+            <option value="salvage">Salvaged</option>
+            <option value="other">Other</option>
           </select>
           <label class="form-label">Ore / Resource type</label>
           <select class="form-select" id="f-mat-type"></select>
@@ -1943,7 +1950,6 @@ const ORE_REFINED = new Set([
   'Stileron','Taranite','Tin','Titanium','Torite','Tungsten',
 ]);
 const ORE_RAW = new Set([
-  // Standard ore/raw variants
   'Agricium (Ore)','Aluminum (Ore)','Aslarite (Raw)','Beryl (Raw)',
   'Bexalite (Raw)','Borase (Ore)','Cobalt (Raw)','Copper (Ore)',
   'Corundum (Raw)','Diamond (Raw)','Gold (Ore)','Hephaestanite (Raw)',
@@ -1951,16 +1957,24 @@ const ORE_RAW = new Set([
   'Ouratite (Raw)','Quantainium (Raw)','Quartz (Raw)','Riccite (Ore)',
   'Savrilium Ore','Silicon (Raw)','Stileron (Raw)',
   'Taranite (Raw)','Tin (Ore)','Titanium (Ore)','Torite (Ore)','Tungsten (Ore)',
-  // Dolivine — ship-mined, exists only in raw form (no refined counterpart)
-  'Dolivine',
-  // Saldynium Ore — ore form tracked separately; base Saldynium is hand-mined
-  'Saldynium (Ore)',
+  'Dolivine','Saldynium (Ore)',
+]);
+const ORE_HAND = new Set([
+  'Aphorite','Carinite','Carinite (Pure)','Feynmaline','Glacosite',
+  'Hadanite','Janalite','Sadaryx','Saldynium',
+]);
+const ORE_SALVAGE = new Set([
+  'Construction Materials',
+  'Construction Material Pebbles','Construction Material Rubble',
+  'Construction Material Salvage',
 ]);
 function oreState(name) {
   if (!name) return null;
-  if (ORE_REFINED.has(name)) return 'refined';
-  if (ORE_RAW.has(name)) return 'raw';
-  return null;
+  if (ORE_REFINED.has(name))  return 'refined';
+  if (ORE_RAW.has(name))      return 'raw';
+  if (ORE_HAND.has(name))     return 'hand';
+  if (ORE_SALVAGE.has(name))  return 'salvage';
+  return 'other';
 }
 const DKP_TABLE = {
   'wikelo favor':15,'polaris bit':15,'carinite (pure)':50,'carinite':1,
@@ -2156,9 +2170,11 @@ const BP_CLASS={owned:'bp-owned',researching:'bp-researching',wanted:'bp-wanted'
 
 function oreListForState(state){
   if(!state)return ORE_LIST;
-  if(state==='refined')return ORE_LIST.filter(o=>ORE_REFINED.has(o));
-  if(state==='raw')return ORE_LIST.filter(o=>ORE_RAW.has(o));
-  return ORE_LIST.filter(o=>!ORE_REFINED.has(o)&&!ORE_RAW.has(o));
+  if(state==='refined') return ORE_LIST.filter(o=>ORE_REFINED.has(o));
+  if(state==='raw')     return ORE_LIST.filter(o=>ORE_RAW.has(o));
+  if(state==='hand')    return ORE_LIST.filter(o=>ORE_HAND.has(o));
+  if(state==='salvage') return ORE_LIST.filter(o=>ORE_SALVAGE.has(o));
+  return ORE_LIST.filter(o=>!ORE_REFINED.has(o)&&!ORE_RAW.has(o)&&!ORE_HAND.has(o)&&!ORE_SALVAGE.has(o));
 }
 function filterOreDropdown(){
   const state=document.getElementById('f-mat-state-filter')?.value||'';
@@ -2514,7 +2530,7 @@ function render(){
     const mQ=!q||[it.name,it.owner,it.oreType,it.function,it.compClass,it.bpHolder,it.bpOutput,it.wkHolder].some(f=>(f||'').toLowerCase().includes(q));
     if(!mQ)return false;
     if(it.cat==='component'){if(cf.fn&&it.function!==cf.fn)return false;if(cf.cls&&it.compClass!==cf.cls)return false;if(cf.grade&&it.grade!==cf.grade)return false;if(cf.size&&sc_normaliseSize(it.size)!==cf.size)return false;}
-    if(it.cat==='material'){if((it.quality||0)<rangeMin||(it.quality||0)>rangeMax)return false;const a=[mf.t1,mf.t2,mf.t3].filter(Boolean);if(a.length&&!a.includes(it.oreType))return false;if(mf.state){const s=oreState(it.oreType);const match=mf.state==='hand'?s===null:s===mf.state;if(!match)return false;}}
+    if(it.cat==='material'){if((it.quality||0)<rangeMin||(it.quality||0)>rangeMax)return false;const a=[mf.t1,mf.t2,mf.t3].filter(Boolean);if(a.length&&!a.includes(it.oreType))return false;if(mf.state){const s=oreState(it.oreType);if(s!==mf.state)return false;}}
     if(it.cat==='blueprint'){const u=it.bpStatus==='owned';if(u&&!bpU)return false;if(!u&&!bpL)return false;}
     if(it.cat==='wikelo'){if(wkT&&it.wkType!==wkT)return false;if(rSet){const nl=it.name.toLowerCase();if(!rSet.some(ri=>nl.includes(ri)||ri.includes(nl)))return false;}}
     return true;
@@ -2541,7 +2557,7 @@ function render(){
     }
     if(it.cat==='material'){
       const qual=it.quality||0,pct=Math.round((qual/1000)*100),col=qualityColor(qual);
-      const st=oreState(it.oreType);const stBadge=st?`<span class="ore-state-${st}">${st==='refined'?'Refined':'Ore'}</span>`:'';
+      const st=oreState(it.oreType);const stLabel={refined:'Refined',raw:'Ore',hand:'Hand-mined',salvage:'Salvage',other:'Other'};const stBadge=st?`<span class="ore-state-${st}">${stLabel[st]||st}</span>`:'';
       return`<div class="card cat-material" onclick="openDetail('${it.id}')"><div class="card-cat">Material</div><div class="card-name">${it.name}</div><div class="quality-bar"><div class="quality-bar-track"><div class="quality-bar-fill" style="width:${pct}%;background:${col};"></div></div><div class="quality-label">Quality ${qual} / 1000</div></div><div class="card-footer" style="margin-top:8px;"><span class="qty-badge">${fmtQty(it.qty)}</span>${stBadge}<span class="owner">${it.owner||''}</span></div><div id="inv-price-${it.id}" class="inv-price-badge" style="display:none;"></div></div>`;
     }
     if(it.cat==='blueprint'){
