@@ -216,6 +216,20 @@
   .ore-state-salvage { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; white-space:nowrap; background:rgba(100,160,210,0.12); color:#64a0d2; }
   .ore-state-other   { display:inline-block; font-size:0.59rem; font-weight:600; padding:0.1rem 0.35rem; border-radius:3px; white-space:nowrap; background:rgba(140,140,140,0.12); color:#888;    }
 
+  /* ── Disbursal requests ── */
+  .req-pending-badge { display:inline-block; font-size:0.57rem; font-weight:700; padding:0.08rem 0.3rem; border-radius:3px; background:rgba(196,122,42,0.2); color:#c47a2a; margin-left:0.3rem; vertical-align:middle; }
+  .req-form { margin-top:0.6rem; padding:0.65rem 0.7rem; background:rgba(255,255,255,0.03); border:0.5px solid rgba(255,255,255,0.08); border-radius:6px; }
+  .req-section-title { font-size:0.67rem; font-weight:600; color:var(--color-text-secondary); margin:0.85rem 0 0.35rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .req-row { padding:0.45rem 0; border-bottom:0.5px solid rgba(255,255,255,0.05); }
+  .req-row:last-child { border-bottom:none; }
+  .req-row-name { font-size:0.78rem; font-weight:600; color:var(--color-text); }
+  .req-row-meta { font-size:0.66rem; color:var(--color-text-secondary); margin-top:0.1rem; }
+  .req-row-actions { display:flex; gap:0.4rem; margin-top:0.4rem; }
+  .req-approve-btn { font-size:0.69rem; padding:0.18rem 0.6rem; border-radius:4px; border:none; background:#5a9e3f; color:#fff; cursor:pointer; font-weight:600; }
+  .req-approve-btn:disabled,.req-deny-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .req-deny-btn { font-size:0.69rem; padding:0.18rem 0.6rem; border-radius:4px; border:none; background:rgba(190,65,65,0.75); color:#fff; cursor:pointer; font-weight:600; }
+  .req-pending-note { font-size:0.74rem; color:var(--color-text-secondary); padding:0.35rem 0; }
+
   /* ── Grade/class badges ── */
   .grade-A { background: #1e2e14; color: #5a9e3f; }
   .grade-B { background: #142236; color: #4a8fd4; }
@@ -1575,6 +1589,7 @@
       <button class="edit-btn" id="d-edit">Edit</button>
       <button class="delete-btn" id="d-delete">Remove</button>
     </div>
+    <div id="d-request-area" style="display:none;margin-top:0.75rem;"></div>
   </div>
 </div>
 
@@ -2061,13 +2076,14 @@ async function loadAll() {
   if (!sb) { wkRecipes = DEFAULT_RECIPES.map(r=>({...r})); populateRecipeDropdown(); render(); return; }
   setLoading(true);
   try {
-    const [comps,mats,bps,wks,recs,pend] = await Promise.all([
+    const [comps,mats,bps,wks,recs,pend,creqs] = await Promise.all([
       sb.from('components').select('*'),
       sb.from('materials').select('*'),
       sb.from('blueprints').select('*'),
       sb.from('wikelo_items').select('*'),
       sb.from('wikelo_recipes').select('*').order('sort_order'),
       sb.from('loot_pending').select('id,item_id,member_id,member_name,type,amount,item_name,submitted_at').order('submitted_at',{ascending:true}),
+      sb.from('component_requests').select('id,item_id,item_name,member_id,member_name,qty,reason,status,submitted_at,resolved_at,resolved_by').order('submitted_at',{ascending:true}),
     ]);
     if (comps.error) throw comps.error;
     if (mats.error)  throw mats.error;
@@ -2082,7 +2098,8 @@ async function loadAll() {
     wkRecipes = (!recs.error && recs.data.length > 0)
       ? recs.data.map(r=>({id:r.id,name:r.name,items:r.items,sort_order:r.sort_order}))
       : DEFAULT_RECIPES.map(r=>({...r}));
-    lootPending = (!pend.error && pend.data) ? pend.data : [];
+    lootPending  = (!pend.error  && pend.data)  ? pend.data  : [];
+    compRequests = (!creqs.error && creqs.data) ? creqs.data : [];
     populateRecipeDropdown();
   } catch(err) {
     console.error('Supabase load error:',err);
@@ -2118,6 +2135,117 @@ async function sbDelete(id,cat) {
   const {error} = await sb.from(tableFor(cat)).delete().eq('id',id);
   if (error) throw error;
   items=items.filter(x=>x.id!==id);
+}
+
+// ============================================================
+// DISBURSAL REQUESTS
+// ============================================================
+function compPendingCount(itemId){
+  return compRequests.filter(r=>r.item_id===itemId&&r.status==='pending').length;
+}
+
+function renderRequestArea(it){
+  const area=document.getElementById('d-request-area');
+  if(!area)return;
+  if(it.cat!=='component'||!authMember){area.style.display='none';return;}
+  area.style.display='';
+  const pending=compRequests.filter(r=>r.item_id===it.id&&r.status==='pending');
+  const alreadyPending=compRequests.some(r=>r.item_id===it.id&&r.member_id===authMember.id&&r.status==='pending');
+  let html='';
+
+  // Request button / form (all members)
+  if(alreadyPending){
+    html+=`<div class="req-pending-note">✓ You have a pending request for this item.</div>`;
+  } else {
+    html+=`<button class="edit-btn" style="width:100%;margin-top:0;" onclick="toggleReqForm()">Request Disbursal</button>
+    <div id="d-req-form" style="display:none;" class="req-form">
+      <div class="form-group" style="margin-bottom:0.5rem;">
+        <label class="form-label">Quantity requested</label>
+        <input class="form-input" type="number" id="req-qty" min="1" max="${it.qty}" value="1" style="width:80px;">
+      </div>
+      <div class="form-group" style="margin-bottom:0.5rem;">
+        <label class="form-label">Reason <span style="color:var(--color-text-tertiary);font-weight:400;">(optional)</span></label>
+        <input class="form-input" type="text" id="req-reason" placeholder="e.g. fitting Caterpillar for next op">
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="edit-btn" id="req-submit-btn" onclick="submitDisbursalRequest('${it.id}','${it.name.replace(/'/g,"\\'")}')">Submit Request</button>
+        <button class="delete-btn" onclick="toggleReqForm()">Cancel</button>
+      </div>
+    </div>`;
+  }
+
+  // Officer-only: pending requests list
+  if((isOfficer||isAdmin)&&pending.length){
+    html+=`<div class="req-section-title">Pending Requests (${pending.length})</div>`;
+    html+=pending.map(r=>{
+      const dt=new Date(r.submitted_at).toLocaleDateString();
+      return `<div class="req-row">
+        <div class="req-row-name">${esc(r.member_name)} &mdash; &times;${r.qty}</div>
+        <div class="req-row-meta">${r.reason?esc(r.reason):'No reason given'} &middot; ${dt}</div>
+        <div class="req-row-actions">
+          <button class="req-approve-btn" onclick="resolveRequest('${r.id}','approved','${it.id}',${r.qty},this)">Approve</button>
+          <button class="req-deny-btn"    onclick="resolveRequest('${r.id}','denied','${it.id}',0,this)">Deny</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  area.innerHTML=html;
+}
+
+function toggleReqForm(){
+  const form=document.getElementById('d-req-form');
+  if(form)form.style.display=form.style.display==='none'?'':'none';
+}
+
+async function submitDisbursalRequest(itemId,itemName){
+  const qty=parseInt(document.getElementById('req-qty').value)||1;
+  const reason=document.getElementById('req-reason').value.trim();
+  const btn=document.getElementById('req-submit-btn');
+  btn.disabled=true;btn.textContent='Submitting…';
+  try{
+    const {data,error}=await sb.from('component_requests').insert({
+      item_id:itemId,item_name:itemName,
+      member_id:authMember.id,
+      member_name:authMember.display_name||authMember.username,
+      qty,reason:reason||null,status:'pending',
+    }).select().single();
+    if(error)throw error;
+    compRequests.push(data);
+    const it=items.find(i=>i.id===itemId);if(it)renderRequestArea(it);
+    render();
+  }catch(err){
+    showError('Failed to submit request: '+(err.message||String(err)));
+    btn.disabled=false;btn.textContent='Submit Request';
+  }
+}
+
+async function resolveRequest(reqId,action,itemId,qty,btn){
+  btn.disabled=true;
+  try{
+    const now=new Date().toISOString();
+    const resolvedBy=authMember.display_name||authMember.username;
+    const {error:rErr}=await sb.from('component_requests').update({
+      status:action,resolved_at:now,resolved_by:resolvedBy,
+    }).eq('id',reqId);
+    if(rErr)throw rErr;
+    if(action==='approved'&&qty>0){
+      const it=items.find(i=>i.id===itemId);
+      if(it){
+        const newQty=Math.max(0,it.qty-qty);
+        const {error:qErr}=await sb.from('components').update({qty:newQty}).eq('id',itemId);
+        if(qErr)throw qErr;
+        it.qty=newQty;
+      }
+    }
+    const req=compRequests.find(r=>r.id===reqId);
+    if(req){req.status=action;req.resolved_at=now;req.resolved_by=resolvedBy;}
+    const it=items.find(i=>i.id===itemId);if(it)renderRequestArea(it);
+    render();
+  }catch(err){
+    showError('Failed to resolve request: '+(err.message||String(err)));
+    btn.disabled=false;
+  }
 }
 
 // ============================================================
@@ -2547,7 +2675,8 @@ function render(){
       const c=it.compClass?`<span class="class-badge class-${it.compClass}">${it.compClass}</span>`:'';
       const typeLabel=sc_typeDisplay(it.function);
       const mfrLine=it.mfr?`<div style="font-size:0.63rem;color:var(--color-text-tertiary);margin-bottom:0.2rem;">${esc(it.mfr)}</div>`:'';
-      return`<div class="card cat-component" onclick="openDetail('${it.id}')"><div class="card-cat">Component</div><div class="card-name">${it.name}</div>${mfrLine}<div class="card-sub">${typeLabel}</div><div class="comp-meta">${c}${g}${s}</div><div class="card-footer"><span class="qty-badge">×${it.qty}</span><span class="owner">${it.owner||''}</span></div></div>`;
+      const _pend=compPendingCount(it.id);const _pendBadge=(isOfficer||isAdmin)&&_pend?`<span class="req-pending-badge">${_pend} req</span>`:'';
+      return`<div class="card cat-component" onclick="openDetail('${it.id}')"><div class="card-cat">Component</div><div class="card-name">${it.name}${_pendBadge}</div>${mfrLine}<div class="card-sub">${typeLabel}</div><div class="comp-meta">${c}${g}${s}</div><div class="card-footer"><span class="qty-badge">×${it.qty}</span><span class="owner">${it.owner||''}</span></div></div>`;
     }
     if(it.cat==='material'){
       const qual=it.quality||0,pct=Math.round((qual/1000)*100),col=qualityColor(qual);
@@ -2794,6 +2923,7 @@ function openDetail(id){
     try{await sbDelete(id,it.cat);closeModal('detailModal');render();}
     catch(err){showError('Failed to delete: '+(err.message||String(err)));}
   };
+  renderRequestArea(it);
   document.getElementById('detailModal').classList.add('open');
 }
 function editItem(id){
@@ -2836,7 +2966,8 @@ populateOreDropdowns();initDualRange();loadAll();
 // LOOT MARKETPLACE — Buy & Bid
 // ============================================================
 let _buyItemId = null, _bidItemId = null;
-let lootPending = []; // pending buy/bid submissions awaiting officer approval
+let lootPending    = []; // pending buy/bid submissions awaiting officer approval
+let compRequests   = []; // disbursal requests for components
 
 function openBuyConfirm(itemId) {
   if (!authMember) { showError('Sign in with Discord to purchase items.'); return; }
