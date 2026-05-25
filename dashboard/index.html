@@ -1692,7 +1692,7 @@ async function handleAuthSession(session) {
   if (memberId && sb) {
     const { data: member } = await sb
       .from('members')
-      .select('id, username, display_name, is_officer, discord_avatar, dkp_balance, rsi_handle, rsi_verified')
+      .select('id, username, display_name, is_officer, can_add_items, discord_avatar, dkp_balance, rsi_handle, rsi_verified')
       .eq('id', memberId)
       .maybeSingle();
 
@@ -1844,7 +1844,7 @@ function tableFor(cat) {
 }
 
 function fromDB(row, cat) {
-  const it = { id: row.id, cat, name: row.name, notes: row.notes || '' };
+  const it = { id: row.id, cat, name: row.name, notes: row.notes || '', addedBy: row.added_by || '' };
   if (cat === 'component') {
     it.function  = row.function      || '';
     it.compClass = row.comp_class    || '';
@@ -1879,7 +1879,7 @@ function fromDB(row, cat) {
 }
 
 function toDB(item) {
-  const row = { name: item.name, notes: item.notes || null };
+  const row = { name: item.name, notes: item.notes || null, added_by: item.addedBy || null };
   if (item.cat === 'component') {
     row.function     = item.function  || null;
     row.comp_class   = item.compClass || null;
@@ -2790,7 +2790,7 @@ function onListingTypeChange() {
 }
 
 function openAddModal(){
-  if (!isOfficer && !isAdmin) { showError('Only officers can add items to the inventory.'); return; }
+  if (!isOfficer && !isAdmin && !authMember?.can_add_items) { showError('Inventory access is restricted. Use /verify in Discord to request access.'); return; }
   const tabLabel={component:'Add Component',material:'Add Material',blueprint:'Add Blueprint',wikelo:'Add Loot Item'};
   editId=null;document.getElementById('modal-title-add').textContent=tabLabel[activeTab]||'Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
   ['f-name','f-owner','f-notes','f-mat-owner','f-bp-output','f-bp-holder','f-wk-holder'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2824,6 +2824,7 @@ async function submitItem(){
   btn.disabled=true; btn.textContent=editId?'Saving…':'Adding…';
   const item={cat,name,notes:document.getElementById('f-notes').value.trim()};
   if(editId) item.id=editId;
+  if(!editId && authMember) item.addedBy=authMember.display_name||authMember.username||'';
   if(cat==='component'){item.function=document.getElementById('f-function').value;item.compClass=document.getElementById('f-class').value;item.grade=document.getElementById('f-grade').value;item.size=document.getElementById('f-size').value;item.mfr=document.getElementById('f-comp-mfr').value;item.qty=parseInt(document.getElementById('f-qty').value)||1;item.owner=document.getElementById('f-owner').value.trim();}
   else if(cat==='material'){item.oreType=document.getElementById('f-mat-type').value;item.name=item.oreType;item.quality=Math.max(1,Math.min(1000,parseInt(document.getElementById('f-mat-quality').value)||1));item.qty=parseInt(document.getElementById('f-mat-qty').value)||1;item.owner=document.getElementById('f-mat-owner').value.trim();}
   else if(cat==='blueprint'){item.bpOutput=document.getElementById('f-bp-output').value.trim();item.bpStatus=document.getElementById('f-bp-status').value;item.bpRuns=parseInt(document.getElementById('f-bp-runs').value)||0;item.bpHolder=document.getElementById('f-bp-holder').value.trim();}
@@ -2863,6 +2864,7 @@ function openDetail(id){
   else if(it.cat==='material'){const qual=it.quality||0,col=qualityColor(qual),pct=Math.round((qual/1000)*100);info=`<div class="info-item"><div class="label">Ore Type</div><div class="value">${it.oreType||'—'}</div></div><div class="info-item"><div class="label">Quality</div><div class="value">${qual} / 1000</div></div><div class="info-item"><div class="label">Quantity</div><div class="value">${fmtQty(it.qty)}</div></div><div class="info-item"><div class="label">Owner / Location</div><div class="value">${it.owner||'—'}</div></div><div style="grid-column:1/-1;margin-top:4px;"><div style="height:5px;border-radius:2px;background:#2e2c2a;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};border-radius:2px;"></div></div></div>`;}
   else if(it.cat==='blueprint'){info=`<div class="info-item"><div class="label">Produces</div><div class="value">${it.bpOutput||'—'}</div></div><div class="info-item"><div class="label">Status</div><div class="value">${BP_STATUS[it.bpStatus]}</div></div><div class="info-item"><div class="label">Runs Remaining</div><div class="value">${it.bpRuns===0?'Unlimited':it.bpRuns}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.bpHolder||'—'}</div></div>`;}
   else if(it.cat==='wikelo'){const totDkp=(it.wkDkp||0)*(it.wkQty||0);info=`<div class="info-item"><div class="label">Quantity Held</div><div class="value">${it.wkQty}</div></div><div class="info-item"><div class="label">DKP / unit</div><div class="value">${it.wkDkp||0}</div></div><div class="info-item"><div class="label">Total DKP held</div><div class="value" style="color:#a89cf7;">${totDkp}</div></div><div class="info-item"><div class="label">Held By</div><div class="value">${it.wkHolder||'—'}</div></div>`;}
+  if(it.addedBy) info+=`<div class="info-item" style="grid-column:1/-1;"><div class="label">Added by</div><div class="value" style="color:var(--color-text-secondary);">${esc(it.addedBy)}</div></div>`;
   document.getElementById('d-grid').innerHTML=info;
   const notes=document.getElementById('d-notes');notes.textContent=it.notes||'';notes.style.display=it.notes?'block':'none';
 

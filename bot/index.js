@@ -71,6 +71,16 @@ client.on(Events.InteractionCreate, async interaction => {
     });
     return;
   }
+
+  // ── Inventory verify buttons (verify-approve-<userId> / verify-deny-<userId>) ──
+  if (interaction.isButton() && interaction.customId.startsWith('verify-')) {
+    const { handleVerifyButton } = await import('./verifyButtons.js');
+    await handleVerifyButton(interaction).catch(err => {
+      console.error('handleVerifyButton error:', err);
+      if (!interaction.replied) interaction.reply({ content: 'Button handler errored.', ephemeral: true }).catch(() => {});
+    });
+    return;
+  }
 });
 
 // Auto-close events: when a Discord Scheduled Event ends, close it in DB + award DKP
