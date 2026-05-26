@@ -1731,7 +1731,7 @@ function updateAuthUI() {
   if (!container) return;
   // Gate add-item button to officers/admins
   const addBtn = document.getElementById('add-item-btn');
-  if (addBtn) addBtn.style.display = (isOfficer || isAdmin) ? '' : 'none';
+  if (addBtn) addBtn.style.display = (isOfficer || isAdmin || authMember?.can_add_items) ? '' : 'none';
 
   if (authUser) {
     const name      = authMember?.display_name || authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'Member';
