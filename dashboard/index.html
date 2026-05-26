@@ -1067,13 +1067,14 @@
       <input type="hidden" id="f-size">
       <input type="hidden" id="f-comp-mfr">
       <!-- Quantity + Owner -->
+      <div id="comp-stock-hint" style="display:none;font-size:0.7rem;color:var(--color-text-secondary);margin-bottom:0.4rem;padding:0.3rem 0.5rem;background:rgba(126,184,247,0.06);border-radius:4px;border-left:2px solid rgba(126,184,247,0.3);"></div>
       <div class="form-row" style="margin-top:0;">
         <div class="form-group">
-          <label class="form-label">Quantity</label>
-          <input class="form-input" id="f-qty" type="number" min="1" value="1">
+          <label class="form-label" id="f-qty-label">Qty to add</label>
+          <input class="form-input" id="f-qty" type="number" min="0" value="1">
         </div>
         <div class="form-group">
-          <label class="form-label">Owner / Loc.</label>
+          <label class="form-label">Holder / Loc.</label>
           <input class="form-input" id="f-owner" type="text" placeholder="e.g. Area18">
         </div>
       </div>
@@ -2089,8 +2090,15 @@ async function loadAll() {
     if (mats.error)  throw mats.error;
     if (bps.error)   throw bps.error;
     if (wks.error)   throw wks.error;
+    // Components: deduplicate by name, summing qty (handles legacy duplicate rows)
+    const compRaw = comps.data.map(r=>fromDB(r,'component'));
+    const compMap = new Map();
+    for (const c of compRaw) {
+      if (compMap.has(c.name)) { compMap.get(c.name).qty += c.qty; }
+      else { compMap.set(c.name, c); }
+    }
     items = [
-      ...comps.data.map(r=>fromDB(r,'component')),
+      ...compMap.values(),
       ...mats.data.map(r=>fromDB(r,'material')),
       ...bps.data.map(r=>fromDB(r,'blueprint')),
       ...wks.data.map(r=>fromDB(r,'wikelo')),
@@ -2520,6 +2528,18 @@ function compSelect(i) {
   selEl.style.display = 'flex';
   // Hide the entire search section as a unit
   document.getElementById('comp-search-fields').style.display = 'none';
+  // Show current stock hint if this component is already tracked
+  var existing = items.find(function(it){ return it.cat==='component' && it.name===c.n; });
+  var hint = document.getElementById('comp-stock-hint');
+  if (hint) {
+    if (existing && !editId) {
+      hint.textContent = 'Currently in stock: '+existing.qty+'. Qty below adds to that total.';
+      hint.style.display = 'block';
+      document.getElementById('f-qty').value = 1;
+    } else {
+      hint.style.display = 'none';
+    }
+  }
 }
 
 function compClear() {
@@ -2676,7 +2696,8 @@ function render(){
       const typeLabel=sc_typeDisplay(it.function);
       const mfrLine=it.mfr?`<div style="font-size:0.63rem;color:var(--color-text-tertiary);margin-bottom:0.2rem;">${esc(it.mfr)}</div>`:'';
       const _pend=compPendingCount(it.id);const _pendBadge=(isOfficer||isAdmin)&&_pend?`<span class="req-pending-badge">${_pend} req</span>`:'';
-      return`<div class="card cat-component" onclick="openDetail('${it.id}')"><div class="card-cat">Component</div><div class="card-name">${it.name}${_pendBadge}</div>${mfrLine}<div class="card-sub">${typeLabel}</div><div class="comp-meta">${c}${g}${s}</div><div class="card-footer"><span class="qty-badge">×${it.qty}</span><span class="owner">${it.owner||''}</span></div></div>`;
+      const _oos=it.qty===0;const _oosCls=_oos?' style="opacity:0.55;"':'';const _oosQty=_oos?`<span class="qty-badge" style="background:rgba(255,255,255,0.05);color:var(--color-text-tertiary);">Out of stock</span>`:`<span class="qty-badge">×${it.qty}</span>`;
+      return`<div class="card cat-component${_oos?' card-oos':''}" onclick="openDetail('${it.id}')"${_oosCls}><div class="card-cat">Component</div><div class="card-name">${it.name}${_pendBadge}</div>${mfrLine}<div class="card-sub">${typeLabel}</div><div class="comp-meta">${c}${g}${s}</div><div class="card-footer">${_oosQty}<span class="owner">${it.owner||''}</span></div></div>`;
     }
     if(it.cat==='material'){
       const qual=it.quality||0,pct=Math.round((qual/1000)*100),col=qualityColor(qual);
@@ -2791,7 +2812,7 @@ function onListingTypeChange() {
 
 function openAddModal(){
   if (!isOfficer && !isAdmin && !authMember?.can_add_items) { showError('Inventory access is restricted. Use /verify in Discord to request access.'); return; }
-  const tabLabel={component:'Add Component',material:'Add Material',blueprint:'Add Blueprint',wikelo:'Add Loot Item'};
+  const tabLabel={component:'Add to Stock',material:'Add Material',blueprint:'Add Blueprint',wikelo:'Add Loot Item'};
   editId=null;document.getElementById('modal-title-add').textContent=tabLabel[activeTab]||'Add Item';document.getElementById('submitBtn').textContent='Add to Inventory';
   ['f-name','f-owner','f-notes','f-mat-owner','f-bp-output','f-bp-holder','f-wk-holder'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-qty').value=1;document.getElementById('f-mat-qty').value=1;
@@ -2807,6 +2828,8 @@ function openAddModal(){
   var _cr=document.getElementById('comp-results');if(_cr)_cr.style.display='none';
   var _cs=document.getElementById('f-comp-search');if(_cs)_cs.value='';
   var _ctf=document.getElementById('f-comp-type-filter');if(_ctf)_ctf.value='';
+  var _sh=document.getElementById('comp-stock-hint');if(_sh)_sh.style.display='none';
+  var _ql=document.getElementById('f-qty-label');if(_ql)_ql.textContent='Qty to add';
   document.getElementById('f-bp-status').value='owned';
   document.getElementById('f-listing-type').value='none'; onListingTypeChange();
   onCatChange();document.getElementById('addModal').classList.add('open');
@@ -2825,7 +2848,7 @@ async function submitItem(){
   const item={cat,name,notes:document.getElementById('f-notes').value.trim()};
   if(editId) item.id=editId;
   if(!editId && authMember) item.addedBy=authMember.display_name||authMember.username||'';
-  if(cat==='component'){item.function=document.getElementById('f-function').value;item.compClass=document.getElementById('f-class').value;item.grade=document.getElementById('f-grade').value;item.size=document.getElementById('f-size').value;item.mfr=document.getElementById('f-comp-mfr').value;item.qty=parseInt(document.getElementById('f-qty').value)||1;item.owner=document.getElementById('f-owner').value.trim();}
+  if(cat==='component'){item.function=document.getElementById('f-function').value;item.compClass=document.getElementById('f-class').value;item.grade=document.getElementById('f-grade').value;item.size=document.getElementById('f-size').value;item.mfr=document.getElementById('f-comp-mfr').value;item.qty=Math.max(0,parseInt(document.getElementById('f-qty').value)||0);item.owner=document.getElementById('f-owner').value.trim();}
   else if(cat==='material'){item.oreType=document.getElementById('f-mat-type').value;item.name=item.oreType;item.quality=Math.max(1,Math.min(1000,parseInt(document.getElementById('f-mat-quality').value)||1));item.qty=parseInt(document.getElementById('f-mat-qty').value)||1;item.owner=document.getElementById('f-mat-owner').value.trim();}
   else if(cat==='blueprint'){item.bpOutput=document.getElementById('f-bp-output').value.trim();item.bpStatus=document.getElementById('f-bp-status').value;item.bpRuns=parseInt(document.getElementById('f-bp-runs').value)||0;item.bpHolder=document.getElementById('f-bp-holder').value.trim();}
   else if(cat==='wikelo'){
@@ -2843,7 +2866,22 @@ async function submitItem(){
     }
   }
   try {
-    if(editId){ await sbUpdate(item); } else { await sbInsert(item); }
+    if(editId){
+      await sbUpdate(item);
+    } else if(cat==='component'){
+      // Upsert: find existing entry by name and increment qty
+      const existing=items.find(i=>i.cat==='component'&&i.name===name);
+      if(existing){
+        const merged={...existing, qty:existing.qty+item.qty};
+        if(item.owner) merged.owner=item.owner;
+        if(item.notes) merged.notes=item.notes;
+        await sbUpdate(merged);
+      } else {
+        await sbInsert(item);
+      }
+    } else {
+      await sbInsert(item);
+    }
     closeModal('addModal'); render();
   } catch(err) {
     showError('Failed to save: '+(err.message||String(err)));
@@ -2935,6 +2973,8 @@ function editItem(id){
   onCatChange();
   if(it.cat==='component'){
     document.getElementById('f-qty').value=it.qty;document.getElementById('f-owner').value=it.owner||'';
+    var _ql2=document.getElementById('f-qty-label');if(_ql2)_ql2.textContent='Quantity (total)';
+    var _sh2=document.getElementById('comp-stock-hint');if(_sh2)_sh2.style.display='none';
     compShowPreselected(it.name,it.function,it.grade,it.size,it.compClass,it.mfr);
   }
   else if(it.cat==='material'){document.getElementById('f-mat-type').value=it.oreType||'';document.getElementById('f-mat-quality').value=it.quality||'';document.getElementById('f-mat-qty').value=it.qty;document.getElementById('f-mat-owner').value=it.owner||'';}
