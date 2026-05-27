@@ -43,15 +43,29 @@ export default {
         .addIntegerOption(opt =>
           opt.setName('limit').setDescription('How many entries to show (default 10)').setRequired(false)
         )
+    )
+    .addSubcommand(sub =>
+      sub.setName('transfer')
+        .setDescription('Send DKP to another member. Requires verified status.')
+        .addUserOption(opt =>
+          opt.setName('member').setDescription('Member to send DKP to').setRequired(true)
+        )
+        .addIntegerOption(opt =>
+          opt.setName('amount').setDescription('Amount to transfer').setRequired(true).setMinValue(1)
+        )
+        .addStringOption(opt =>
+          opt.setName('note').setDescription('Optional note').setRequired(false)
+        )
     ),
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
 
-    if (sub === 'balance') return handleBalance(interaction);
-    if (sub === 'award')   return handleAward(interaction);
-    if (sub === 'top')     return handleTop(interaction);
-    if (sub === 'history') return handleHistory(interaction);
+    if (sub === 'balance')  return handleBalance(interaction);
+    if (sub === 'award')    return handleAward(interaction);
+    if (sub === 'top')      return handleTop(interaction);
+    if (sub === 'history')  return handleHistory(interaction);
+    if (sub === 'transfer') return handleTransfer(interaction);
   },
 };
 
@@ -173,4 +187,83 @@ async function handleHistory(interaction) {
   });
 
   return interaction.editReply(`**DKP History — ${target.username}**\n\n${lines.join('\n')}`);
+}
+
+// ──────────────────────────────────────────────
+// /dkp transfer  (verified members + officers)
+// ──────────────────────────────────────────────
+async function handleTransfer(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+
+  const senderId = interaction.user.id;
+  const target   = interaction.options.getUser('member');
+  const amount   = interaction.options.getInteger('amount');
+  const note     = interaction.options.getString('note') || 'DKP transfer';
+
+  if (target.id === senderId) {
+    return interaction.editReply("You can't transfer DKP to yourself.");
+  }
+
+  // Fetch sender
+  const { data: sender } = await db
+    .from('members')
+    .select('id, display_name, dkp_balance, can_add_items, is_officer')
+    .eq('id', senderId)
+    .maybeSingle();
+
+  if (!sender) {
+    return interaction.editReply("You haven't registered yet. Use `/register` first.");
+  }
+
+  // Verified or officer required
+  const isOfficer = interaction.member?.roles?.cache?.some(r => ['Worg', 'Lycan'].includes(r.name)) ?? false;
+  if (!isOfficer && !sender.can_add_items) {
+    return interaction.editReply(
+      'You need verified status to transfer DKP. Use `/verify` to request access.'
+    );
+  }
+
+  if (sender.dkp_balance < amount) {
+    return interaction.editReply(
+      `Insufficient balance. You have **${sender.dkp_balance} DKP** and are trying to send **${amount}**.`
+    );
+  }
+
+  // Fetch recipient
+  const { data: recipient } = await db
+    .from('members')
+    .select('id, display_name, dkp_balance')
+    .eq('id', target.id)
+    .maybeSingle();
+
+  if (!recipient) {
+    return interaction.editReply(`${target.username} hasn't registered yet.`);
+  }
+
+  const senderNew    = sender.dkp_balance - amount;
+  const recipientNew = recipient.dkp_balance + amount;
+
+  await Promise.all([
+    db.from('members').update({ dkp_balance: senderNew    }).eq('id', senderId),
+    db.from('members').update({ dkp_balance: recipientNew }).eq('id', target.id),
+    db.from('dkp_transactions').insert([
+      {
+        member_id:  senderId,
+        amount:     -amount,
+        reason:     `Transfer to ${recipient.display_name}: ${note}`,
+        awarded_by: senderId,
+      },
+      {
+        member_id:  target.id,
+        amount,
+        reason:     `Transfer from ${sender.display_name}: ${note}`,
+        awarded_by: senderId,
+      },
+    ]),
+  ]);
+
+  return interaction.editReply(
+    `✅ Sent **${amount} DKP** to **${recipient.display_name}**.\n` +
+    `Your new balance: **${senderNew}**`
+  );
 }
