@@ -4939,10 +4939,25 @@ function openMemberModal(id) {
       <div id="mm-cert-error" style="display:none;color:#c05050;font-size:12px;margin-top:0.5rem;"></div>
     </div>` : '';
 
+  // Transfer DKP section — shown to verified members and officers viewing someone else's profile
+  const canTransfer = authMember && authMember.id !== id && (isOfficer || isAdmin || authMember.can_add_items);
+  const transferSection = canTransfer ? `
+    <div style="margin-top:1.25rem;padding-top:1rem;border-top:0.5px solid var(--color-border-tertiary);">
+      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9e9b96;margin-bottom:0.625rem;">Transfer DKP</div>
+      <div style="font-size:12px;color:#7a7672;margin-bottom:0.625rem;">Your balance: <strong style="color:#a89cf7" id="mm-tx-my-balance">${authMember.dkp_balance}</strong></div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        <input id="mm-tx-amount" class="form-input" type="number" min="1" placeholder="Amount" style="width:7rem;flex:none;">
+        <input id="mm-tx-note"   class="form-input" type="text"   placeholder="Note (optional)" style="flex:1;min-width:9rem;">
+        <button class="btn-primary" onclick="transferDkpFromModal('${esc(id)}','${esc(m.display_name||m.username)}')">Send</button>
+      </div>
+      <div id="mm-tx-error"   style="display:none;color:#c05050;font-size:12px;margin-top:0.5rem;"></div>
+      <div id="mm-tx-success" style="display:none;color:#5a9e3f;font-size:12px;margin-top:0.5rem;"></div>
+    </div>` : '';
+
   document.getElementById('modal-title-member').textContent = m.display_name || m.username;
   document.getElementById('member-modal-body').innerHTML = `
     <div class="info-grid" style="margin-bottom:1.25rem;">
-      <div class="info-item"><div class="label">DKP Balance</div><div class="value" style="color:#a89cf7">${m.dkp_balance}</div></div>
+      <div class="info-item"><div class="label">DKP Balance</div><div class="value" style="color:#a89cf7" id="mm-target-balance">${m.dkp_balance}</div></div>
       <div class="info-item"><div class="label">Certifications</div><div class="value" style="color:#7eb8f7">${certs.length}</div></div>
       <div class="info-item"><div class="label">Events Attended</div><div class="value" style="color:#5a9e3f">${m.event_count}</div></div>
       <div class="info-item"><div class="label">Member Since</div><div class="value">${new Date(m.joined_at).toLocaleDateString()}</div></div>
@@ -4951,9 +4966,99 @@ function openMemberModal(id) {
       ? `<div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9e9b96;margin-bottom:10px;">Certifications</div>
          <div class="info-grid">${certLines}</div>`
       : `<div style="color:#6b6864;font-size:13px;margin-bottom:${canManage?'0':'0'};">No certifications held yet.</div>`}
-    ${awardSection}`;
+    ${awardSection}
+    ${transferSection}`;
 
   document.getElementById('memberModal').classList.add('open');
+}
+
+// ── DKP transfer from member profile modal ──
+async function transferDkpFromModal(targetId, targetName) {
+  const errEl     = document.getElementById('mm-tx-error');
+  const successEl = document.getElementById('mm-tx-success');
+  const amountEl  = document.getElementById('mm-tx-amount');
+  const noteEl    = document.getElementById('mm-tx-note');
+
+  errEl.style.display     = 'none';
+  successEl.style.display = 'none';
+
+  const amount = parseInt(amountEl?.value, 10);
+  const note   = noteEl?.value?.trim() || 'DKP transfer';
+
+  if (!amount || amount < 1) {
+    errEl.textContent = 'Enter a valid amount (minimum 1).';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if (!authMember) {
+    errEl.textContent = 'You must be logged in to transfer DKP.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if (authMember.dkp_balance < amount) {
+    errEl.textContent = `Insufficient balance. You have ${authMember.dkp_balance} DKP.`;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.querySelector('#member-modal-body .btn-primary[onclick^="transferDkp"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  try {
+    const senderNew    = authMember.dkp_balance - amount;
+    const targetMember = orgMembers.find(x => x.id === targetId);
+    const recipientNew = (targetMember?.dkp_balance ?? 0) + amount;
+
+    const [r1, r2, r3] = await Promise.all([
+      sb.from('members').update({ dkp_balance: senderNew    }).eq('id', authMember.id),
+      sb.from('members').update({ dkp_balance: recipientNew }).eq('id', targetId),
+      sb.from('dkp_transactions').insert([
+        {
+          member_id:  authMember.id,
+          amount:     -amount,
+          reason:     `Transfer to ${targetName}: ${note}`,
+          awarded_by: authMember.id,
+        },
+        {
+          member_id:  targetId,
+          amount,
+          reason:     `Transfer from ${authMember.display_name || authMember.username}: ${note}`,
+          awarded_by: authMember.id,
+        },
+      ]),
+    ]);
+
+    if (r1.error) throw r1.error;
+    if (r2.error) throw r2.error;
+    if (r3.error) throw r3.error;
+
+    // Update local state
+    authMember.dkp_balance = senderNew;
+    if (targetMember) targetMember.dkp_balance = recipientNew;
+
+    // Refresh displayed balances inside the modal
+    const myBalEl     = document.getElementById('mm-tx-my-balance');
+    const targetBalEl = document.getElementById('mm-target-balance');
+    if (myBalEl)     myBalEl.textContent     = senderNew;
+    if (targetBalEl) targetBalEl.textContent = recipientNew;
+
+    amountEl.value = '';
+    noteEl.value   = '';
+
+    successEl.textContent   = `Sent ${amount} DKP to ${targetName}. Your balance: ${senderNew}.`;
+    successEl.style.display = 'block';
+
+    // Refresh member cards so balances stay consistent
+    renderOrg();
+  } catch (err) {
+    console.error('DKP transfer error:', err);
+    errEl.textContent = 'Transfer failed. Try again.';
+    errEl.style.display = 'block';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+  }
 }
 
 // ── RSI account linking (webapp flow) ────────────────────────────────────────
