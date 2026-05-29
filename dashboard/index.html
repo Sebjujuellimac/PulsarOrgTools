@@ -5739,7 +5739,7 @@ function op_tickJobTimer(jid){
   var job=op_getJob(jid);if(!job)return;
   var rem=job.timerEnd-Date.now();
   var cd=op_gV('op-tcd-'+jid),bar=op_gV('op-tbar-'+jid),eta=op_gV('op-teta-'+jid);
-  if(rem<=0){clearInterval(op_jobTimerInts[jid]);delete op_jobTimerInts[jid];job.timerDone=true;op_renderJob(jid);return;}
+  if(rem<=0){clearInterval(op_jobTimerInts[jid]);delete op_jobTimerInts[jid];job.timerDone=true;op_renderJob(jid);op_notifyRefineDone(jid);return;}
   if(cd){cd.textContent=op_hms(rem);cd.className='op-ref-timer'+(rem<300000?' warn':'');}
   if(bar)bar.style.width=Math.max(0,Math.min(100,((job.timerTotal-rem)/job.timerTotal)*100)).toFixed(1)+'%';
   if(eta)eta.textContent='Done at '+new Date(job.timerEnd).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -5979,11 +5979,101 @@ function op_renderSessionList(){
       +'<div class="op-metric"><div class="op-metric-label">Net total</div><div class="op-metric-value green">'+op_fmt(tNet)+'</div></div>'
       +'</div>'
       +(tPending>0?'<div style="font-size:0.72rem;color:var(--color-text-tertiary);margin-top:0.375rem;">'+tPending+' item'+(tPending>1?'s':'')+' still pending/refining</div>':'')
-      +'<div style="display:flex;gap:0.375rem;margin-top:0.625rem;">'
+      +'<div style="display:flex;gap:0.375rem;margin-top:0.625rem;flex-wrap:wrap;">'
       +'<button class="op-small-btn" onclick="op_editSession('+s.id+')" style="font-size:0.6rem;">✏ Edit</button>'
       +'<button class="op-small-btn danger" onclick="op_deleteSession('+s.id+')" style="font-size:0.6rem;">✕ Delete</button>'
+      +((isOfficer||isAdmin)?'<button class="op-small-btn" id="op-notify-btn-'+s.id+'" onclick="op_notifySessionPayout('+s.id+',this)" style="font-size:0.6rem;">📨 Notify</button>':'')
       +'</div></div>';
   }).join('');
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+// Match a free-text crew name to a registered member (case-insensitive)
+function op_matchMember(name){
+  var n=(name||'').toLowerCase();
+  return orgMembers.find(function(m){
+    return (m.display_name||'').toLowerCase()===n || (m.username||'').toLowerCase()===n;
+  })||null;
+}
+
+// Called automatically when a refine job timer hits zero.
+// Inserts refine_done DM notifications for any crew member matched to a registered user.
+async function op_notifyRefineDone(jid){
+  if(!sb)return;
+  var job=op_getJob(jid);if(!job)return;
+  var sessionName=((op_gV('op-sName')||{}).value||'').trim()||'Current session';
+  var rows=[];
+  var seen=new Set();
+  job.crewIds.forEach(function(cid){
+    var c=null;for(var i=0;i<op_sessionCrew.length;i++){if(op_sessionCrew[i].id===cid){c=op_sessionCrew[i];break;}}
+    if(!c)return;
+    var m=op_matchMember(c.name);
+    if(m&&!seen.has(m.id)){seen.add(m.id);rows.push({type:'refine_done',member_id:m.id,payload:{session_name:sessionName,job_loc:job.loc||''}});}
+  });
+  if(!rows.length)return;
+  var res=await sb.from('notifications_queue').insert(rows);
+  if(res.error)console.error('[Notifier] Could not queue refine_done notifications:',res.error.message);
+  else console.log('[Notifier] Queued',rows.length,'refine_done notification(s)');
+}
+
+// Called when an officer clicks "📨 Notify" on a saved session card.
+// Calculates each crew member's earnings and inserts payout DM notifications.
+async function op_notifySessionPayout(sid,btn){
+  if(!sb)return;
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  var s=null;for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===sid){s=op_sessions[i];break;}}
+  if(!s){if(btn){btn.disabled=false;btn.textContent='📨 Notify';}return;}
+
+  // Aggregate per-crew-name earnings across all jobs in the session
+  var earnings={};
+  var fee=s.fee||op_walletFee,guildPct=s.guildPct||0;
+  s.jobs.forEach(function(j){
+    var jc=j.crewIds.map(function(cid){
+      for(var i=0;i<s.crew.length;i++)if(s.crew[i].id===cid)return s.crew[i];
+      var snap=j.crewSnapshot||[];for(var si=0;si<snap.length;si++)if(snap[si].id===cid)return snap[si];
+      return null;
+    }).filter(Boolean);
+    var pip=false;for(var pi=0;pi<jc.length;pi++){if(jc[pi].name===j.payer){pip=true;break;}}
+    if(!pip&&j.payer){var allsrc=s.crew.concat(j.crewSnapshot||[]);for(var ai=0;ai<allsrc.length;ai++){if(allsrc[ai].name===j.payer){jc.unshift(allsrc[ai]);break;}}}
+    var gross=j.items.filter(function(i){return i.status==='sold';}).reduce(function(sum,i){return sum+i.price;},0);
+    if(!j.payer||!gross)return;
+    var sv=op_settleJob(jc,gross,j.cost||0,guildPct,fee,function(cid){
+      var c=null;var allc=s.crew.concat(j.crewSnapshot||[]);
+      for(var i=0;i<allc.length;i++){if(allc[i].id===cid){c=allc[i];break;}}
+      return c&&c.elapsedMs?c.elapsedMs/3600000:0;
+    },j.payer,(j.additionalCosts||[]).reduce(function(acc,c){return acc+c.amt;},0));
+    sv.sr.forEach(function(r){if(!earnings[r.name])earnings[r.name]=0;earnings[r.name]+=r.ip?r.gc:r.recv;});
+    sv.hr.forEach(function(r){if(!earnings[r.name])earnings[r.name]=0;earnings[r.name]+=r.recv;});
+  });
+
+  var rows=[];
+  var seen=new Set();
+  Object.keys(earnings).forEach(function(name){
+    if(!earnings[name])return;
+    var m=op_matchMember(name);
+    if(m&&!seen.has(m.id)){
+      seen.add(m.id);
+      rows.push({
+        type:'payout',
+        member_id:m.id,
+        payload:{session_name:s.name,amount:earnings[name],crew_name:name},
+      });
+    }
+  });
+
+  if(!rows.length){
+    alert('No registered members matched in this session\'s crew. Check that crew names match display names in the member list.');
+    if(btn){btn.disabled=false;btn.textContent='📨 Notify';}
+    return;
+  }
+
+  var res=await sb.from('notifications_queue').insert(rows);
+  if(res.error){
+    alert('Error sending notifications: '+res.error.message);
+    if(btn){btn.disabled=false;btn.textContent='📨 Notify';}
+  } else {
+    if(btn){btn.textContent='✓ Sent ('+rows.length+')';btn.style.background='rgba(90,158,63,0.15)';btn.style.color='#5a9e3f';}
+  }
 }
 
 // ── Summary tab ───────────────────────────────────────────────────────────────
