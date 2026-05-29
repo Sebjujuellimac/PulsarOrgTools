@@ -5250,6 +5250,38 @@ var op_sellItemId=null, op_sellJobId=null;
 var op_paidStatus={};
 var op_activeTab='sessions';
 var op_walletFee=5; // fixed transfer fee %
+var op_hydrated=false;
+
+// ── localStorage persistence ──────────────────────────────────────────────────
+var OP_STORE_KEY='khd_op_sessions_v1';
+function op_persist(){
+  try{
+    localStorage.setItem(OP_STORE_KEY,JSON.stringify({
+      sessions:op_sessions,
+      sessionIdCtr:op_sessionIdCtr,
+      crewIdCtr:op_crewIdCtr,
+      jobIdCtr:op_jobIdCtr,
+      itemIdCtr:op_itemIdCtr,
+      paidStatus:op_paidStatus,
+    }));
+  }catch(e){console.warn('[Ops] localStorage save failed:',e);}
+}
+function op_hydrate(){
+  if(op_hydrated)return;
+  op_hydrated=true;
+  try{
+    var raw=localStorage.getItem(OP_STORE_KEY);
+    if(!raw)return;
+    var d=JSON.parse(raw);
+    if(Array.isArray(d.sessions))   op_sessions=d.sessions;
+    if(d.sessionIdCtr>0) op_sessionIdCtr=d.sessionIdCtr;
+    if(d.crewIdCtr>0)    op_crewIdCtr=d.crewIdCtr;
+    if(d.jobIdCtr>0)     op_jobIdCtr=d.jobIdCtr;
+    if(d.itemIdCtr>0)    op_itemIdCtr=d.itemIdCtr;
+    if(d.paidStatus)     op_paidStatus=d.paidStatus;
+    console.log('[Ops] Loaded',op_sessions.length,'session(s) from storage.');
+  }catch(e){console.warn('[Ops] localStorage load failed:',e);}
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function op_fmt(n){ return Math.round(n).toLocaleString(); }
@@ -5322,6 +5354,7 @@ var OP_FB=['Agricium','Agricium (Raw)','Astatine','Bexalite','Bexalite (Raw)','B
 function op_togglePaid(jid,name){
   var key=String(jid)+'_'+String(name);
   op_paidStatus[key]=!op_paidStatus[key];
+  op_persist();
   op_renderJobSettlement(jid);
 }
 function op_isPaid(jid,name){return !!op_paidStatus[String(jid)+'_'+String(name)];}
@@ -5356,6 +5389,7 @@ function op_switchTab(t){
 
 // ── Top-level render (called by renderOrg on tab switch) ─────────────────────
 function renderOperations(grid) {
+  op_hydrate(); // restore sessions from localStorage on first visit
   grid.className='';
   document.getElementById('org-result-count').textContent='';
   grid.innerHTML=
@@ -5922,7 +5956,7 @@ function op_saveSession(){
   var s={id:op_editingSession||op_sessionIdCtr++,name:((op_gV('op-sName')||{}).value||'').trim()||'Unnamed session',owner:((op_gV('op-sOwner')||{}).value||'').trim(),crew:snap,jobs:jobSnap,date:new Date().toLocaleDateString(),fee:op_walletFee,guildPct:guildPct};
   if(op_editingSession){for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===op_editingSession){op_sessions[i]=s;break;}}}
   else op_sessions.unshift(s);
-  op_cancelSession();op_renderSessionList();updateOrgStats();
+  op_cancelSession();op_persist();op_renderSessionList();updateOrgStats();
 }
 function op_editSession(id){
   var s=null;for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===id){s=op_sessions[i];break;}}if(!s)return;
@@ -5941,7 +5975,7 @@ function op_editSession(id){
   op_renderSessionSummary();op_fetchCommodities(function(){});
   sf.scrollIntoView({behavior:'smooth'});
 }
-function op_deleteSession(id){if(!confirm('Delete this session?'))return;op_sessions=op_sessions.filter(function(s){return s.id!==id;});op_renderSessionList();updateOrgStats();}
+function op_deleteSession(id){if(!confirm('Delete this session?'))return;op_sessions=op_sessions.filter(function(s){return s.id!==id;});op_persist();op_renderSessionList();updateOrgStats();}
 
 // ── Session list ──────────────────────────────────────────────────────────────
 function op_renderSessionList(){
