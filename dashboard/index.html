@@ -5252,34 +5252,102 @@ var op_activeTab='sessions';
 var op_walletFee=5; // fixed transfer fee %
 var op_hydrated=false;
 
-// ── localStorage persistence ──────────────────────────────────────────────────
-var OP_STORE_KEY='khd_op_sessions_v1';
-function op_persist(){
-  try{
-    localStorage.setItem(OP_STORE_KEY,JSON.stringify({
-      sessions:op_sessions,
-      sessionIdCtr:op_sessionIdCtr,
-      crewIdCtr:op_crewIdCtr,
-      jobIdCtr:op_jobIdCtr,
-      itemIdCtr:op_itemIdCtr,
-      paidStatus:op_paidStatus,
-    }));
-  }catch(e){console.warn('[Ops] localStorage save failed:',e);}
+// ── Persistence (Supabase primary, localStorage fallback) ─────────────────────
+var OP_STORE_KEY='khd_op_sessions_v2';
+
+// Recalculate ID counters from loaded session data so new items never conflict.
+function op_recalcCounters(){
+  var ms=0,mc=0,mj=0,mi=0;
+  op_sessions.forEach(function(s){
+    if(s.id>ms)ms=s.id;
+    (s.crew||[]).forEach(function(c){if(c.id>mc)mc=c.id;});
+    (s.jobs||[]).forEach(function(j){
+      if(j.id>mj)mj=j.id;
+      (j.items||[]).forEach(function(i){if(i.id>mi)mi=i.id;});
+    });
+  });
+  if(ms>=op_sessionIdCtr)op_sessionIdCtr=ms+1;
+  if(mc>=op_crewIdCtr)   op_crewIdCtr=mc+1;
+  if(mj>=op_jobIdCtr)    op_jobIdCtr=mj+1;
+  if(mi>=op_itemIdCtr)   op_itemIdCtr=mi+1;
 }
-function op_hydrate(){
+
+// Mirror current state to localStorage as a fast offline/fallback cache.
+function op_localCache(){
+  try{localStorage.setItem(OP_STORE_KEY,JSON.stringify({sessions:op_sessions,paidStatus:op_paidStatus}));}
+  catch(e){}
+}
+
+// Build the data blob to store for a session — embeds paidStatus entries for
+// that session's jobs so the data is self-contained.
+function op_sessionBlob(s){
+  var paid={};
+  (s.jobs||[]).forEach(function(j){
+    Object.keys(op_paidStatus).forEach(function(k){
+      if(k.startsWith(String(j.id)+'_'))paid[k]=op_paidStatus[k];
+    });
+  });
+  return Object.assign({},s,{paidStatus:paid});
+}
+
+// Upsert a session to Supabase. Attaches db_id to the session object on insert.
+async function op_dbSave(s){
+  if(!sb)return;
+  try{
+    var blob=op_sessionBlob(s);
+    if(s.db_id){
+      await sb.from('op_sessions_store').update({data:blob,updated_at:new Date().toISOString()}).eq('id',s.db_id);
+    }else{
+      var res=await sb.from('op_sessions_store').insert({data:blob}).select('id').single();
+      if(!res.error&&res.data)s.db_id=res.data.id;
+    }
+  }catch(e){console.error('[Ops] Supabase save failed:',e);}
+  op_localCache();
+}
+
+// Delete a session from Supabase by its db_id.
+async function op_dbDelete(dbId){
+  if(!sb||!dbId)return;
+  try{await sb.from('op_sessions_store').delete().eq('id',dbId);}
+  catch(e){console.error('[Ops] Supabase delete failed:',e);}
+  op_localCache();
+}
+
+// Load sessions from Supabase (primary) or localStorage (fallback).
+// Re-renders the session list when done — renderOperations shows a spinner
+// then calls this and re-renders on resolution.
+async function op_hydrate(){
   if(op_hydrated)return;
   op_hydrated=true;
+
+  // ── Supabase primary ──
+  if(sb){
+    try{
+      var res=await sb.from('op_sessions_store').select('id,data').order('created_at',{ascending:false});
+      if(!res.error&&res.data&&res.data.length){
+        op_sessions=res.data.map(function(row){
+          var s=row.data||{};s.db_id=row.id;return s;
+        });
+        op_sessions.forEach(function(s){
+          if(s.paidStatus)Object.assign(op_paidStatus,s.paidStatus);
+        });
+        op_recalcCounters();
+        op_localCache();
+        console.log('[Ops] Loaded',op_sessions.length,'session(s) from Supabase.');
+        return;
+      }
+    }catch(e){console.warn('[Ops] Supabase load failed, trying localStorage:',e);}
+  }
+
+  // ── localStorage fallback ──
   try{
     var raw=localStorage.getItem(OP_STORE_KEY);
     if(!raw)return;
     var d=JSON.parse(raw);
-    if(Array.isArray(d.sessions))   op_sessions=d.sessions;
-    if(d.sessionIdCtr>0) op_sessionIdCtr=d.sessionIdCtr;
-    if(d.crewIdCtr>0)    op_crewIdCtr=d.crewIdCtr;
-    if(d.jobIdCtr>0)     op_jobIdCtr=d.jobIdCtr;
-    if(d.itemIdCtr>0)    op_itemIdCtr=d.itemIdCtr;
-    if(d.paidStatus)     op_paidStatus=d.paidStatus;
-    console.log('[Ops] Loaded',op_sessions.length,'session(s) from storage.');
+    if(Array.isArray(d.sessions))op_sessions=d.sessions;
+    if(d.paidStatus)Object.assign(op_paidStatus,d.paidStatus);
+    op_recalcCounters();
+    console.log('[Ops] Loaded',op_sessions.length,'session(s) from localStorage fallback.');
   }catch(e){console.warn('[Ops] localStorage load failed:',e);}
 }
 
@@ -5354,7 +5422,9 @@ var OP_FB=['Agricium','Agricium (Raw)','Astatine','Bexalite','Bexalite (Raw)','B
 function op_togglePaid(jid,name){
   var key=String(jid)+'_'+String(name);
   op_paidStatus[key]=!op_paidStatus[key];
-  op_persist();
+  // Re-save the session that owns this job so paid status syncs to Supabase
+  var owner=op_sessions.find(function(s){return (s.jobs||[]).some(function(j){return j.id===jid;});});
+  if(owner)op_dbSave(owner); else op_localCache();
   op_renderJobSettlement(jid);
 }
 function op_isPaid(jid,name){return !!op_paidStatus[String(jid)+'_'+String(name)];}
@@ -5389,7 +5459,15 @@ function op_switchTab(t){
 
 // ── Top-level render (called by renderOrg on tab switch) ─────────────────────
 function renderOperations(grid) {
-  op_hydrate(); // restore sessions from localStorage on first visit
+  if(!op_hydrated){
+    grid.className='';
+    grid.innerHTML='<div class="empty" style="padding:2rem;">Loading sessions…</div>';
+    op_hydrate().then(function(){
+      // Re-enter the full render path once data is ready
+      var g=document.getElementById('org-grid');if(g)renderOperations(g);
+    });
+    return;
+  }
   grid.className='';
   document.getElementById('org-result-count').textContent='';
   grid.innerHTML=
@@ -5956,7 +6034,7 @@ function op_saveSession(){
   var s={id:op_editingSession||op_sessionIdCtr++,name:((op_gV('op-sName')||{}).value||'').trim()||'Unnamed session',owner:((op_gV('op-sOwner')||{}).value||'').trim(),crew:snap,jobs:jobSnap,date:new Date().toLocaleDateString(),fee:op_walletFee,guildPct:guildPct};
   if(op_editingSession){for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===op_editingSession){op_sessions[i]=s;break;}}}
   else op_sessions.unshift(s);
-  op_cancelSession();op_persist();op_renderSessionList();updateOrgStats();
+  op_cancelSession();op_renderSessionList();updateOrgStats();op_dbSave(s);
 }
 function op_editSession(id){
   var s=null;for(var i=0;i<op_sessions.length;i++){if(op_sessions[i].id===id){s=op_sessions[i];break;}}if(!s)return;
@@ -5975,7 +6053,14 @@ function op_editSession(id){
   op_renderSessionSummary();op_fetchCommodities(function(){});
   sf.scrollIntoView({behavior:'smooth'});
 }
-function op_deleteSession(id){if(!confirm('Delete this session?'))return;op_sessions=op_sessions.filter(function(s){return s.id!==id;});op_persist();op_renderSessionList();updateOrgStats();}
+function op_deleteSession(id){
+  if(!confirm('Delete this session?'))return;
+  var s=op_sessions.find(function(x){return x.id===id;});
+  var dbId=s?s.db_id:null;
+  op_sessions=op_sessions.filter(function(x){return x.id!==id;});
+  op_renderSessionList();updateOrgStats();
+  op_dbDelete(dbId);
+}
 
 // ── Session list ──────────────────────────────────────────────────────────────
 function op_renderSessionList(){
