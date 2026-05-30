@@ -423,7 +423,7 @@
   .flow-course-card.editable:hover { box-shadow: 0 0 0 1px #7eb8f7; }
 
   /* SVG arrow overlay */
-  .flow-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .flow-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; overflow: visible; }
   .flow-arrow { fill: none; stroke: #4a8ab5; stroke-width: 2; opacity: 0.75; }
   .flow-arrow-breadth { fill: none; stroke: #c47a2a; stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.65; }
   .flow-arrow-head { fill: #4a8ab5; opacity: 0.75; }
@@ -4108,6 +4108,18 @@ function renderCourseFlowchart(pane) {
 
   // Draw arrows after layout settles
   requestAnimationFrame(() => drawFlowArrows(pane));
+
+  // Redraw on any size change (window resize, sidebar drag, etc.)
+  // Disconnect any previous observer so we don't stack up listeners on re-render.
+  if (pane._flowRO) { pane._flowRO.disconnect(); pane._flowRO = null; }
+  if (window.ResizeObserver) {
+    let _flowROTimer;
+    pane._flowRO = new ResizeObserver(() => {
+      clearTimeout(_flowROTimer);
+      _flowROTimer = setTimeout(() => drawFlowArrows(pane), 40);
+    });
+    pane._flowRO.observe(pane);
+  }
 }
 
 function toggleRetiredCourses() {
@@ -4376,9 +4388,13 @@ function drawFlowArrows(pane) {
   const canvas = pane.querySelector('.flow-canvas');
   if (!svg || !canvas) return;
 
+  // Use scrollWidth/scrollHeight so the SVG covers the full content area
+  // (canvas may be wider than the visible pane when many tracks are shown).
+  // Because we removed the CSS width/height from the SVG, these attributes
+  // directly control the element size — no scaling artefacts.
   const cw = canvas.scrollWidth, ch = canvas.scrollHeight;
-  svg.setAttribute('width', cw);
-  svg.setAttribute('height', ch);
+  svg.setAttribute('width',   cw);
+  svg.setAttribute('height',  ch);
   svg.setAttribute('viewBox', `0 0 ${cw} ${ch}`);
 
   const canvasRect = canvas.getBoundingClientRect();
