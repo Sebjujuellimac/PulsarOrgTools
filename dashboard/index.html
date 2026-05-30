@@ -571,6 +571,19 @@
   .ev-modal-timelog td { padding: 0.35rem 0.5rem; border-bottom: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); }
   .ev-modal-timelog tr:last-child td { border-bottom: none; }
 
+  /* ── Attendance log (detailed per-member timeline) ── */
+  .atl-wrap { display: flex; flex-direction: column; gap: 0.625rem; margin-top: 0.25rem; }
+  .atl-member { background: var(--color-bg-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: 6px; overflow: hidden; }
+  .atl-member-header { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; border-bottom: 0.5px solid var(--color-border-secondary); }
+  .atl-name  { font-size: 0.82rem; font-weight: 600; color: var(--color-text-primary); }
+  .atl-total { font-size: 0.72rem; color: var(--color-text-tertiary); }
+  .atl-sessions { padding: 0.375rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .atl-session { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--color-text-secondary); }
+  .atl-session-time { font-variant-numeric: tabular-nums; min-width: 4.5rem; }
+  .atl-arrow { color: var(--color-text-tertiary); font-size: 0.65rem; }
+  .atl-dur   { margin-left: auto; font-size: 0.69rem; color: var(--color-text-tertiary); font-variant-numeric: tabular-nums; }
+  .atl-present { color: #5a9e3f; font-style: italic; }
+
   /* ── TODO banner ── */
   .todo-banner { background: #2e1e0a; border: 0.5px solid #854F0B; border-radius: var(--border-radius-md); padding: 0.625rem 0.875rem; margin-bottom: 1rem; font-size: 0.75rem; color: #c47a2a; }
   .todo-banner strong { color: #e8a44a; }
@@ -3641,7 +3654,7 @@ function renderEvents(grid) {
 }
 
 // ── Event Detail Modal ──────────────────────────────────────────────────────
-function openEventDetailModal(evId) {
+async function openEventDetailModal(evId) {
   const ev = orgEvents.find(e => e.id === evId);
   if (!ev) return;
 
@@ -3664,57 +3677,15 @@ function openEventDetailModal(evId) {
   if (ev.auec_per_hour > 0)  badges += `<span class="ev-modal-badge ev-badge-auec">${ev.auec_per_hour.toLocaleString()} aUEC/hr</span>`;
   if (ev.course_code)        badges += `<span class="ev-modal-badge ev-badge-cert">${esc(ev.course_code)}</span>`;
 
-  // Time log — only show to officers/admins and only for org events that have attendance data
-  let timeLogHTML = '';
-  if (isOrg && (isOfficer || isAdmin)) {
-    const evAttendees = orgAttendance.filter(a => a.event_id === evId);
-    if (evAttendees.length) {
-      const rows = evAttendees.map(a => {
-        const member = orgMembers.find(m => m.id === a.member_id);
-        const name   = member ? esc(member.display_name || member.username) : `<span style="opacity:.5">${a.member_id.slice(-6)}</span>`;
+  const descHTML = ev.description ? `<div class="ev-modal-desc">${esc(ev.description)}</div>` : '';
+  const locHTML  = ev.location    ? `<div class="ev-modal-meta">📍 ${esc(ev.location)}</div>` : '';
 
-        const fmtTime = iso => iso
-          ? new Date(iso).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', timeZone:'America/New_York'})
-          : '—';
-
-        const dur = a.duration_minutes > 0
-          ? `${Math.floor(a.duration_minutes / 60)}h ${a.duration_minutes % 60}m`
-          : (a.clock_in && !a.clock_out ? '<span style="color:#5a9e3f">in progress</span>' : '—');
-
-        const dkpEarned  = (a.time_dkp  || 0) > 0 ? `+${a.time_dkp} DKP`  : '';
-        const auecOwed   = (a.time_auec || 0) > 0 ? `${(a.time_auec/1000).toFixed(1)}k aUEC` : '';
-        const rewardCell = [dkpEarned, auecOwed].filter(Boolean).join(' / ') || '—';
-
-        return `<tr>
-          <td>${name}</td>
-          <td>${fmtTime(a.clock_in)}</td>
-          <td>${fmtTime(a.clock_out)}</td>
-          <td>${dur}</td>
-          <td style="color:#5a9e3f">${rewardCell}</td>
-        </tr>`;
-      }).join('');
-
-      timeLogHTML = `
-        <div class="ev-modal-section-label">Time Log</div>
-        <div class="ev-modal-timelog-wrap">
-          <table class="ev-modal-timelog">
-            <thead><tr>
-              <th>Member</th><th>Clock-In</th><th>Clock-Out</th><th>Duration</th><th>Earned</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>`;
-    } else {
-      timeLogHTML = `<div class="ev-modal-section-label">Time Log</div>
-        <div style="color:var(--color-text-tertiary);font-size:.85rem;margin-top:.25rem;">No time data recorded yet.</div>`;
-    }
-  }
-
-  const descHTML = ev.description
-    ? `<div class="ev-modal-desc">${esc(ev.description)}</div>`
-    : '';
-  const locHTML = ev.location
-    ? `<div class="ev-modal-meta">📍 ${esc(ev.location)}</div>`
+  // Attendance log section — officers/admins only, org events only.
+  // Render a placeholder first so the modal opens immediately; fill async.
+  const showLog  = isOrg && (isOfficer || isAdmin);
+  const logStub  = showLog
+    ? `<div class="ev-modal-section-label">Attendance Log</div>
+       <div id="ev-atl-content" style="color:var(--color-text-tertiary);font-size:.82rem;margin-top:.25rem;">Loading…</div>`
     : '';
 
   const el = document.getElementById('ev-detail-modal');
@@ -3726,9 +3697,128 @@ function openEventDetailModal(evId) {
       ${locHTML}
       ${descHTML}
       <div class="ev-modal-badges">${badges}</div>
-      ${timeLogHTML}
+      ${logStub}
     </div>`;
   el.style.display = 'flex';
+
+  if (!showLog) return;
+
+  // ── Async: fetch attendance_log for this event, then render ──
+  try {
+    const { data: logRows, error } = await sb
+      .from('attendance_log')
+      .select('member_id, action, ts')
+      .eq('event_id', evId)
+      .order('ts', { ascending: true });
+
+    const placeholder = document.getElementById('ev-atl-content');
+    if (!placeholder) return; // modal closed before we got back
+
+    if (error) throw error;
+
+    if (logRows?.length) {
+      placeholder.outerHTML = buildAttendanceLog(logRows, evId);
+    } else {
+      // No log data — fall back to the summary attendance records
+      placeholder.outerHTML = buildAttendanceFallback(evId);
+    }
+  } catch (err) {
+    const placeholder = document.getElementById('ev-atl-content');
+    if (placeholder) placeholder.textContent = 'Could not load attendance log.';
+    console.error('attendance log fetch error:', err);
+  }
+}
+
+// Build a per-member timeline from raw attendance_log rows.
+function buildAttendanceLog(rows, evId) {
+  const ET = { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' };
+  const fmtT = ts => ts.toLocaleTimeString('en-US', ET);
+  const fmtD = ms => {
+    const m = Math.floor(ms / 60000);
+    return m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`;
+  };
+
+  // Group by member, sort chronologically within each group
+  const byMember = {};
+  for (const r of rows) {
+    (byMember[r.member_id] ??= []).push({ action: r.action, ts: new Date(r.ts) });
+  }
+
+  const memberData = Object.entries(byMember).map(([memberId, events]) => {
+    // Pair up joins and leaves into discrete sessions
+    const sessions = [];
+    let joinTs = null;
+    for (const e of events) {
+      if (e.action === 'join') {
+        joinTs = e.ts;
+      } else if (e.action === 'leave' && joinTs) {
+        sessions.push({ joinAt: joinTs, leaveAt: e.ts, ms: e.ts - joinTs });
+        joinTs = null;
+      }
+    }
+    if (joinTs) sessions.push({ joinAt: joinTs, leaveAt: null, ms: Date.now() - joinTs });
+
+    const totalMs  = sessions.reduce((s, x) => s + x.ms, 0);
+    const existing = orgAttendance.find(a => a.event_id === evId && a.member_id === memberId);
+    return { memberId, sessions, totalMs, existing };
+  }).sort((a, b) => b.totalMs - a.totalMs);
+
+  const cards = memberData.map(m => {
+    const mem   = orgMembers.find(x => x.id === m.memberId);
+    const name  = mem ? esc(mem.display_name || mem.username)
+                      : `<span style="opacity:.5">${m.memberId.slice(-6)}</span>`;
+    const dkp   = (m.existing?.time_dkp  || 0) > 0 ? `+${m.existing.time_dkp} DKP`  : '';
+    const auec  = (m.existing?.time_auec || 0) > 0 ? `${(m.existing.time_auec/1000).toFixed(1)}k aUEC` : '';
+    const reward = [dkp, auec].filter(Boolean).join(' · ');
+
+    const sessionHTML = m.sessions.map(s => `
+      <div class="atl-session">
+        <span class="atl-session-time">${fmtT(s.joinAt)}</span>
+        <span class="atl-arrow">→</span>
+        <span class="atl-session-time">${s.leaveAt ? fmtT(s.leaveAt) : '<span class="atl-present">present</span>'}</span>
+        <span class="atl-dur">${fmtD(s.ms)}</span>
+      </div>`).join('');
+
+    return `<div class="atl-member">
+      <div class="atl-member-header">
+        <span class="atl-name">${name}</span>
+        <span class="atl-total">${fmtD(m.totalMs)} total${reward ? ' · ' + reward : ''}</span>
+      </div>
+      <div class="atl-sessions">${sessionHTML}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="atl-wrap">${cards}</div>`;
+}
+
+// Fallback for events before attendance_log existed — renders the summary table.
+function buildAttendanceFallback(evId) {
+  const evAttendees = orgAttendance.filter(a => a.event_id === evId);
+  if (!evAttendees.length) {
+    return `<div style="color:var(--color-text-tertiary);font-size:.82rem;margin-top:.25rem;">No attendance data recorded for this event.</div>`;
+  }
+  const ET = { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' };
+  const fmtT = iso => iso ? new Date(iso).toLocaleTimeString('en-US', ET) : '—';
+  const rows = evAttendees.map(a => {
+    const mem  = orgMembers.find(m => m.id === a.member_id);
+    const name = mem ? esc(mem.display_name || mem.username) : `<span style="opacity:.5">${a.member_id.slice(-6)}</span>`;
+    const dur  = a.duration_minutes > 0
+      ? `${Math.floor(a.duration_minutes/60)}h ${a.duration_minutes%60}m`
+      : (a.clock_in && !a.clock_out ? '<span style="color:#5a9e3f">in progress</span>' : '—');
+    const dkp  = (a.time_dkp  || 0) > 0 ? `+${a.time_dkp} DKP`  : '';
+    const auec = (a.time_auec || 0) > 0 ? `${(a.time_auec/1000).toFixed(1)}k aUEC` : '';
+    const reward = [dkp, auec].filter(Boolean).join(' / ') || '—';
+    return `<tr>
+      <td>${name}</td><td>${fmtT(a.clock_in)}</td><td>${fmtT(a.clock_out)}</td>
+      <td>${dur}</td><td style="color:#5a9e3f">${reward}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="ev-modal-timelog-wrap">
+    <table class="ev-modal-timelog">
+      <thead><tr><th>Member</th><th>Clock-In</th><th>Clock-Out</th><th>Duration</th><th>Earned</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
 function closeEventDetailModal() {

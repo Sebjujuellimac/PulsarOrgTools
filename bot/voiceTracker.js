@@ -60,6 +60,11 @@ async function handleVoiceJoin(memberId, channelId) {
   const name        = member.display_name || memberId;
   const clockInTime = new Date().toISOString();
 
+  // Always log the raw join event for the detailed timeline
+  db.from('attendance_log')
+    .insert({ event_id: evt.id, member_id: memberId, action: 'join', ts: clockInTime })
+    .catch(e => console.error('attendance_log join error:', e.message));
+
   const { data: existing } = await db
     .from('attendance')
     .select('id, clock_in')
@@ -100,6 +105,11 @@ async function handleVoiceLeave(memberId, channelId) {
   if (!evt) return;
 
   const clockOutTime = new Date().toISOString();
+
+  // Always log the raw leave event for the detailed timeline
+  db.from('attendance_log')
+    .insert({ event_id: evt.id, member_id: memberId, action: 'leave', ts: clockOutTime })
+    .catch(e => console.error('attendance_log leave error:', e.message));
 
   await db.from('attendance')
     .update({ clock_out: clockOutTime })
@@ -152,9 +162,15 @@ export async function sweepVoiceChannelOnStart(discordEvent) {
       await db.from('attendance').insert({
         event_id: evt.id, member_id: memberId, attended: true, clock_in: now,
       });
+      db.from('attendance_log')
+        .insert({ event_id: evt.id, member_id: memberId, action: 'join', ts: now })
+        .catch(e => console.error('attendance_log sweep error:', e.message));
       count++;
     } else if (!existing.clock_in) {
       await db.from('attendance').update({ clock_in: now }).eq('id', existing.id);
+      db.from('attendance_log')
+        .insert({ event_id: evt.id, member_id: memberId, action: 'join', ts: now })
+        .catch(e => console.error('attendance_log sweep error:', e.message));
       count++;
     }
     // Already has a clock_in — no action needed
