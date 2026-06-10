@@ -327,6 +327,19 @@
   .q-open      { font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 99px; background: #1e2e14; color: #5a9e3f; font-weight: 500; }
   .q-completed { font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 99px; background: #142236; color: #4a8fd4; font-weight: 500; }
   .q-closed    { font-size: 0.625rem; padding: 0.125rem 0.5rem; border-radius: 99px; background: #2e2c2a; color: #9e9b96; font-weight: 500; }
+
+  /* ── Objectives ── */
+  .obj-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .obj-title { font-size: 0.875rem; font-weight: 500; }
+  .obj-meta { font-size: 0.69rem; color: var(--color-text-tertiary); }
+  .obj-mat-row { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.25rem; }
+  .obj-mat-label { display: flex; justify-content: space-between; font-size: 0.69rem; color: var(--color-text-secondary); }
+  .obj-mat-bar { height: 6px; border-radius: 99px; background: var(--color-background-primary); overflow: hidden; }
+  .obj-mat-fill { height: 100%; background: #4a8fd4; border-radius: 99px; transition: width 0.2s; }
+  .obj-mat-fill.complete { background: #5a9e3f; }
+  .obj-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
+  .recipe-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .recipe-mat-line { font-size: 0.69rem; color: var(--color-text-secondary); display: flex; justify-content: space-between; }
   .q-type-action { font-size: 0.5rem; padding: 0.1rem 0.44rem; border-radius: 99px; background: #23232a; color: #6b6864; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
   .q-type-item   { font-size: 0.5rem; padding: 0.1rem 0.44rem; border-radius: 99px; background: #1a302e; color: #2dbd8f; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
   .quest-meta { font-size: 0.625rem; color: var(--color-text-tertiary); display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
@@ -762,6 +775,7 @@
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Economy</div>
       <button class="sidebar-item" id="nav-operations" onclick="setOrgTab('operations')">Operations<span class="nav-stat" id="stat-operations"></span></button>
+      <button class="sidebar-item" id="nav-objectives" onclick="setOrgTab('objectives')">Objectives<span class="nav-stat" id="stat-objectives"></span></button>
 
       <div class="sidebar-section-label" style="margin-top:0.5rem;">Calendar</div>
       <button class="sidebar-item" id="nav-events" onclick="setOrgTab('events')">Events<span class="nav-stat" id="stat-events"></span></button>
@@ -1013,6 +1027,17 @@
 
     <!-- Operations filter (hidden — SC Tracker has its own internal tabs) -->
     <div class="filter-panel" id="ofp-operations" style="display:none;"></div>
+
+    <!-- Objectives filter -->
+    <div class="filter-panel" id="ofp-objectives">
+      <div class="filter-row" style="align-items:center;">
+        <div class="op-tab-bar" style="margin-bottom:0;">
+          <button class="op-tab" id="obj-tabBtn-board" onclick="obj_switchTab('board')">Board</button>
+          <button class="op-tab" id="obj-tabBtn-recipes" onclick="obj_switchTab('recipes')">Recipe Library</button>
+        </div>
+        <button class="op-small-btn primary" id="obj-add-btn" style="margin-left:auto;display:none;" onclick="obj_addClick()">+ Add</button>
+      </div>
+    </div>
 
     <div id="quest-body-row">
       <div id="quest-main">
@@ -2369,7 +2394,7 @@ function setTab(t){
   activeTab=t;
   setSection('inventory');
   const invCats=['component','material','blueprint','wikelo'];
-  const orgTabs=['members','events','leaderboard','certifications','quests','operations'];
+  const orgTabs=['members','events','leaderboard','certifications','quests','operations','objectives'];
   invCats.forEach(cat=>{
     document.getElementById('nav-'+cat)?.classList.toggle('active',cat===t);
     document.getElementById('fp-'+cat)?.classList.toggle('visible',cat===t);
@@ -3348,6 +3373,7 @@ function updateOrgStats() {
   setOrgStat('stat-events',         openEvents        || '');
   setOrgStat('stat-certifications', orgCerts.length   || '');
   setOrgStat('stat-operations',     activeOps         || '');
+  setOrgStat('stat-objectives',     orgObjectives.filter(o=>o.status==='open').length || '');
 }
 
 // ── Quest pending panel ────────────────────────────────────────────────────────
@@ -3424,13 +3450,14 @@ function setOrgTab(t) {
   activeOrgTab = t;
   setSection('org');
   const invCats=['component','material','blueprint','wikelo'];
-  const orgTabs=['members','events','leaderboard','certifications','quests','operations'];
+  const orgTabs=['members','events','leaderboard','certifications','quests','operations','objectives'];
   orgTabs.forEach(tab=>{
     document.getElementById('nav-'+tab)?.classList.toggle('active',tab===t);
     const fp=document.getElementById('ofp-'+tab);
     if(fp&&fp.style.display!=='none') fp.classList.toggle('visible',tab===t);
   });
   invCats.forEach(cat=>document.getElementById('nav-'+cat)?.classList.remove('active'));
+  if (t==='objectives') obj_switchTab(obj_activeTab);
   renderOrg();
 }
 
@@ -3443,6 +3470,7 @@ function renderOrg() {
   else if (activeOrgTab==='certifications') renderCertifications(grid);
   else if (activeOrgTab==='quests')       renderQuests(grid);
   else if (activeOrgTab==='operations')  renderOperations(grid);
+  else if (activeOrgTab==='objectives')  renderObjectives(grid);
 
   // Quest pending panel — officers only, quests tab only
   const questRow = document.getElementById('quest-body-row');
@@ -4516,13 +4544,16 @@ function arrowPath({ sx, sy, adx, dx, dy, elbowY, isBreadth, dxShift = 0 }) {
 // ── Quests & Submissions ──
 let orgQuests       = [];
 let orgSubmissions  = [];  // pending quest turn-ins visible to officers
+let orgRecipes      = [];  // blueprint recipe library
+let orgObjectives   = [];  // org objectives (recipe + target qty + contributions)
+let obj_activeTab   = 'board';
 
 async function loadOrg() {
   if (!sb) { renderOrg(); updateOrgStats(); return; }
   document.getElementById('loadingBar').style.display = 'block';
   document.getElementById('org-grid').innerHTML = '<div class="empty">Loading org data…</div>';
   try {
-    const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes,opRes,opCrewRes,opJobsRes,opItemsRes,opCostsRes,gbRes] = await Promise.all([
+    const [mRes,eRes,cRes,aRes,qRes,sRes,coursesRes,tracksRes,opRes,opCrewRes,opJobsRes,opItemsRes,opCostsRes,gbRes,recipesRes,objectivesRes] = await Promise.all([
       sb.from('members').select('id,username,display_name,dkp_balance,joined_at,rsi_handle,rsi_verified,rsi_citizen_number,rsi_avatar_url').eq('is_system',false).is('discharged_at',null).order('dkp_balance',{ascending:false}),
       sb.from('events').select('id,title,description,dkp_reward,dkp_per_hour,auec_per_hour,status,scheduled_start_time,scheduled_end_time,location,source,source_id,source_url,voice_channel_id,course_code').order('scheduled_start_time',{ascending:false}),
       sb.from('certifications').select('member_id,course_code,awarded_at'),
@@ -4537,6 +4568,8 @@ async function loadOrg() {
       sb.from('operation_items').select('*').order('display_order',{ascending:true}),
       sb.from('operation_costs').select('*').order('display_order',{ascending:true}),
       sb.from('guild_bank_balance').select('balance').single(),
+      sb.from('blueprint_recipes').select('*').order('code',{ascending:true}),
+      sb.from('org_objectives').select('*').order('created_at',{ascending:false}),
     ]);
     if (mRes.error) throw mRes.error;
     orgCourses = coursesRes.data || [];
@@ -4560,6 +4593,8 @@ async function loadOrg() {
     orgOpItems    = opItemsRes.data || [];
     orgOpCosts    = opCostsRes.data || [];
     guildBankBalance = Number(gbRes.data?.balance || 0);
+    orgRecipes    = recipesRes.data    || [];
+    orgObjectives = objectivesRes.data || [];
     orgLoaded = true;
   } catch(err) {
     showError('Could not load org data: '+(err.message||String(err)));
@@ -6500,12 +6535,367 @@ function op_renderSummary(){
     +'</div>';
 }
 
+// ── Objectives ──────────────────────────────────────────────────────────────
+function obj_switchTab(t){
+  obj_activeTab = t;
+  document.getElementById('obj-tabBtn-board')?.classList.toggle('active', t==='board');
+  document.getElementById('obj-tabBtn-recipes')?.classList.toggle('active', t==='recipes');
+  const addBtn = document.getElementById('obj-add-btn');
+  if (addBtn) {
+    addBtn.style.display = (isOfficer||isAdmin) ? '' : 'none';
+    addBtn.textContent = t==='recipes' ? '+ Add Recipe' : '+ New Objective';
+  }
+  if (activeOrgTab==='objectives') renderOrg();
+}
+
+function obj_addClick(){
+  if (obj_activeTab==='recipes') openRecipeModal();
+  else openObjectiveModal();
+}
+
+function renderObjectives(grid){
+  if (obj_activeTab==='recipes') renderRecipeLibrary(grid);
+  else renderObjectiveBoard(grid);
+}
+
+function obj_recipeById(id){ return orgRecipes.find(r=>r.id===id); }
+
+function obj_progress(o){
+  const recipe    = obj_recipeById(o.recipe_id);
+  const materials = recipe?.materials || {};
+  const target    = o.target_qty || 1;
+  const contributions = o.contributions || [];
+  return Object.entries(materials).map(([mat,perUnit])=>{
+    const need = perUnit * target;
+    const have = contributions.filter(c=>c.material===mat).reduce((a,c)=>a+(Number(c.qty)||0),0);
+    return { mat, need, have, pct: need>0 ? Math.min(100, Math.round(have/need*100)) : 100 };
+  });
+}
+
+function renderObjectiveBoard(grid){
+  document.getElementById('org-result-count').textContent = '';
+  if (!orgObjectives.length){
+    grid.innerHTML = '<div class="empty">No active objectives.'+((isOfficer||isAdmin)?' Click "+ New Objective" to add one.':' Check back soon.')+'</div>';
+    grid.className = '';
+    return;
+  }
+  grid.className = 'org-grid';
+  grid.innerHTML = orgObjectives.map(o=>{
+    const recipe  = obj_recipeById(o.recipe_id);
+    const rows    = obj_progress(o);
+    const matRows = rows.map(r=>`
+      <div class="obj-mat-row">
+        <div class="obj-mat-label"><span>${esc(r.mat)}</span><span>${r.have.toLocaleString()} / ${r.need.toLocaleString()} SCU</span></div>
+        <div class="obj-mat-bar"><div class="obj-mat-fill${r.have>=r.need?' complete':''}" style="width:${r.pct}%;"></div></div>
+      </div>`).join('');
+    return `<div class="obj-card">
+      <div class="obj-title">${esc(recipe?.name||'Unknown recipe')}${recipe?.code?` <span class="obj-meta">(${esc(recipe.code)})</span>`:''}</div>
+      <div class="obj-meta">Target: ${o.target_qty}x${o.status==='complete'?' · <span style="color:#5a9e3f;">Complete</span>':''}</div>
+      ${o.notes?`<div class="obj-meta" style="font-style:italic;">${esc(o.notes)}</div>`:''}
+      ${matRows || '<div class="obj-meta">This recipe has no materials defined.</div>'}
+      <div class="obj-footer">
+        <button class="op-small-btn primary" onclick="openContributeModal('${esc(o.id)}')">Log Turn-In</button>
+        ${(isOfficer||isAdmin)?`
+          ${(!o.status||o.status==='open')
+            ?`<button class="op-small-btn success" onclick="obj_setStatus('${esc(o.id)}','complete')">Mark Complete</button>`
+            :`<button class="op-small-btn" onclick="obj_setStatus('${esc(o.id)}','open')">Reopen</button>`}
+          <button class="op-small-btn danger" onclick="deleteObjective('${esc(o.id)}')">Delete</button>
+        `:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderRecipeLibrary(grid){
+  document.getElementById('org-result-count').textContent = '';
+  if (!orgRecipes.length){
+    grid.innerHTML = '<div class="empty">No recipes in the library yet.</div>';
+    grid.className = '';
+    return;
+  }
+  grid.className = 'org-grid';
+  grid.innerHTML = orgRecipes.map(r=>{
+    const mats = Object.entries(r.materials||{})
+      .map(([m,q])=>`<div class="recipe-mat-line"><span>${esc(m)}</span><span>${Number(q).toLocaleString()} SCU</span></div>`).join('');
+    return `<div class="recipe-card">
+      <div class="obj-title">${esc(r.name)} <span class="obj-meta">(${esc(r.code)})</span></div>
+      ${r.category?`<div class="obj-meta">${esc(r.category)}</div>`:''}
+      ${mats}
+      ${(isOfficer||isAdmin)?`<div class="obj-footer">
+        <button class="op-small-btn" onclick="openRecipeModal('${esc(r.id)}')">Edit</button>
+        <button class="op-small-btn danger" onclick="deleteRecipe('${esc(r.id)}')">Delete</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── Recipe modal ──
+let _editingRecipeId = null;
+
+function openRecipeModal(id){
+  if (!isOfficer && !isAdmin) return;
+  _editingRecipeId = id || null;
+  document.getElementById('rc-error').style.display = 'none';
+  document.getElementById('rc-mat-rows').innerHTML = '';
+  const r = id ? obj_recipeById(id) : null;
+  document.getElementById('recipe-modal-title').textContent = r ? 'Edit Recipe' : 'Add Recipe';
+  document.getElementById('rc-code').value     = r?.code || '';
+  document.getElementById('rc-name').value     = r?.name || '';
+  document.getElementById('rc-category').value = r?.category || '';
+  const mats = Object.entries(r?.materials || {});
+  if (mats.length) mats.forEach(([m,q])=>rc_addMatRow(m,q));
+  else rc_addMatRow();
+  document.getElementById('recipeModal').classList.add('open');
+}
+
+function rc_addMatRow(mat,qty){
+  const wrap = document.getElementById('rc-mat-rows');
+  const row  = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:0.4rem;margin-bottom:0.4rem;';
+  const opts = '<option value="">— Select ore —</option>' +
+    ORE_LIST.map(o=>`<option value="${esc(o)}"${o===mat?' selected':''}>${esc(o)}</option>`).join('');
+  row.innerHTML = `<select class="form-select" style="flex:2;">${opts}</select>
+    <input class="form-input" type="number" min="0" placeholder="Qty (SCU)" style="flex:1;" value="${qty!=null?qty:''}">
+    <button class="op-small-btn danger" type="button" onclick="this.parentElement.remove()">×</button>`;
+  wrap.appendChild(row);
+}
+
+async function submitRecipe(){
+  const code     = document.getElementById('rc-code').value.trim();
+  const name     = document.getElementById('rc-name').value.trim();
+  const category = document.getElementById('rc-category').value.trim();
+  const errEl    = document.getElementById('rc-error');
+  if (!code || !name) {
+    errEl.textContent = 'Code and name are required.'; errEl.style.display = 'block'; return;
+  }
+  const materials = {};
+  document.querySelectorAll('#rc-mat-rows > div').forEach(row=>{
+    const sel = row.querySelector('select').value;
+    const qty = Number(row.querySelector('input').value);
+    if (sel && qty > 0) materials[sel] = qty;
+  });
+  if (!Object.keys(materials).length) {
+    errEl.textContent = 'Add at least one material.'; errEl.style.display = 'block'; return;
+  }
+  const payload = { code, name, category: category || null, materials };
+  try {
+    let result;
+    if (_editingRecipeId) {
+      result = await sb.from('blueprint_recipes').update(payload).eq('id', _editingRecipeId).select().single();
+    } else {
+      result = await sb.from('blueprint_recipes').insert(payload).select().single();
+    }
+    if (result.error) throw result.error;
+    if (_editingRecipeId) {
+      const idx = orgRecipes.findIndex(r=>r.id===_editingRecipeId);
+      if (idx >= 0) orgRecipes[idx] = result.data;
+    } else {
+      orgRecipes.push(result.data);
+      orgRecipes.sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+    }
+    closeModal('recipeModal');
+    renderOrg();
+  } catch (err) {
+    errEl.textContent = 'Failed to save recipe: ' + (err.message || String(err));
+    errEl.style.display = 'block';
+  }
+}
+
+async function deleteRecipe(id){
+  if (!isOfficer && !isAdmin) return;
+  if (!confirm('Delete this recipe? Objectives referencing it will lose their material breakdown.')) return;
+  try {
+    const { error } = await sb.from('blueprint_recipes').delete().eq('id', id);
+    if (error) throw error;
+    orgRecipes = orgRecipes.filter(r=>r.id!==id);
+    renderOrg();
+  } catch (err) {
+    showError('Failed to delete recipe: ' + (err.message || String(err)));
+  }
+}
+
+// ── Objective modal ──
+function openObjectiveModal(){
+  if (!isOfficer && !isAdmin) return;
+  if (!orgRecipes.length) { showError('Add a recipe to the library first.'); return; }
+  document.getElementById('ob-recipe').innerHTML = orgRecipes
+    .map(r=>`<option value="${esc(r.id)}">${esc(r.code)} — ${esc(r.name)}</option>`).join('');
+  document.getElementById('ob-qty').value = 1;
+  document.getElementById('ob-notes').value = '';
+  document.getElementById('ob-error').style.display = 'none';
+  document.getElementById('objectiveModal').classList.add('open');
+}
+
+async function submitObjective(){
+  const recipeId = document.getElementById('ob-recipe').value;
+  const qty   = Math.max(1, Number(document.getElementById('ob-qty').value) || 1);
+  const notes = document.getElementById('ob-notes').value.trim();
+  const errEl = document.getElementById('ob-error');
+  try {
+    const { data, error } = await sb.from('org_objectives')
+      .insert({ recipe_id: recipeId, target_qty: qty, notes: notes || null, status: 'open', contributions: [] })
+      .select().single();
+    if (error) throw error;
+    orgObjectives.unshift(data);
+    closeModal('objectiveModal');
+    renderOrg();
+    updateOrgStats();
+  } catch (err) {
+    errEl.textContent = 'Failed to create objective: ' + (err.message || String(err));
+    errEl.style.display = 'block';
+  }
+}
+
+async function obj_setStatus(id, status){
+  if (!isOfficer && !isAdmin) return;
+  try {
+    const { error } = await sb.from('org_objectives').update({ status }).eq('id', id);
+    if (error) throw error;
+    const o = orgObjectives.find(o=>o.id===id);
+    if (o) o.status = status;
+    renderOrg();
+    updateOrgStats();
+  } catch (err) {
+    showError('Failed to update objective: ' + (err.message || String(err)));
+  }
+}
+
+async function deleteObjective(id){
+  if (!isOfficer && !isAdmin) return;
+  if (!confirm('Delete this objective and its turn-in history?')) return;
+  try {
+    const { error } = await sb.from('org_objectives').delete().eq('id', id);
+    if (error) throw error;
+    orgObjectives = orgObjectives.filter(o=>o.id!==id);
+    renderOrg();
+    updateOrgStats();
+  } catch (err) {
+    showError('Failed to delete objective: ' + (err.message || String(err)));
+  }
+}
+
+// ── Contribute (turn-in) modal ──
+let _contributeObjId = null;
+
+function openContributeModal(objId){
+  if (!authMember) { showError('Log in to record a turn-in.'); return; }
+  const o = orgObjectives.find(o=>o.id===objId);
+  const recipe = obj_recipeById(o?.recipe_id);
+  const mats = Object.keys(recipe?.materials || {});
+  if (!mats.length) { showError('This recipe has no materials defined yet.'); return; }
+  _contributeObjId = objId;
+  document.getElementById('ct-material').innerHTML = mats.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  document.getElementById('ct-qty').value = '';
+  document.getElementById('ct-error').style.display = 'none';
+  document.getElementById('contributeModal').classList.add('open');
+}
+
+async function submitContribution(){
+  const material = document.getElementById('ct-material').value;
+  const qty = Number(document.getElementById('ct-qty').value);
+  const errEl = document.getElementById('ct-error');
+  if (!qty || qty <= 0) {
+    errEl.textContent = 'Enter a quantity greater than 0.'; errEl.style.display = 'block'; return;
+  }
+  const o = orgObjectives.find(o=>o.id===_contributeObjId);
+  if (!o) return;
+  const contributions = [...(o.contributions || []), {
+    member_id: authMember.id,
+    member_name: authMember.display_name || authMember.username,
+    material, qty,
+    ts: new Date().toISOString(),
+  }];
+  try {
+    const { error } = await sb.from('org_objectives').update({ contributions }).eq('id', o.id);
+    if (error) throw error;
+    o.contributions = contributions;
+    closeModal('contributeModal');
+    renderOrg();
+  } catch (err) {
+    errEl.textContent = 'Failed to log turn-in: ' + (err.message || String(err));
+    errEl.style.display = 'block';
+  }
+}
+
 // Dummy stubs to prevent JS errors from any lingering onclick refs (old code)
 function renderOpList(){} function renderOpDetail(){} function closeOpDetail(){}
 </script>
 
 <!-- ── Modals ── -->
 <div id="ev-detail-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;" onclick="if(event.target===this)closeEventDetailModal()"></div>
+
+<!-- RECIPE MODAL -->
+<div class="modal-bg" id="recipeModal">
+  <div class="modal" style="max-width:480px;" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+    <div class="modal-header">
+      <span class="modal-title" id="recipe-modal-title">Add Recipe</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('recipeModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Code</label>
+      <input class="form-input" id="rc-code" placeholder="e.g. NDB-30">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="rc-name" placeholder="e.g. RSI Quantum Drive">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <input class="form-input" id="rc-category" placeholder="e.g. Quantum Drive">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Required Materials (per unit)</label>
+      <div id="rc-mat-rows"></div>
+      <button class="op-small-btn" type="button" onclick="rc_addMatRow()">+ Add Material</button>
+    </div>
+    <div id="rc-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" onclick="submitRecipe()">Save Recipe</button>
+  </div>
+</div>
+
+<!-- OBJECTIVE MODAL -->
+<div class="modal-bg" id="objectiveModal">
+  <div class="modal" style="max-width:420px;" role="dialog" aria-modal="true" aria-labelledby="objective-modal-title">
+    <div class="modal-header">
+      <span class="modal-title" id="objective-modal-title">New Objective</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('objectiveModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Recipe</label>
+      <select class="form-select" id="ob-recipe"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Quantity Needed</label>
+      <input class="form-input" id="ob-qty" type="number" min="1" value="1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input class="form-input" id="ob-notes" placeholder="e.g. for the new Hull C">
+    </div>
+    <div id="ob-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" onclick="submitObjective()">Create Objective</button>
+  </div>
+</div>
+
+<!-- CONTRIBUTE / TURN-IN MODAL -->
+<div class="modal-bg" id="contributeModal">
+  <div class="modal" style="max-width:380px;" role="dialog" aria-modal="true" aria-labelledby="contribute-modal-title">
+    <div class="modal-header">
+      <span class="modal-title" id="contribute-modal-title">Log Turn-In</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('contributeModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Material</label>
+      <select class="form-select" id="ct-material"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Quantity (SCU)</label>
+      <input class="form-input" id="ct-qty" type="number" min="1" placeholder="e.g. 50">
+    </div>
+    <div id="ct-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" onclick="submitContribution()">Submit</button>
+  </div>
+</div>
 
 </body>
 </html>
