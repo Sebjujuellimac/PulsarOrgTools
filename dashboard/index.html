@@ -3476,8 +3476,10 @@ function renderOrg() {
   const questRow = document.getElementById('quest-body-row');
   if (questRow) {
     const showQuestPanel = activeOrgTab === 'quests' && (isOfficer || isAdmin);
-    questRow.classList.toggle('has-panel', showQuestPanel);
+    const showObjPanel = activeOrgTab === 'objectives' && obj_activeTab === 'board' && (isOfficer || isAdmin);
+    questRow.classList.toggle('has-panel', showQuestPanel || showObjPanel);
     if (showQuestPanel) renderQuestPending();
+    else if (showObjPanel) renderObjectivePending();
     else { const p = document.getElementById('quest-pending-panel'); if (p) p.innerHTML = ''; }
 
     const p = document.getElementById('op-payout-panel'); if (p) p.innerHTML = '';
@@ -6590,7 +6592,7 @@ function renderObjectiveBoard(grid){
       </div>`).join('');
     return `<div class="obj-card">
       <div class="obj-title">${esc(recipe?.name||'Unknown recipe')}${recipe?.code?` <span class="obj-meta">(${esc(recipe.code)})</span>`:''}</div>
-      <div class="obj-meta">Target: ${o.target_qty}x${o.status==='complete'?' · <span style="color:#5a9e3f;">Complete</span>':''}</div>
+      <div class="obj-meta">Target: ${o.target_qty}x${o.status==='complete'?' · <span style="color:#5a9e3f;">Complete</span>':''}${(o.pending_contributions?.length && (isOfficer||isAdmin))?` · <span style="color:#c47a2a;">${o.pending_contributions.length} pending</span>`:''}</div>
       ${o.notes?`<div class="obj-meta" style="font-style:italic;">${esc(o.notes)}</div>`:''}
       ${matRows || '<div class="obj-meta">This recipe has no materials defined.</div>'}
       <div class="obj-footer">
@@ -6733,7 +6735,7 @@ async function submitObjective(){
   const errEl = document.getElementById('ob-error');
   try {
     const { data, error } = await sb.from('org_objectives')
-      .insert({ recipe_id: recipeId, target_qty: qty, notes: notes || null, status: 'open', contributions: [] })
+      .insert({ recipe_id: recipeId, target_qty: qty, notes: notes || null, status: 'open', contributions: [], pending_contributions: [] })
       .select().single();
     if (error) throw error;
     orgObjectives.unshift(data);
@@ -6799,21 +6801,104 @@ async function submitContribution(){
   }
   const o = orgObjectives.find(o=>o.id===_contributeObjId);
   if (!o) return;
-  const contributions = [...(o.contributions || []), {
+  const pending = [...(o.pending_contributions || []), {
+    id: (crypto.randomUUID ? crypto.randomUUID() : 'pc-'+Date.now()+'-'+Math.random().toString(36).slice(2)),
     member_id: authMember.id,
     member_name: authMember.display_name || authMember.username,
     material, qty,
     ts: new Date().toISOString(),
   }];
   try {
-    const { error } = await sb.from('org_objectives').update({ contributions }).eq('id', o.id);
+    const { error } = await sb.from('org_objectives').update({ pending_contributions: pending }).eq('id', o.id);
     if (error) throw error;
-    o.contributions = contributions;
+    o.pending_contributions = pending;
     closeModal('contributeModal');
     renderOrg();
   } catch (err) {
     errEl.textContent = 'Failed to log turn-in: ' + (err.message || String(err));
     errEl.style.display = 'block';
+  }
+}
+
+// ── Pending turn-in approval (officers) ──
+function renderObjectivePending() {
+  const panel = document.getElementById('quest-pending-panel');
+  if (!panel) return;
+
+  const pendingItems = [];
+  for (const o of orgObjectives) {
+    for (const p of (o.pending_contributions || [])) {
+      pendingItems.push({ obj: o, c: p });
+    }
+  }
+
+  if (!pendingItems.length) {
+    panel.innerHTML = `<div class="lp-panel-box">
+      <div class="lp-panel-hdr">Pending Turn-Ins</div>
+      <div class="lp-empty">No pending submissions.</div>
+    </div>`;
+    return;
+  }
+
+  pendingItems.sort((a,b)=>new Date(a.c.ts) - new Date(b.c.ts));
+
+  const cards = pendingItems.map(({obj, c}) => {
+    const recipe = obj_recipeById(obj.recipe_id);
+    const dateStr = c.ts
+      ? new Date(c.ts).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+      : '';
+    return `<div class="lp-card">
+      <div class="lp-type lp-type-turnin">Turn-In</div>
+      <div class="lp-item">${esc(recipe?.name || recipe?.code || 'Objective')} — ${esc(c.material)} ×${c.qty}</div>
+      <div class="lp-who">by ${esc(c.member_name)}</div>
+      <div class="lp-date">${dateStr} ET</div>
+      <div class="lp-actions">
+        <button class="lp-approve" onclick="approveContribution('${esc(obj.id)}','${esc(c.id)}')">Approve</button>
+        <button class="lp-deny"    onclick="denyContribution('${esc(obj.id)}','${esc(c.id)}')">Deny</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `<div class="lp-panel-box">
+    <div class="lp-panel-hdr">Pending Turn-Ins <span style="color:#c47a2a;font-weight:600;">${pendingItems.length}</span></div>
+    ${cards}
+  </div>`;
+}
+
+async function approveContribution(objId, contribId) {
+  if (!isOfficer && !isAdmin) return;
+  const o = orgObjectives.find(o=>o.id===objId);
+  if (!o) return;
+  const pending = o.pending_contributions || [];
+  const item = pending.find(p=>p.id===contribId);
+  if (!item) return;
+  const newPending = pending.filter(p=>p.id!==contribId);
+  const newContributions = [...(o.contributions || []), { member_id: item.member_id, member_name: item.member_name, material: item.material, qty: item.qty, ts: item.ts }];
+  try {
+    const { error } = await sb.from('org_objectives')
+      .update({ pending_contributions: newPending, contributions: newContributions })
+      .eq('id', o.id);
+    if (error) throw error;
+    o.pending_contributions = newPending;
+    o.contributions = newContributions;
+    renderOrg();
+  } catch (err) {
+    showError('Failed to approve turn-in: ' + (err.message || String(err)));
+  }
+}
+
+async function denyContribution(objId, contribId) {
+  if (!isOfficer && !isAdmin) return;
+  const o = orgObjectives.find(o=>o.id===objId);
+  if (!o) return;
+  const newPending = (o.pending_contributions || []).filter(p=>p.id!==contribId);
+  try {
+    const { error } = await sb.from('org_objectives').update({ pending_contributions: newPending }).eq('id', o.id);
+    if (error) throw error;
+    o.pending_contributions = newPending;
+    renderOrg();
+  } catch (err) {
+    showError('Failed to deny turn-in: ' + (err.message || String(err)));
   }
 }
 
