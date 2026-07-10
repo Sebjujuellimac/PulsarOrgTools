@@ -3661,6 +3661,7 @@ function renderEvents(grid) {
         <span class="cal-week-label">${weekLabel}</span>
         <button class="cal-nav-btn" aria-label="Next week" onclick="calWeekOffset++;renderOrg()">›</button>
         <button class="cal-today-btn" onclick="calWeekOffset=0;renderOrg()">Today</button>
+        ${(isOfficer||isAdmin) ? '<button class="cal-today-btn" onclick="openCreateEventModal()" style="margin-left:auto;">+ New Event</button>' : ''}
       </div>
       <div class="cal-tgrid-outer">
         <div class="cal-thead">
@@ -6821,6 +6822,63 @@ async function submitContribution(){
   }
 }
 
+// ── Create Event ──────────────────────────────────────────────────────────────
+function openCreateEventModal() {
+  document.getElementById('cev-title').value    = '';
+  document.getElementById('cev-desc').value     = '';
+  document.getElementById('cev-location').value = '';
+  document.getElementById('cev-dkp').value      = '0';
+  document.getElementById('cev-dkp-hr').value   = '0';
+  document.getElementById('cev-auec-hr').value  = '0';
+  document.getElementById('cev-course').value   = '';
+  document.getElementById('cev-error').style.display = 'none';
+  // Default start to next whole hour, end to +2h
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  now.setHours(now.getHours() + 1);
+  const toLocal = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  document.getElementById('cev-start').value = toLocal(now);
+  const end = new Date(now); end.setHours(end.getHours() + 2);
+  document.getElementById('cev-end').value = toLocal(end);
+  document.getElementById('createEventModal').classList.add('open');
+}
+
+async function submitCreateEvent() {
+  const title  = document.getElementById('cev-title').value.trim();
+  const errEl  = document.getElementById('cev-error');
+  errEl.style.display = 'none';
+  if (!title) { errEl.textContent = 'Title is required.'; errEl.style.display = 'block'; return; }
+  const startVal = document.getElementById('cev-start').value;
+  if (!startVal) { errEl.textContent = 'Start date/time is required.'; errEl.style.display = 'block'; return; }
+
+  const payload = {
+    title,
+    description:     document.getElementById('cev-desc').value.trim()     || null,
+    location:        document.getElementById('cev-location').value.trim()  || null,
+    dkp_reward:      Number(document.getElementById('cev-dkp').value)      || 0,
+    dkp_per_hour:    Number(document.getElementById('cev-dkp-hr').value)   || 0,
+    auec_per_hour:   Number(document.getElementById('cev-auec-hr').value)  || 0,
+    course_code:     document.getElementById('cev-course').value.trim().toUpperCase() || null,
+    scheduled_start_time: new Date(startVal).toISOString(),
+    scheduled_end_time:   document.getElementById('cev-end').value
+                          ? new Date(document.getElementById('cev-end').value).toISOString()
+                          : null,
+    status: 'open',
+    source: 'org',
+    created_by: authMember?.id || null,
+  };
+  try {
+    const { data, error } = await sb.from('events').insert(payload).select().single();
+    if (error) throw error;
+    orgEvents.push(data);
+    closeModal('createEventModal');
+    renderOrg();
+  } catch (err) {
+    errEl.textContent = 'Failed to create event: ' + (err.message || String(err));
+    errEl.style.display = 'block';
+  }
+}
+
 // ── Pending turn-in approval (officers) ──
 function renderObjectivePending() {
   const panel = document.getElementById('quest-pending-panel');
@@ -6980,6 +7038,58 @@ function renderOpList(){} function renderOpDetail(){} function closeOpDetail(){}
     </div>
     <div id="ct-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
     <button class="submit-btn" onclick="submitContribution()">Submit</button>
+  </div>
+</div>
+
+<!-- CREATE EVENT MODAL -->
+<div class="modal-bg" id="createEventModal">
+  <div class="modal" style="max-width:480px;" role="dialog" aria-modal="true" aria-labelledby="create-event-modal-title">
+    <div class="modal-header">
+      <span class="modal-title" id="create-event-modal-title">New Event</span>
+      <button class="close-btn" aria-label="Close" onclick="closeModal('createEventModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Title <span style="color:#c44a4a;">*</span></label>
+      <input class="form-input" id="cev-title" placeholder="e.g. Fleet Mining Op — Pyro">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-input" id="cev-desc" rows="2" placeholder="Optional details…" style="resize:vertical;"></textarea>
+    </div>
+    <div class="form-row" style="display:flex;gap:0.75rem;">
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">Start <span style="color:#c44a4a;">*</span></label>
+        <input class="form-input" id="cev-start" type="datetime-local">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">End</label>
+        <input class="form-input" id="cev-end" type="datetime-local">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Location</label>
+      <input class="form-input" id="cev-location" placeholder="e.g. Pyro, Stanton, etc.">
+    </div>
+    <div class="form-row" style="display:flex;gap:0.75rem;">
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">Flat DKP reward</label>
+        <input class="form-input" id="cev-dkp" type="number" min="0" value="0">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">DKP / hr</label>
+        <input class="form-input" id="cev-dkp-hr" type="number" min="0" value="0">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label class="form-label">aUEC / hr</label>
+        <input class="form-input" id="cev-auec-hr" type="number" min="0" value="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Course code (training events only)</label>
+      <input class="form-input" id="cev-course" placeholder="e.g. AWC-01 — leave blank if not a class">
+    </div>
+    <div id="cev-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
+    <button class="submit-btn" onclick="submitCreateEvent()">Create Event</button>
   </div>
 </div>
 
