@@ -1648,6 +1648,8 @@
 // ============================================================
 const SUPABASE_URL = 'https://njsmomshevbigaxmjvmj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_If0p7SXWaS4GoyWx_Q471g_adpwJQww';  // paste anon/public key here
+const BOT_API_URL    = '';   // Railway bot URL e.g. https://yourbot.up.railway.app — set this to enable Discord event creation
+const BOT_API_SECRET = '';   // must match BOT_EVENT_SECRET in Railway env
 
 let sb = null;
 if (SUPABASE_URL && SUPABASE_KEY) {
@@ -6844,6 +6846,7 @@ function openCreateEventModal() {
 }
 
 async function submitCreateEvent() {
+  if (!isOfficer && !isAdmin) return;
   const title  = document.getElementById('cev-title').value.trim();
   const errEl  = document.getElementById('cev-error');
   errEl.style.display = 'none';
@@ -6851,31 +6854,62 @@ async function submitCreateEvent() {
   const startVal = document.getElementById('cev-start').value;
   if (!startVal) { errEl.textContent = 'Start date/time is required.'; errEl.style.display = 'block'; return; }
 
+  const description   = document.getElementById('cev-desc').value.trim()    || null;
+  const location      = document.getElementById('cev-location').value.trim() || null;
+  const endVal        = document.getElementById('cev-end').value;
   const payload = {
     title,
-    description:     document.getElementById('cev-desc').value.trim()     || null,
-    location:        document.getElementById('cev-location').value.trim()  || null,
+    description,
+    location,
     dkp_reward:      Number(document.getElementById('cev-dkp').value)      || 0,
     dkp_per_hour:    Number(document.getElementById('cev-dkp-hr').value)   || 0,
     auec_per_hour:   Number(document.getElementById('cev-auec-hr').value)  || 0,
     course_code:     document.getElementById('cev-course').value.trim().toUpperCase() || null,
     scheduled_start_time: new Date(startVal).toISOString(),
-    scheduled_end_time:   document.getElementById('cev-end').value
-                          ? new Date(document.getElementById('cev-end').value).toISOString()
-                          : null,
+    scheduled_end_time:   endVal ? new Date(endVal).toISOString() : null,
     status: 'open',
     source: 'org',
     created_by: authMember?.id || null,
   };
+
+  const submitBtn = document.querySelector('#createEventModal .submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating…';
+
   try {
     const { data, error } = await sb.from('events').insert(payload).select().single();
     if (error) throw error;
+
+    // Ask the bot to create a matching Discord Scheduled Event
+    if (BOT_API_URL && BOT_API_SECRET) {
+      try {
+        const res = await fetch(`${BOT_API_URL}/api/create-discord-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BOT_API_SECRET}` },
+          body: JSON.stringify({
+            event_id: data.id, title, description, location,
+            scheduled_start_time: payload.scheduled_start_time,
+            scheduled_end_time:   payload.scheduled_end_time,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (json.discord_event_id) data.discord_event_id = json.discord_event_id;
+        if (!res.ok) console.warn('Bot API returned', res.status, json.error);
+      } catch (botErr) {
+        // Non-fatal — event is in DB, Discord creation failed silently
+        console.warn('Discord event creation failed:', botErr.message);
+      }
+    }
+
     orgEvents.push(data);
     closeModal('createEventModal');
     renderOrg();
   } catch (err) {
     errEl.textContent = 'Failed to create event: ' + (err.message || String(err));
     errEl.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Create Event';
   }
 }
 

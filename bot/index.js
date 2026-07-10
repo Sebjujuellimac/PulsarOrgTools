@@ -3,6 +3,7 @@ import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import { db } from './db.js';
 import { startDecayScheduler } from './decay.js';
 import { startNotifier } from './notifier.js';
+import { startEventApi } from './eventApi.js';
 import { readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -168,6 +169,7 @@ client.once(Events.ClientReady, async c => {
   await syncOfficerRolesOnStartup(c);
   startDecayScheduler(c);
   startNotifier(c);
+  startEventApi(c);
 });
 
 client.login(process.env.DISCORD_TOKEN);
