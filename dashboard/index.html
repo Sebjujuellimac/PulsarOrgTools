@@ -6832,7 +6832,13 @@ function openCreateEventModal() {
   document.getElementById('cev-dkp').value      = '0';
   document.getElementById('cev-dkp-hr').value   = '0';
   document.getElementById('cev-auec-hr').value  = '0';
-  document.getElementById('cev-course').value   = '';
+  // Populate course dropdown from active courses
+  const courseSel = document.getElementById('cev-course');
+  const activeCourses = (orgCourses || []).filter(c => !c.retired_at)
+    .sort((a,b) => (a.code||'').localeCompare(b.code||''));
+  courseSel.innerHTML = '<option value="">— Not a class —</option>' +
+    activeCourses.map(c => `<option value="${esc(c.code)}">${esc(c.code)}${c.title ? ' — ' + esc(c.title) : ''}</option>`).join('');
+  courseSel.value = '';
   document.getElementById('cev-error').style.display = 'none';
   // Default start to next whole hour, end to +2h
   const now = new Date();
@@ -6864,7 +6870,7 @@ async function submitCreateEvent() {
     dkp_reward:      Number(document.getElementById('cev-dkp').value)      || 0,
     dkp_per_hour:    Number(document.getElementById('cev-dkp-hr').value)   || 0,
     auec_per_hour:   Number(document.getElementById('cev-auec-hr').value)  || 0,
-    course_code:     document.getElementById('cev-course').value.trim().toUpperCase() || null,
+    course_code:     document.getElementById('cev-course').value || null,
     scheduled_start_time: new Date(startVal).toISOString(),
     scheduled_end_time:   endVal ? new Date(endVal).toISOString() : null,
     status: 'open',
@@ -7119,8 +7125,8 @@ function renderOpList(){} function renderOpDetail(){} function closeOpDetail(){}
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Course code (training events only)</label>
-      <input class="form-input" id="cev-course" placeholder="e.g. AWC-01 — leave blank if not a class">
+      <label class="form-label">Course (training events only)</label>
+      <select class="form-select" id="cev-course"><option value="">— Not a class —</option></select>
     </div>
     <div id="cev-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
     <button class="submit-btn" onclick="submitCreateEvent()">Create Event</button>
