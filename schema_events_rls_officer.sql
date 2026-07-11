@@ -9,6 +9,8 @@ drop policy if exists "public write" on events;
 
 drop policy if exists "officer insert" on events;
 drop policy if exists "officer update" on events;
+drop policy if exists "officer delete" on events;
 
 create policy "officer insert" on events for insert with check (is_officer());
 create policy "officer update" on events for update using (is_officer());
+create policy "officer delete" on events for delete using (is_officer());

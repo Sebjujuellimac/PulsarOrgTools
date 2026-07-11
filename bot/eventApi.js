@@ -35,7 +35,9 @@ export function startEventApi(client) {
     // CORS preflight
     if (req.method === 'OPTIONS') { respond(res, 204, {}); return; }
 
-    if (req.method !== 'POST' || req.url !== '/api/create-discord-event') {
+    const route = req.url;
+    if (req.method !== 'POST' ||
+        (route !== '/api/create-discord-event' && route !== '/api/delete-discord-event')) {
       respond(res, 404, { error: 'Not found' }); return;
     }
 
@@ -59,6 +61,28 @@ export function startEventApi(client) {
       respond(res, 400, { error: 'Invalid JSON' }); return;
     }
 
+    // ── Delete a Discord Scheduled Event ──────────────────────────────────────
+    if (route === '/api/delete-discord-event') {
+      const { discord_event_id } = body;
+      if (!discord_event_id) {
+        respond(res, 400, { error: 'Missing required field: discord_event_id' }); return;
+      }
+      try {
+        const guild = await client.guilds.fetch(process.env.GUILD_ID);
+        await guild.scheduledEvents.delete(discord_event_id);
+        respond(res, 200, { deleted: true });
+      } catch (err) {
+        // If it's already gone, treat as success so the DB delete still proceeds
+        if (err?.code === 10070 /* Unknown Guild Scheduled Event */) {
+          respond(res, 200, { deleted: true, note: 'already gone' }); return;
+        }
+        console.error('eventApi delete-discord-event error:', err);
+        respond(res, 500, { error: err.message || String(err) });
+      }
+      return;
+    }
+
+    // ── Create a Discord Scheduled Event ──────────────────────────────────────
     const { event_id, title, description, location, scheduled_start_time, scheduled_end_time } = body;
     if (!event_id || !title || !scheduled_start_time) {
       respond(res, 400, { error: 'Missing required fields: event_id, title, scheduled_start_time' }); return;

@@ -3723,6 +3723,15 @@ async function openEventDetailModal(evId) {
        <div id="ev-atl-content" style="color:var(--color-text-tertiary);font-size:.82rem;margin-top:.25rem;">Loading…</div>`
     : '';
 
+  // Delete control — officers/admins only, org events only.
+  const showDelete = isOrg && (isOfficer || isAdmin);
+  const deleteHTML = showDelete
+    ? `<div id="ev-delete-row" style="margin-top:1rem;padding-top:0.85rem;border-top:0.5px solid var(--color-border-secondary);">
+         <button class="op-small-btn danger" id="ev-delete-btn" onclick="deleteCalendarEvent('${esc(evId)}')">Delete Event</button>
+         <span id="ev-delete-err" style="display:none;color:#c44a4a;font-size:.78rem;margin-left:.6rem;"></span>
+       </div>`
+    : '';
+
   const el = document.getElementById('ev-detail-modal');
   el.innerHTML = `
     <div class="ev-detail-panel">
@@ -3733,6 +3742,7 @@ async function openEventDetailModal(evId) {
       ${descHTML}
       <div class="ev-modal-badges">${badges}</div>
       ${logStub}
+      ${deleteHTML}
     </div>`;
   el.style.display = 'flex';
 
@@ -3858,6 +3868,43 @@ function buildAttendanceFallback(evId) {
 
 function closeEventDetailModal() {
   document.getElementById('ev-detail-modal').style.display = 'none';
+}
+
+async function deleteCalendarEvent(evId) {
+  if (!isOfficer && !isAdmin) return;
+  const ev = orgEvents.find(e => e.id === evId);
+  if (!ev) return;
+  if (!confirm(`Delete "${ev.title}"? This removes it from the calendar${ev.discord_event_id ? ' and Discord' : ''}. Attendance records are also removed. This cannot be undone.`)) return;
+
+  const btn = document.getElementById('ev-delete-btn');
+  const errEl = document.getElementById('ev-delete-err');
+  if (errEl) errEl.style.display = 'none';
+  if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+
+  try {
+    // Ask the bot to remove the linked Discord Scheduled Event first (non-fatal)
+    if (ev.discord_event_id && BOT_API_URL && BOT_API_SECRET) {
+      try {
+        await fetch(`${BOT_API_URL}/api/delete-discord-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BOT_API_SECRET}` },
+          body: JSON.stringify({ discord_event_id: ev.discord_event_id }),
+        });
+      } catch (botErr) {
+        console.warn('Discord event deletion failed:', botErr.message);
+      }
+    }
+
+    const { error } = await sb.from('events').delete().eq('id', evId);
+    if (error) throw error;
+
+    orgEvents = orgEvents.filter(e => e.id !== evId);
+    closeEventDetailModal();
+    renderOrg();
+  } catch (err) {
+    if (errEl) { errEl.textContent = 'Failed: ' + (err.message || String(err)); errEl.style.display = 'inline'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete Event'; }
+  }
 }
 
 // ── Leaderboard ──
