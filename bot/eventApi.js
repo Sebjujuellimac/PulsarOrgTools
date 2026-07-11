@@ -13,7 +13,7 @@
 // ============================================================
 
 import { createServer } from 'http';
-import { GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel } from 'discord.js';
+import { GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel, ChannelType } from 'discord.js';
 import { db } from './db.js';
 
 const SECRET = process.env.BOT_EVENT_SECRET;
@@ -37,7 +37,9 @@ export function startEventApi(client) {
 
     const route = req.url;
     if (req.method !== 'POST' ||
-        (route !== '/api/create-discord-event' && route !== '/api/delete-discord-event')) {
+        (route !== '/api/create-discord-event' &&
+         route !== '/api/delete-discord-event' &&
+         route !== '/api/voice-channels')) {
       respond(res, 404, { error: 'Not found' }); return;
     }
 
@@ -59,6 +61,23 @@ export function startEventApi(client) {
       body = JSON.parse(raw);
     } catch {
       respond(res, 400, { error: 'Invalid JSON' }); return;
+    }
+
+    // ── List guild voice channels ─────────────────────────────────────────────
+    if (route === '/api/voice-channels') {
+      try {
+        const guild = await client.guilds.fetch(process.env.GUILD_ID);
+        const channels = await guild.channels.fetch();
+        const voice = [...channels.values()]
+          .filter(c => c && c.type === ChannelType.GuildVoice)
+          .sort((a, b) => (a.rawPosition ?? 0) - (b.rawPosition ?? 0))
+          .map(c => ({ id: c.id, name: c.name }));
+        respond(res, 200, { channels: voice });
+      } catch (err) {
+        console.error('eventApi voice-channels error:', err);
+        respond(res, 500, { error: err.message || String(err) });
+      }
+      return;
     }
 
     // ── Delete a Discord Scheduled Event ──────────────────────────────────────
@@ -83,7 +102,8 @@ export function startEventApi(client) {
     }
 
     // ── Create a Discord Scheduled Event ──────────────────────────────────────
-    const { event_id, title, description, location, scheduled_start_time, scheduled_end_time } = body;
+    const { event_id, title, description, location, voice_channel_id,
+            scheduled_start_time, scheduled_end_time } = body;
     if (!event_id || !title || !scheduled_start_time) {
       respond(res, 400, { error: 'Missing required fields: event_id, title, scheduled_start_time' }); return;
     }
@@ -91,21 +111,25 @@ export function startEventApi(client) {
     try {
       const guild = await client.guilds.fetch(process.env.GUILD_ID);
 
-      // External events require an end time and a location string
       const startTime = new Date(scheduled_start_time);
       const endTime   = scheduled_end_time
         ? new Date(scheduled_end_time)
         : new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // default +2h
 
-      const discordEvent = await guild.scheduledEvents.create({
-        name:              title,
-        description:       description || undefined,
+      // If a voice channel is chosen, make a Voice event tied to it (Discord
+      // shows attendees who join). Otherwise an External event with a location.
+      const base = {
+        name:               title,
+        description:        description || undefined,
         scheduledStartTime: startTime,
         scheduledEndTime:   endTime,
-        entityType:        GuildScheduledEventEntityType.External,
-        entityMetadata:    { location: location || 'TBD' },
-        privacyLevel:      GuildScheduledEventPrivacyLevel.GuildOnly,
-      });
+        privacyLevel:       GuildScheduledEventPrivacyLevel.GuildOnly,
+      };
+      const options = voice_channel_id
+        ? { ...base, entityType: GuildScheduledEventEntityType.Voice, channel: voice_channel_id }
+        : { ...base, entityType: GuildScheduledEventEntityType.External, entityMetadata: { location: location || 'TBD' } };
+
+      const discordEvent = await guild.scheduledEvents.create(options);
 
       // Write discord_event_id back to the DB row
       await db.from('events').update({ discord_event_id: discordEvent.id }).eq('id', event_id);

@@ -6872,6 +6872,8 @@ async function submitContribution(){
 }
 
 // ── Create Event ──────────────────────────────────────────────────────────────
+let _voiceChannelsCache = null;   // [{id, name}] fetched from the bot
+
 function openCreateEventModal() {
   document.getElementById('cev-title').value    = '';
   document.getElementById('cev-desc').value     = '';
@@ -6895,7 +6897,38 @@ function openCreateEventModal() {
   document.getElementById('cev-start').value = toLocal(now);
   const end = new Date(now); end.setHours(end.getHours() + 2);
   document.getElementById('cev-end').value = toLocal(end);
+  populateVoiceChannelDropdown();
   document.getElementById('createEventModal').classList.add('open');
+}
+
+async function populateVoiceChannelDropdown() {
+  const sel = document.getElementById('cev-vc');
+  if (!BOT_API_URL || !BOT_API_SECRET) {
+    sel.innerHTML = '<option value="">— Bot not configured —</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  const render = list => {
+    sel.innerHTML = '<option value="">— Don\'t monitor —</option>' +
+      list.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  };
+  if (_voiceChannelsCache) { render(_voiceChannelsCache); return; }
+  sel.innerHTML = '<option value="">Loading channels…</option>';
+  try {
+    const res = await fetch(`${BOT_API_URL}/api/voice-channels`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BOT_API_SECRET}` },
+      body: '{}',
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !Array.isArray(json.channels)) throw new Error(json.error || 'Bad response');
+    _voiceChannelsCache = json.channels;
+    render(_voiceChannelsCache);
+  } catch (err) {
+    console.warn('Failed to load voice channels:', err.message);
+    sel.innerHTML = '<option value="">— Could not load channels —</option>';
+  }
 }
 
 async function submitCreateEvent() {
@@ -6909,6 +6942,7 @@ async function submitCreateEvent() {
 
   const description   = document.getElementById('cev-desc').value.trim()    || null;
   const location      = document.getElementById('cev-location').value.trim() || null;
+  const voiceChannelId = document.getElementById('cev-vc').value || null;
   const endVal        = document.getElementById('cev-end').value;
   const payload = {
     title,
@@ -6918,6 +6952,7 @@ async function submitCreateEvent() {
     dkp_per_hour:    Number(document.getElementById('cev-dkp-hr').value)   || 0,
     auec_per_hour:   Number(document.getElementById('cev-auec-hr').value)  || 0,
     course_code:     document.getElementById('cev-course').value || null,
+    voice_channel_id: voiceChannelId,
     scheduled_start_time: new Date(startVal).toISOString(),
     scheduled_end_time:   endVal ? new Date(endVal).toISOString() : null,
     status: 'open',
@@ -6941,6 +6976,7 @@ async function submitCreateEvent() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BOT_API_SECRET}` },
           body: JSON.stringify({
             event_id: data.id, title, description, location,
+            voice_channel_id: voiceChannelId,
             scheduled_start_time: payload.scheduled_start_time,
             scheduled_end_time:   payload.scheduled_end_time,
           }),
@@ -7174,6 +7210,11 @@ function renderOpList(){} function renderOpDetail(){} function closeOpDetail(){}
     <div class="form-group">
       <label class="form-label">Course (training events only)</label>
       <select class="form-select" id="cev-course"><option value="">— Not a class —</option></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Monitor voice channel</label>
+      <select class="form-select" id="cev-vc"><option value="">— Don't monitor —</option></select>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:0.3rem;">Members in this channel during the event are auto-clocked for time-based DKP/aUEC and certs.</div>
     </div>
     <div id="cev-error" style="display:none;font-size:12px;color:#c44a4a;margin-bottom:0.75rem;"></div>
     <button class="submit-btn" onclick="submitCreateEvent()">Create Event</button>
