@@ -2696,7 +2696,154 @@ function inv_prefetchTabPrices() {
 // ============================================================
 // RENDER
 // ============================================================
+// ── Component catalog view (full SC catalog, owned floated to top) ──────────
+var compCatalogRendered = [];   // rows currently shown, for click-through by index
+
+function componentMatchKey(name){ return (name||'').toLowerCase().trim(); }
+
+function buildComponentCatalogRows(){
+  // Index owned components (from the DB) by normalised name
+  var ownedByKey = {};
+  items.filter(function(it){ return it.cat==='component'; }).forEach(function(it){
+    var k = componentMatchKey(it.name);
+    (ownedByKey[k] = ownedByKey[k] || []).push(it);
+  });
+
+  var rows = [], seen = {}, usedKeys = {};
+  (sc_catalog||[]).forEach(function(c){
+    var k = componentMatchKey(c.n);
+    if (seen[k]) return; seen[k] = true;               // collapse near-duplicate names
+    var holders = ownedByKey[k] || [];
+    if (holders.length) usedKeys[k] = true;
+    rows.push({
+      name: c.n, t: c.t, cls: c.cls||'', g: c.g||'',
+      sz: (c.sz!==null&&c.sz!==undefined) ? String(c.sz) : '', mfr: c.mfr||'',
+      owned: holders.length>0, holders: holders,
+      totalQty: holders.reduce(function(a,h){ return a+(h.qty||0); },0),
+    });
+  });
+  // Owned components that aren't in the catalog (manual/custom entries)
+  Object.keys(ownedByKey).forEach(function(k){
+    if (usedKeys[k]) return;
+    var holders = ownedByKey[k], rep = holders[0];
+    rows.push({
+      name: rep.name, t: rep.function||'', cls: rep.compClass||'', g: rep.grade||'',
+      sz: sc_normaliseSize(rep.size), mfr: rep.mfr||'',
+      owned: true, holders: holders,
+      totalQty: holders.reduce(function(a,h){ return a+(h.qty||0); },0),
+    });
+  });
+  return rows;
+}
+
+function renderComponentTab(){
+  document.getElementById('dkpBanner').classList.remove('visible');
+  var p = document.getElementById('loot-pending-panel'); if (p) p.innerHTML = '';
+  document.getElementById('loot-body-row')?.classList.remove('has-panel');
+
+  var grid = document.getElementById('grid');
+
+  // Catalog loads async — show a spinner and re-render when ready
+  if (!sc_catalog) {
+    grid.innerHTML = '<div class="empty">Loading component catalog…</div>';
+    sc_fetchCatalog(function(){ if (activeTab==='component') render(); });
+    updateStats();
+    return;
+  }
+
+  var q  = (document.getElementById('search').value||'').toLowerCase();
+  var cf = { fn:document.getElementById('ff-function').value, cls:document.getElementById('ff-class').value,
+             grade:document.getElementById('ff-grade').value, size:document.getElementById('ff-size').value };
+
+  var rows = buildComponentCatalogRows().filter(function(r){
+    if (q && !(r.name.toLowerCase().includes(q) || (r.mfr||'').toLowerCase().includes(q)
+              || r.holders.some(function(h){ return (h.owner||'').toLowerCase().includes(q); }))) return false;
+    if (cf.fn    && r.t   !== cf.fn)   return false;
+    if (cf.cls   && r.cls !== cf.cls)  return false;
+    if (cf.grade && r.g   !== cf.grade) return false;
+    if (cf.size  && sc_normaliseSize(r.sz) !== cf.size) return false;
+    return true;
+  });
+
+  // Owned first, then alphabetical within each group
+  rows.sort(function(a,b){
+    if (a.owned !== b.owned) return a.owned ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  compCatalogRendered = rows;
+
+  updateSummary('fs-component',[cf.fn?sc_typeDisplay(cf.fn):'',cf.cls,cf.grade?'Grade '+cf.grade:'',cf.size?'Size '+cf.size:''].filter(Boolean));
+  var anyF=[cf.fn,cf.cls,cf.grade,cf.size,q].some(Boolean);
+  var ownedCount = rows.filter(function(r){return r.owned;}).length;
+  document.getElementById('resultCount').textContent = anyF
+    ? rows.length+' component'+(rows.length!==1?'s':'')+' matched'+(ownedCount?' · '+ownedCount+' in stock':'')
+    : (ownedCount+' of '+rows.length+' components in stock');
+
+  if (!rows.length){ grid.innerHTML='<div class="empty">No components match the current filters.</div>'; updateStats(); return; }
+
+  grid.innerHTML = rows.map(function(r,i){
+    var sz = sc_normaliseSize(r.sz);
+    var g  = r.g   ? '<span class="grade-badge grade-'+r.g+'">'+r.g+'</span>' : '';
+    var s  = sz    ? '<span class="size-badge">'+sz+'</span>' : '';
+    var c  = r.cls ? '<span class="class-badge class-'+r.cls+'">'+r.cls+'</span>' : '';
+    var mfrLine = r.mfr ? '<div style="font-size:0.63rem;color:var(--color-text-tertiary);margin-bottom:0.2rem;">'+esc(r.mfr)+'</div>' : '';
+    if (r.owned){
+      var owners = r.holders.map(function(h){return h.owner;}).filter(Boolean);
+      var ownerLabel = owners.length>1 ? esc(owners[0])+' +'+(owners.length-1)
+                     : (owners.length===1 ? esc(owners[0]) : '');
+      var qtyBadge = r.totalQty>0 ? '<span class="qty-badge">×'+r.totalQty+'</span>'
+                                  : '<span class="qty-badge" style="background:rgba(255,255,255,0.05);color:var(--color-text-tertiary);">Out of stock</span>';
+      return '<div class="card cat-component" onclick="openComponentCatalogDetail('+i+')"><div class="card-cat">Component</div><div class="card-name">'+esc(r.name)+'</div>'+mfrLine+'<div class="card-sub">'+sc_typeDisplay(r.t)+'</div><div class="comp-meta">'+c+g+s+'</div><div class="card-footer">'+qtyBadge+'<span class="owner">'+ownerLabel+'</span></div></div>';
+    }
+    return '<div class="card cat-component" onclick="openComponentCatalogDetail('+i+')" style="opacity:0.5;"><div class="card-cat">Component</div><div class="card-name">'+esc(r.name)+'</div>'+mfrLine+'<div class="card-sub">'+sc_typeDisplay(r.t)+'</div><div class="comp-meta">'+c+g+s+'</div><div class="card-footer"><span class="qty-badge" style="background:rgba(255,255,255,0.04);color:var(--color-text-tertiary);">Not in stock</span></div></div>';
+  }).join('');
+
+  updateStats();
+}
+
+function openComponentCatalogDetail(idx){
+  var r = compCatalogRendered[idx]; if (!r) return;
+  document.getElementById('modal-title-detail').textContent = r.name;
+  var sz = sc_normaliseSize(r.sz);
+  var badge='';
+  if (r.cls) badge+='<span class="class-badge class-'+r.cls+'" style="display:inline-block;margin-bottom:10px;margin-right:4px;">'+r.cls+'</span>';
+  if (r.g)   badge+='<span class="grade-badge grade-'+r.g+'" style="display:inline-block;margin-bottom:10px;margin-right:4px;">'+r.g+'</span>';
+  if (sz)    badge+='<span class="size-badge" style="display:inline-block;margin-bottom:10px;margin-right:4px;">Size '+sz+'</span>';
+  document.getElementById('d-badge').innerHTML = badge;
+
+  var info='<div class="info-item"><div class="label">Type</div><div class="value">'+sc_typeDisplay(r.t)+'</div></div>'
+    +'<div class="info-item"><div class="label">Manufacturer</div><div class="value">'+(esc(r.mfr)||'—')+'</div></div>'
+    +'<div class="info-item"><div class="label">Grade</div><div class="value">'+(r.g||'—')+'</div></div>'
+    +'<div class="info-item"><div class="label">Size</div><div class="value">'+(sz||'—')+'</div></div>'
+    +'<div class="info-item"><div class="label">In stock</div><div class="value">'+(r.owned?('×'+r.totalQty):'—')+'</div></div>'
+    +'<div class="info-item"><div class="label">Holders</div><div class="value">'+(r.owned?r.holders.length:0)+'</div></div>';
+  document.getElementById('d-grid').innerHTML = info;
+
+  // Holders breakdown (replaces the UEX panel area for catalog detail)
+  var holdersEl = document.getElementById('d-uex-prices');
+  if (r.owned){
+    var rowsH = r.holders.map(function(h){
+      return '<div class="d-uex-row" style="cursor:pointer;" onclick="openDetail(\''+h.id+'\')" title="View, edit, or request disbursal"><span class="term">'+(esc(h.owner)||'Unknown')
+        +(h.notes?'<span class="sys">'+esc(h.notes)+'</span>':'')+'</span><span class="price">×'+(h.qty||0)+' ›</span></div>';
+    }).join('');
+    holdersEl.innerHTML = '<div class="d-uex-panel"><div class="d-uex-title">Held by</div>'+rowsH
+      +'<div style="font-size:0.59rem;color:var(--color-text-tertiary);margin-top:0.5rem;">Click a holder to view details, edit, or request disbursal.</div></div>';
+  } else {
+    holdersEl.innerHTML = '<div class="d-uex-panel"><div class="d-uex-title">Held by</div>'
+      +'<div style="font-size:0.72rem;color:var(--color-text-tertiary);">Not currently in org inventory.'
+      +((isOfficer||isAdmin)?' Use “+ Add Item” to log a unit.':'')+'</div></div>';
+  }
+  holdersEl.style.display = 'block';
+
+  document.getElementById('d-notes').style.display='none';
+  document.getElementById('d-edit').style.display='none';
+  document.getElementById('d-delete').style.display='none';
+  var reqArea=document.getElementById('d-request-area'); if(reqArea) reqArea.style.display='none';
+  document.getElementById('detailModal').classList.add('open');
+}
+
 function render(){
+  if(activeTab==='component'){ renderComponentTab(); return; }
   const q=document.getElementById('search').value.toLowerCase();
   const cf={fn:document.getElementById('ff-function').value,cls:document.getElementById('ff-class').value,grade:document.getElementById('ff-grade').value,size:document.getElementById('ff-size').value};
   const mf={t1:document.getElementById('ff-mat1').value,t2:document.getElementById('ff-mat2').value,t3:document.getElementById('ff-mat3').value,state:document.getElementById('ff-mat-state').value};
