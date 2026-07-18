@@ -169,6 +169,11 @@
   .dkp-total-badge { font-size: 0.625rem; padding: 0.125rem 0.44rem; border-radius: 4px; background: #1e1a3a; color: #a89cf7; font-weight: 500; }
   .comp-meta { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
   /* ── Component vertical list ── */
+  .comp-scroll { overflow-y: auto; overflow-x: hidden; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.25rem; }
+  .comp-pager { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; font-size: 0.72rem; color: var(--color-text-secondary); }
+  .comp-pager-btn { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); color: var(--color-text-secondary); font-size: 0.72rem; padding: 0.25rem 0.6rem; cursor: pointer; }
+  .comp-pager-btn:hover:not(:disabled) { background: var(--color-background-primary); color: var(--color-text-primary); }
+  .comp-pager-btn:disabled { opacity: 0.4; cursor: default; }
   .comp-list { display: flex; flex-direction: column; gap: 0.25rem; }
   .comp-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
   .comp-row:hover { border-color: var(--color-border-secondary); background: var(--color-background-primary); }
@@ -2712,7 +2717,10 @@ function inv_prefetchTabPrices() {
 // RENDER
 // ============================================================
 // ── Component catalog view (full SC catalog, owned floated to top) ──────────
-var compCatalogRendered = [];   // rows currently shown, for click-through by index
+var compCatalogRendered = [];   // full filtered+sorted rows, for click-through by index
+var compPage = 0;               // current page in the component list
+var COMP_PAGE_SIZE = 50;        // rows per page
+var _compFilterSig = null;      // last filter signature — resets page on change
 
 function componentMatchKey(name){ return (name||'').toLowerCase().trim(); }
 
@@ -2797,8 +2805,19 @@ function renderComponentTab(){
 
   if (!rows.length){ grid.innerHTML='<div class="empty">No components match the current filters.</div>'; updateStats(); return; }
 
+  // Reset to page 1 whenever the filter/search set changes
+  var sig = q+'|'+cf.fn+'|'+cf.cls+'|'+cf.grade+'|'+cf.size;
+  if (sig !== _compFilterSig) { compPage = 0; _compFilterSig = sig; }
+
+  var totalPages = Math.ceil(rows.length / COMP_PAGE_SIZE);
+  if (compPage > totalPages-1) compPage = totalPages-1;
+  if (compPage < 0) compPage = 0;
+  var start = compPage * COMP_PAGE_SIZE;
+  var pageRows = rows.slice(start, start + COMP_PAGE_SIZE);
+
   var canAdd = isOfficer || isAdmin || !!authMember?.can_add_items;
-  grid.innerHTML = '<div class="comp-list">' + rows.map(function(r,i){
+  var listHTML = pageRows.map(function(r,li){
+    var i = start + li;   // global index into compCatalogRendered
     var sz = sc_normaliseSize(r.sz);
     var g  = r.g   ? '<span class="grade-badge grade-'+r.g+'">'+r.g+'</span>' : '';
     var s  = sz    ? '<span class="size-badge">'+sz+'</span>' : '';
@@ -2823,9 +2842,39 @@ function renderComponentTab(){
       + '<div class="comp-row-stock">'+stock+'</div>'
       + addBtn
       + '</div>';
-  }).join('') + '</div>';
+  }).join('');
 
+  var pager = '';
+  if (totalPages > 1) {
+    pager = '<div class="comp-pager">'
+      + '<button class="comp-pager-btn" '+(compPage===0?'disabled':'')+' onclick="compGoToPage('+(compPage-1)+')">‹ Prev</button>'
+      + '<span>Page '+(compPage+1)+' of '+totalPages+'</span>'
+      + '<button class="comp-pager-btn" '+(compPage>=totalPages-1?'disabled':'')+' onclick="compGoToPage('+(compPage+1)+')">Next ›</button>'
+      + '<span style="margin-left:auto;color:var(--color-text-tertiary);">Showing '+(start+1)+'–'+(start+pageRows.length)+' of '+rows.length+'</span>'
+      + '</div>';
+  }
+
+  grid.innerHTML = pager + '<div class="comp-scroll" id="comp-scroll"><div class="comp-list">' + listHTML + '</div></div>';
+  sizeCompScroll();
   updateStats();
+}
+
+// Match the scroll box to fill from its top down to the viewport bottom
+// (i.e. the same vertical extent as the sidebar).
+function sizeCompScroll(){
+  var el = document.getElementById('comp-scroll');
+  if (!el) return;
+  var top = el.getBoundingClientRect().top;
+  var h = window.innerHeight - top - 16;
+  el.style.height = Math.max(200, h) + 'px';
+}
+window.addEventListener('resize', function(){ if (activeTab==='component') sizeCompScroll(); });
+
+function compGoToPage(p){
+  var totalPages = Math.ceil(compCatalogRendered.length / COMP_PAGE_SIZE);
+  compPage = Math.max(0, Math.min(p, totalPages-1));
+  renderComponentTab();
+  var el = document.getElementById('comp-scroll'); if (el) el.scrollTop = 0;
 }
 
 function addComponentFromCatalog(idx, ev){
