@@ -2757,6 +2757,7 @@ function renderComponentTab(){
   document.getElementById('loot-body-row')?.classList.remove('has-panel');
 
   var grid = document.getElementById('grid');
+  grid.className = '';   // list view — drop the card-grid columns so rows span full width
 
   // Catalog loads async — show a spinner and re-render when ready
   if (!sc_catalog) {
@@ -2926,6 +2927,7 @@ function render(){
   document.getElementById('resultCount').textContent=anyF?`${filtered.length} item${filtered.length!==1?'s':''} matched`:'';
 
   const grid=document.getElementById('grid');
+  grid.className='grid';   // restore card-grid layout (component tab clears this for its list)
   if(!filtered.length){grid.innerHTML='<div class="empty">No items match the current filters.</div>';updateStats();return;}
   grid.innerHTML=filtered.map(it=>{
     if(it.cat==='component'){
