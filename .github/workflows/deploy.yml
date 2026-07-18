@@ -1,0 +1,36 @@
+name: Deploy Dashboard to Cloudflare
+
+# Auto-deploys the dashboard/ folder to the pulsarorgtools Worker on every
+# push to main that touches the dashboard or the Worker config. Acts as a
+# reliable backstop for Cloudflare Workers Builds.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN  — a token with the "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID — your Cloudflare account ID (Workers & Pages → right sidebar)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/**'
+      - 'wrangler.jsonc'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:   # lets you trigger a deploy manually from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
