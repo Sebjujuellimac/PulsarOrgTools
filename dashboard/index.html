@@ -168,6 +168,21 @@
   .dkp-badge { font-size: 0.69rem; padding: 0.125rem 0.5rem; border-radius: 99px; background: #1e1a3a; color: #a89cf7; font-weight: 500; white-space: nowrap; }
   .dkp-total-badge { font-size: 0.625rem; padding: 0.125rem 0.44rem; border-radius: 4px; background: #1e1a3a; color: #a89cf7; font-weight: 500; }
   .comp-meta { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  /* ── Component vertical list ── */
+  .comp-list { display: flex; flex-direction: column; gap: 0.25rem; }
+  .comp-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .comp-row:hover { border-color: var(--color-border-secondary); background: var(--color-background-primary); }
+  .comp-row.owned { border-left: 2px solid #2dbd8f; }
+  .comp-row.dimmed { opacity: 0.5; }
+  .comp-row-main { flex: 2; min-width: 0; }
+  .comp-row-name { font-size: 0.82rem; font-weight: 500; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .comp-row-mfr { font-size: 0.63rem; color: var(--color-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .comp-row-type { flex: 1; min-width: 5rem; font-size: 0.72rem; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .comp-row-badges { display: flex; gap: 0.3rem; align-items: center; flex-shrink: 0; }
+  .comp-row-stock { flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; min-width: 8rem; }
+  .comp-row-add { flex-shrink: 0; width: 1.6rem; height: 1.6rem; padding: 0; border-radius: 4px; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-secondary); font-size: 1rem; line-height: 1; cursor: pointer; }
+  .comp-row-add:hover { border-color: #2dbd8f; color: #2dbd8f; }
+  @media (max-width: 640px) { .comp-row-type { display: none; } .comp-row-stock { min-width: 0; } }
   .owner { font-size: 0.69rem; color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .quality-bar { margin-top: 0.5rem; }
   .quality-bar-track { height: 3px; border-radius: 2px; background: var(--color-border-tertiary); overflow: hidden; }
@@ -2781,24 +2796,51 @@ function renderComponentTab(){
 
   if (!rows.length){ grid.innerHTML='<div class="empty">No components match the current filters.</div>'; updateStats(); return; }
 
-  grid.innerHTML = rows.map(function(r,i){
+  var canAdd = isOfficer || isAdmin || !!authMember?.can_add_items;
+  grid.innerHTML = '<div class="comp-list">' + rows.map(function(r,i){
     var sz = sc_normaliseSize(r.sz);
     var g  = r.g   ? '<span class="grade-badge grade-'+r.g+'">'+r.g+'</span>' : '';
     var s  = sz    ? '<span class="size-badge">'+sz+'</span>' : '';
     var c  = r.cls ? '<span class="class-badge class-'+r.cls+'">'+r.cls+'</span>' : '';
-    var mfrLine = r.mfr ? '<div style="font-size:0.63rem;color:var(--color-text-tertiary);margin-bottom:0.2rem;">'+esc(r.mfr)+'</div>' : '';
+    var mfr = r.mfr ? '<div class="comp-row-mfr">'+esc(r.mfr)+'</div>' : '';
+    var addBtn = canAdd ? '<button class="comp-row-add" title="Add to inventory" onclick="addComponentFromCatalog('+i+',event)">+</button>' : '';
+    var stock;
     if (r.owned){
       var owners = r.holders.map(function(h){return h.owner;}).filter(Boolean);
       var ownerLabel = owners.length>1 ? esc(owners[0])+' +'+(owners.length-1)
                      : (owners.length===1 ? esc(owners[0]) : '');
       var qtyBadge = r.totalQty>0 ? '<span class="qty-badge">×'+r.totalQty+'</span>'
                                   : '<span class="qty-badge" style="background:rgba(255,255,255,0.05);color:var(--color-text-tertiary);">Out of stock</span>';
-      return '<div class="card cat-component" onclick="openComponentCatalogDetail('+i+')"><div class="card-cat">Component</div><div class="card-name">'+esc(r.name)+'</div>'+mfrLine+'<div class="card-sub">'+sc_typeDisplay(r.t)+'</div><div class="comp-meta">'+c+g+s+'</div><div class="card-footer">'+qtyBadge+'<span class="owner">'+ownerLabel+'</span></div></div>';
+      stock = qtyBadge + '<span class="owner">'+ownerLabel+'</span>';
+    } else {
+      stock = '<span class="owner" style="color:var(--color-text-tertiary);">Not in stock</span>';
     }
-    return '<div class="card cat-component" onclick="openComponentCatalogDetail('+i+')" style="opacity:0.5;"><div class="card-cat">Component</div><div class="card-name">'+esc(r.name)+'</div>'+mfrLine+'<div class="card-sub">'+sc_typeDisplay(r.t)+'</div><div class="comp-meta">'+c+g+s+'</div><div class="card-footer"><span class="qty-badge" style="background:rgba(255,255,255,0.04);color:var(--color-text-tertiary);">Not in stock</span></div></div>';
-  }).join('');
+    return '<div class="comp-row'+(r.owned?' owned':' dimmed')+'" onclick="openComponentCatalogDetail('+i+')">'
+      + '<div class="comp-row-main"><div class="comp-row-name">'+esc(r.name)+'</div>'+mfr+'</div>'
+      + '<div class="comp-row-type">'+sc_typeDisplay(r.t)+'</div>'
+      + '<div class="comp-row-badges">'+c+g+s+'</div>'
+      + '<div class="comp-row-stock">'+stock+'</div>'
+      + addBtn
+      + '</div>';
+  }).join('') + '</div>';
 
   updateStats();
+}
+
+function addComponentFromCatalog(idx, ev){
+  if (ev) ev.stopPropagation();
+  if (!isOfficer && !isAdmin && !authMember?.can_add_items) {
+    showError('Inventory access is restricted. Use /verify in Discord to request access.'); return;
+  }
+  var r = compCatalogRendered[idx]; if (!r) return;
+  openAddModal();
+  compShowPreselected(r.name, r.t, r.g, r.sz, r.cls, r.mfr);
+  var hint = document.getElementById('comp-stock-hint');
+  if (hint && r.owned) {
+    hint.textContent = 'Currently in stock: '+r.totalQty+'. Qty below adds to that total.';
+    hint.style.display = 'block';
+  }
+  var _f = document.getElementById('f-owner'); if (_f) _f.focus();
 }
 
 function openComponentCatalogDetail(idx){
